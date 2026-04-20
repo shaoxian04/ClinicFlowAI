@@ -25,6 +25,24 @@ type VisitDetail = {
   finalizedAt: string | null;
 };
 
+type MedRow = { name: string; dosage: string; frequency: string };
+
+type PostVisitResponse = {
+  visitId: string;
+  summaryEn: string;
+  summaryMs: string;
+  medications: { id: string; name: string; dosage: string; frequency: string }[];
+};
+
+const EMPTY_MED: MedRow = { name: "", dosage: "", frequency: "" };
+
+const SOAP_LABELS: Record<keyof Pick<Soap, "subjective" | "objective" | "assessment" | "plan">, string> = {
+  subjective: "Subjective — what the patient reports",
+  objective: "Objective — exam & measurements",
+  assessment: "Assessment — clinical judgment",
+  plan: "Plan — treatment & follow-up",
+};
+
 export default function VisitDetailPage() {
   const router = useRouter();
   const params = useParams<{ visitId: string }>();
@@ -35,9 +53,11 @@ export default function VisitDetailPage() {
     subjective: "", objective: "", assessment: "", plan: "",
     finalized: false, aiDraftHash: null,
   });
+  const [meds, setMeds] = useState<MedRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasAiDraft, setHasAiDraft] = useState(false);
+  const [notified, setNotified] = useState(false);
 
   useEffect(() => {
     const user = getUser();
@@ -70,34 +90,80 @@ export default function VisitDetailPage() {
     finally { setBusy(false); }
   }
 
-  async function onFinalize() {
+  function addMed() {
+    if (meds.length >= 3) return;
+    setMeds([...meds, { ...EMPTY_MED }]);
+  }
+
+  function updateMed(idx: number, patch: Partial<MedRow>) {
+    setMeds(meds.map((m, i) => (i === idx ? { ...m, ...patch } : m)));
+  }
+
+  function removeMed(idx: number) {
+    setMeds(meds.filter((_, i) => i !== idx));
+  }
+
+  async function onFinalizeAndNotify() {
     if (!soap.subjective.trim() || !soap.objective.trim() || !soap.assessment.trim() || !soap.plan.trim()) {
       setError("All 4 SOAP sections must be non-empty to finalize");
       return;
     }
-    if (!confirm("Finalize this SOAP note? This locks the record.")) return;
-    setBusy(true); setError(null);
+    for (const m of meds) {
+      if (!m.name.trim() || !m.dosage.trim() || !m.frequency.trim()) {
+        setError("Each medication needs name, dosage, and frequency (or remove the row)");
+        return;
+      }
+    }
+    if (!confirm("Finalize this SOAP and notify the patient? The record will be locked.")) return;
+    setBusy(true); setError(null); setNotified(false);
     try {
       const s = await apiPost<Soap>(`/visits/${visitId}/soap/finalize`, soap);
       setSoap(s);
-    } catch (e) { setError((e as Error).message); }
-    finally { setBusy(false); }
+      const postVisit = await apiPost<PostVisitResponse>(`/postvisit/${visitId}/generate`, { medications: meds });
+      setNotified(postVisit.summaryEn.length > 0 || postVisit.summaryMs.length > 0);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
 
-  if (!detail) return <div style={{ padding: 24 }}>Loading…</div>;
+  if (!detail) {
+    return (
+      <main className="shell">
+        <p className="empty">Loading visit…</p>
+      </main>
+    );
+  }
 
   const fields = (detail.preVisitStructured?.fields ?? {}) as Record<string, unknown>;
   const locked = soap.finalized;
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
-      <h1>Visit — {detail.patientName}</h1>
-      <p>Status: <strong>{detail.status}</strong> · Visit ID: <code>{detail.visitId}</code></p>
+    <main className="shell">
+      <span className="eyebrow">Clinician review</span>
+      <h1 className="page-title">
+        Visit with <em>{detail.patientName}</em>
+      </h1>
+      <p className="page-sub">
+        Review the pre-visit intake, capture your SOAP note, prescribe up to three medications, and publish a bilingual
+        summary to the patient in one action.
+      </p>
 
-      <section style={{ background: "#f4f4f8", padding: 12, borderRadius: 6, marginTop: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Pre-visit intake</h3>
+      <div className="status-row">
+        <span className={`pill ${locked ? "pill-good" : "pill-primary"}`}>{detail.status}</span>
+        {hasAiDraft && !locked && <span className="pill pill-warn">AI draft pending review</span>}
+        {locked && <span className="pill pill-good">Finalized</span>}
+        <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
+      </div>
+
+      <section className="card" data-delay="1">
+        <div className="card-head">
+          <h2>Pre-visit intake</h2>
+          <span className="card-idx">01 / INTAKE</span>
+        </div>
         {Object.keys(fields).length === 0 ? (
-          <p style={{ color: "#666" }}>No pre-visit data captured.</p>
+          <p className="empty">No pre-visit data captured.</p>
         ) : (
           <ul>
             {Object.entries(fields).map(([k, v]) => (
@@ -107,47 +173,127 @@ export default function VisitDetailPage() {
         )}
       </section>
 
-      <section style={{ marginTop: 16 }}>
-        <h3>Consultation transcript</h3>
-        <textarea
-          rows={6}
-          style={{ width: "100%", fontFamily: "inherit", padding: 8 }}
-          placeholder="Paste the consultation transcript here…"
-          value={transcript}
-          onChange={(e) => setTranscript(e.target.value)}
-          disabled={locked}
-        />
-        <button onClick={onGenerate} disabled={busy || locked} style={{ marginTop: 8 }}>
-          {busy ? "Generating…" : "Generate SOAP"}
-        </button>
-      </section>
-
-      <section style={{ marginTop: 16 }}>
-        <h3>
-          SOAP note {hasAiDraft && !locked && <span style={{ color: "#b36b00", fontSize: 14 }}>(AI draft — review before finalizing)</span>}
-          {locked && <span style={{ color: "green", fontSize: 14 }}> ✓ Finalized</span>}
-        </h3>
-        {(["subjective", "objective", "assessment", "plan"] as const).map((k) => (
-          <div key={k} style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontWeight: "bold", textTransform: "capitalize" }}>{k}</label>
-            <textarea
-              rows={3}
-              style={{ width: "100%", padding: 8, fontFamily: "inherit", background: locked ? "#f7f7f7" : "white" }}
-              value={soap[k]}
-              onChange={(e) => setSoap({ ...soap, [k]: e.target.value })}
-              disabled={locked}
-            />
-          </div>
-        ))}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onSaveDraft} disabled={busy || locked || !hasAiDraft}>Save draft</button>
-          <button onClick={onFinalize} disabled={busy || locked || !hasAiDraft} style={{ background: "#0070f3", color: "white" }}>
-            Finalize
+      <section className="card" data-delay="2">
+        <div className="card-head">
+          <h2>Consultation transcript</h2>
+          <span className="card-idx">02 / CAPTURE</span>
+        </div>
+        <p>Paste or type the consultation transcript. The AI will draft a SOAP note you review below.</p>
+        <label className="field">
+          <textarea
+            className="textarea"
+            rows={6}
+            placeholder="Patient reports 3 days of productive cough with low-grade fever. Vitals…"
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            disabled={locked}
+          />
+        </label>
+        <div className="btn-row">
+          <button className="btn btn-primary" onClick={onGenerate} disabled={busy || locked}>
+            {busy ? "Generating…" : "Generate SOAP draft"}
           </button>
         </div>
       </section>
 
-      {error && <p style={{ color: "crimson", marginTop: 12 }}>Error: {error}</p>}
-    </div>
+      <section className="card" data-delay="3">
+        <div className="card-head">
+          <h2>SOAP note</h2>
+          <span className="card-idx">03 / DRAFT</span>
+        </div>
+        {hasAiDraft && !locked && (
+          <div className="banner banner-ai">
+            AI-generated draft. Every line is your responsibility — edit freely before finalizing.
+          </div>
+        )}
+        {locked && (
+          <div className="banner banner-done">
+            SOAP note finalized and locked. The patient record is immutable from here.
+          </div>
+        )}
+        <div style={{ height: 14 }} />
+        {(["subjective", "objective", "assessment", "plan"] as const).map((k) => (
+          <label className="field" key={k}>
+            <span className="field-label">{SOAP_LABELS[k]}</span>
+            <textarea
+              className={`textarea ${locked ? "textarea-locked" : ""}`}
+              rows={3}
+              value={soap[k]}
+              onChange={(e) => setSoap({ ...soap, [k]: e.target.value })}
+              disabled={locked}
+            />
+          </label>
+        ))}
+        <div className="btn-row">
+          <button className="btn" onClick={onSaveDraft} disabled={busy || locked || !hasAiDraft}>
+            Save draft
+          </button>
+        </div>
+      </section>
+
+      <section className="card" data-delay="4">
+        <div className="card-head">
+          <h2>Medications</h2>
+          <span className="card-idx card-idx med-counter">{meds.length} / 3</span>
+        </div>
+        {meds.length === 0 && (
+          <p className="empty">No medications yet. Add up to three — the patient will see each with dose and frequency.</p>
+        )}
+        {meds.map((m, i) => (
+          <div className="med-row" key={i}>
+            <input
+              className="input"
+              placeholder="Name (e.g. Paracetamol)"
+              value={m.name}
+              onChange={(e) => updateMed(i, { name: e.target.value })}
+              disabled={locked}
+            />
+            <input
+              className="input"
+              placeholder="Dose (e.g. 500 mg)"
+              value={m.dosage}
+              onChange={(e) => updateMed(i, { dosage: e.target.value })}
+              disabled={locked}
+            />
+            <input
+              className="input"
+              placeholder="Frequency (e.g. TDS)"
+              value={m.frequency}
+              onChange={(e) => updateMed(i, { frequency: e.target.value })}
+              disabled={locked}
+            />
+            <button className="btn btn-ghost" onClick={() => removeMed(i)} disabled={locked} aria-label="Remove medication">
+              Remove
+            </button>
+          </div>
+        ))}
+        <div className="btn-row" style={{ marginTop: 6 }}>
+          <button className="btn" onClick={addMed} disabled={locked || meds.length >= 3}>
+            + Add medication
+          </button>
+        </div>
+      </section>
+
+      <section className="card finalize-card" data-delay="5">
+        <div className="card-head">
+          <h2>Finalize &amp; notify</h2>
+          <span className="card-idx">04 / PUBLISH</span>
+        </div>
+        <p>
+          One click locks the SOAP note, writes a bilingual English + Malay summary, and publishes it to the patient&apos;s
+          portal.
+        </p>
+        <button className="btn btn-accent" onClick={onFinalizeAndNotify} disabled={busy || locked || !hasAiDraft}>
+          {busy ? "Publishing…" : "Finalize & notify patient →"}
+        </button>
+        {notified && (
+          <div className="banner banner-done" style={{ marginTop: 18, background: "rgba(217,227,208,0.95)" }}>
+            Patient notified — bilingual summary now live on their portal.
+          </div>
+        )}
+      </section>
+
+      {error && <div className="banner banner-error">{error}</div>}
+    </main>
   );
 }
