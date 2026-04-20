@@ -19,9 +19,11 @@ async def lifespan(app: FastAPI):
         await apply_schema()
     except Exception:
         log.exception("neo4j.schema_apply_failed")
-        raise
     yield
-    await close_driver()
+    try:
+        await close_driver()
+    except Exception:
+        log.exception("neo4j.close_driver_failed")
 
 
 app = FastAPI(
