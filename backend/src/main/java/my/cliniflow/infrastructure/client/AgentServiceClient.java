@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -72,4 +73,36 @@ public class AgentServiceClient {
     public record SoapReport(String subjective, String objective, String assessment, String plan) {}
 
     public record SoapResult(String subjective, String objective, String assessment, String plan) {}
+
+    public PostVisitResult callPostVisitSummarize(
+        UUID visitId,
+        String subjective, String objective, String assessment, String plan,
+        List<MedicationView> medications
+    ) {
+        PostVisitSummarizeRequest req = new PostVisitSummarizeRequest(
+            visitId.toString(),
+            new SoapBody(nz(subjective), nz(objective), nz(assessment), nz(plan)),
+            medications == null ? List.of() : medications
+        );
+        PostVisitSummarizeResponse resp = withCorrelation(client.post().uri("/agents/post-visit/summarize"))
+            .bodyValue(req)
+            .retrieve()
+            .bodyToMono(PostVisitSummarizeResponse.class)
+            .block();
+        if (resp == null) return new PostVisitResult("", "");
+        return new PostVisitResult(nz(resp.summaryEn()), nz(resp.summaryMs()));
+    }
+
+    private static String nz(String s) { return s == null ? "" : s; }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record PostVisitSummarizeRequest(String visitId, SoapBody soap, List<MedicationView> medications) {}
+
+    public record SoapBody(String subjective, String objective, String assessment, String plan) {}
+
+    public record MedicationView(String name, String dosage, String frequency) {}
+
+    public record PostVisitSummarizeResponse(String visitId, String summaryEn, String summaryMs) {}
+
+    public record PostVisitResult(String summaryEn, String summaryMs) {}
 }
