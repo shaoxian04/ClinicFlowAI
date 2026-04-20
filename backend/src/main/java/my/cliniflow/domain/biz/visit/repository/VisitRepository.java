@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface VisitRepository extends JpaRepository<VisitModel, UUID> {
     List<VisitModel> findByDoctorIdAndStatusOrderByGmtCreateDesc(UUID doctorId, VisitStatus status);
     List<VisitModel> findByDoctorIdOrderByGmtCreateDesc(UUID doctorId);
+    List<VisitModel> findByPatientIdAndStatusOrderByFinalizedAtDesc(UUID patientId, VisitStatus status);
 }
