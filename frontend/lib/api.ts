@@ -26,3 +26,36 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     if (envelope.data == null) throw new Error("empty response data");
     return envelope.data;
 }
+
+export async function apiGet<T>(path: string): Promise<T> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const envelope: WebResult<T> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+    if (envelope.data == null) throw new Error("empty response data");
+    return envelope.data;
+}
+
+export async function apiPut<T>(path: string, body: unknown): Promise<T> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const envelope: WebResult<T> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+    if (envelope.data == null) throw new Error("empty response data");
+    return envelope.data;
+}
