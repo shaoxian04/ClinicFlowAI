@@ -7,6 +7,7 @@ import my.cliniflow.controller.biz.visit.request.SoapDraftRequest;
 import my.cliniflow.controller.biz.visit.request.SoapGenerateRequest;
 import my.cliniflow.controller.biz.visit.response.VisitDetailResponse;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
+import my.cliniflow.infrastructure.security.JwtService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +41,7 @@ public class SoapController {
         @Valid @RequestBody SoapDraftRequest req,
         Authentication auth
     ) {
-        UUID doctorId = UUID.fromString(auth.getName());
+        UUID doctorId = ((JwtService.Claims) auth.getPrincipal()).userId();
         MedicalReportModel r = svc.finalize(visitId, doctorId, req.subjective(), req.objective(), req.assessment(), req.plan());
         return WebResult.ok(toSoap(r));
     }

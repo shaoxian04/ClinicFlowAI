@@ -56,6 +56,10 @@ Read these before touching agent or clinical-data code:
 - **PDPA audit log** is append-only. Never delete or update rows in application code.
 - **Frontend talks to Spring Boot only.** Next.js never calls the Python agent or Neo4j directly, and never uses the Supabase JS client for clinical data.
 
+## Skill usage
+
+- **Frontend design work** — when creating or redesigning UI (layouts, components, styling, visual polish), use the `frontend-design` skill before writing code.
+
 ## Detail index (`docs/details/`)
 
 Read the relevant file on demand — don't preload everything.

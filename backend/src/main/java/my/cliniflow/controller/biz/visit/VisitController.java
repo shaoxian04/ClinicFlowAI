@@ -4,6 +4,7 @@ import my.cliniflow.application.biz.visit.VisitReadAppService;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.visit.response.VisitDetailResponse;
 import my.cliniflow.controller.biz.visit.response.VisitSummaryResponse;
+import my.cliniflow.infrastructure.security.JwtService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,7 @@ public class VisitController {
 
     @GetMapping
     public WebResult<List<VisitSummaryResponse>> list(Authentication auth) {
-        UUID doctorId = UUID.fromString(auth.getName());
+        UUID doctorId = ((JwtService.Claims) auth.getPrincipal()).userId();
         return WebResult.ok(reads.listForDoctor(doctorId));
     }
 

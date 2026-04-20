@@ -8,6 +8,8 @@ router = APIRouter()
 
 
 class VisitGenerateRequest(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     visit_id: str
     transcript: str = ""
     pre_visit: dict = Field(default_factory=dict)
