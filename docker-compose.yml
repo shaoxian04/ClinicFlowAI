@@ -1,0 +1,79 @@
+services:
+  neo4j:
+    image: neo4j:5.20-community
+    container_name: cliniflow-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER}/${NEO4J_PASSWORD}
+      NEO4J_server_memory_heap_max__size: 512M
+    volumes:
+      - ./deploy/data/neo4j:/data
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u $${NEO4J_USER} -p $${NEO4J_PASSWORD} 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  agent:
+    build:
+      context: ./agent
+    container_name: cliniflow-agent
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NEO4J_URI: ${NEO4J_URI}
+      NEO4J_USER: ${NEO4J_USER}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+      AGENT_SERVICE_TOKEN: ${AGENT_SERVICE_TOKEN}
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: cliniflow-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SUPABASE_DB_URL: ${SUPABASE_DB_URL}
+      SUPABASE_DB_USER: ${SUPABASE_DB_USER}
+      SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      AGENT_SERVICE_URL: ${AGENT_SERVICE_URL}
+      AGENT_SERVICE_TOKEN: ${AGENT_SERVICE_TOKEN}
+    depends_on:
+      - agent
+    expose:
+      - "8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: cliniflow-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE: /api
+    expose:
+      - "3000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cliniflow-nginx
+    restart: unless-stopped
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
