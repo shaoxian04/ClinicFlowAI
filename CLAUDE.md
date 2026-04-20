@@ -23,6 +23,8 @@ Design artifacts:
 
 **Conflict resolution**: SAD wins on technical matters; PRD wins on product scope.
 
+**Default branch**: `master`. Feature branches target `master` for PRs.
+
 ## Database setup
 
 - **Postgres (Supabase)** — schema lives in `backend/src/main/resources/db/migration/V1__init.sql`. Flyway runs it automatically on backend boot (`spring.flyway.enabled=true`). JPA is in `validate` mode — schema changes go through a new `V<n>__*.sql`, never `ddl-auto=update`.
