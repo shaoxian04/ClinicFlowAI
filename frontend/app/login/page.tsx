@@ -23,7 +23,7 @@ export default function LoginPage() {
             const data = await apiPost<LoginResponse>("/auth/login", { email, password });
             const { token, ...user } = data;
             saveAuth(token, user);
-            if (user.role === "PATIENT") router.replace("/previsit/new");
+            if (user.role === "PATIENT") router.replace("/portal");
             else if (user.role === "DOCTOR") router.replace("/doctor");
             else router.replace("/");
         } catch (err) {
