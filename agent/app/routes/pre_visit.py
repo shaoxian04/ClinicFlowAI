@@ -1,30 +1,28 @@
+from typing import Any
+
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.graphs.pre_visit import run_turn
 
 router = APIRouter()
 
 
-class PreVisitStartRequest(BaseModel):
-    patient_id: str
-    locale: str = "en-MY"
+class TurnRequest(BaseModel):
+    structured: dict[str, Any] = Field(default_factory=dict)
 
 
-class PreVisitStepRequest(BaseModel):
-    session_id: str
-    user_message: str
+class TurnResponse(BaseModel):
+    assistantMessage: str  # noqa: N815 — camelCase matches Java record accessor
+    fields: dict[str, Any]
+    done: bool
 
 
-class PreVisitTurn(BaseModel):
-    session_id: str
-    assistant_message: str
-    is_complete: bool = False
-
-
-@router.post("/start", response_model=PreVisitTurn)
-async def start(_: PreVisitStartRequest) -> PreVisitTurn:
-    raise NotImplementedError("Pre-visit agent graph not yet wired")
-
-
-@router.post("/continue", response_model=PreVisitTurn)
-async def continue_step(_: PreVisitStepRequest) -> PreVisitTurn:
-    raise NotImplementedError("Pre-visit agent graph not yet wired")
+@router.post("/turn", response_model=TurnResponse)
+async def turn(req: TurnRequest) -> TurnResponse:
+    result = await run_turn(req.structured)
+    return TurnResponse(
+        assistantMessage=result["assistant_message"],
+        fields=result["fields"],
+        done=result["done"],
+    )

@@ -43,6 +43,9 @@ cliniflow:
     service-token: ${AGENT_SERVICE_TOKEN:dev-token}
     connect-timeout-ms: 2000
     read-timeout-ms: 15000
+  dev:
+    seeded-doctor-id: 00000000-0000-0000-0000-000000000001
+    seeded-patient-id: 00000000-0000-0000-0000-000000000010
 
 resilience4j:
   circuitbreaker:
