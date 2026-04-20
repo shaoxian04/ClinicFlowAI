@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class AgentServiceClient {
@@ -48,4 +49,27 @@ public class AgentServiceClient {
         Map<String, Object> fields,
         boolean done
     ) {}
+
+    public SoapResult callVisitGenerate(UUID visitId, Map<String, Object> preVisit, String transcript) {
+        VisitGenerateRequest req = new VisitGenerateRequest(visitId.toString(), transcript == null ? "" : transcript, preVisit == null ? Map.of() : preVisit);
+        VisitGenerateResponse resp = withCorrelation(client.post().uri("/agents/visit/generate"))
+            .bodyValue(req)
+            .retrieve()
+            .bodyToMono(VisitGenerateResponse.class)
+            .block();
+        if (resp == null || resp.report() == null) {
+            return new SoapResult("", "", "", "");
+        }
+        SoapReport r = resp.report();
+        return new SoapResult(r.subjective(), r.objective(), r.assessment(), r.plan());
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record VisitGenerateRequest(String visitId, String transcript, Map<String, Object> preVisit) {}
+
+    public record VisitGenerateResponse(String visitId, SoapReport report, boolean isAiDraft) {}
+
+    public record SoapReport(String subjective, String objective, String assessment, String plan) {}
+
+    public record SoapResult(String subjective, String objective, String assessment, String plan) {}
 }

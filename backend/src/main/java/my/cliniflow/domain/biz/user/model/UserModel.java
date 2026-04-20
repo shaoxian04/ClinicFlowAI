@@ -10,7 +10,6 @@ import java.util.UUID;
 public class UserModel {
 
     @Id
-    @GeneratedValue
     private UUID id;
 
     @Column(nullable = false, unique = true)
@@ -29,13 +28,14 @@ public class UserModel {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
-    @Column(name = "gmt_create", nullable = false, updatable = false, insertable = false)
+    @Column(name = "gmt_create", nullable = false, updatable = false)
     private OffsetDateTime gmtCreate;
 
-    @Column(name = "gmt_modified", nullable = false, insertable = false, updatable = false)
+    @Column(name = "gmt_modified", nullable = false)
     private OffsetDateTime gmtModified;
 
     public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getPasswordHash() { return passwordHash; }
@@ -46,4 +46,8 @@ public class UserModel {
     public void setFullName(String fullName) { this.fullName = fullName; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+    public OffsetDateTime getGmtCreate() { return gmtCreate; }
+    public void setGmtCreate(OffsetDateTime v) { this.gmtCreate = v; }
+    public OffsetDateTime getGmtModified() { return gmtModified; }
+    public void setGmtModified(OffsetDateTime v) { this.gmtModified = v; }
 }

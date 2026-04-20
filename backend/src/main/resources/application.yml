@@ -1,6 +1,8 @@
 spring:
   application:
     name: cliniflow-backend
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
   datasource:
     url: ${SUPABASE_DB_URL:jdbc:postgresql://localhost:5432/cliniflow}
     username: ${SUPABASE_DB_USER:postgres}

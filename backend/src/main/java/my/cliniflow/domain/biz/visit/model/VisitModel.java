@@ -30,6 +30,22 @@ public class VisitModel {
     @Column(name = "finalized_at")
     private OffsetDateTime finalizedAt;
 
+    @Column(name = "gmt_create", nullable = false, updatable = false)
+    private OffsetDateTime gmtCreate;
+
+    @Column(name = "gmt_modified", nullable = false)
+    private OffsetDateTime gmtModified;
+
+    @PrePersist
+    void onInsert() {
+        OffsetDateTime now = OffsetDateTime.now();
+        gmtCreate = now;
+        gmtModified = now;
+    }
+
+    @PreUpdate
+    void onUpdate() { gmtModified = OffsetDateTime.now(); }
+
     @OneToOne(mappedBy = "visit", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private PreVisitReportModel preVisitReport;
 
@@ -49,4 +65,6 @@ public class VisitModel {
         this.preVisitReport = v;
         if (v != null) v.setVisit(this);
     }
+    public OffsetDateTime getGmtCreate() { return gmtCreate; }
+    public OffsetDateTime getGmtModified() { return gmtModified; }
 }
