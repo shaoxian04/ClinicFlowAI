@@ -3189,3 +3189,30 @@ textarea:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .skeleton-bar { animation: none; }
 }
+
+/* === Task 2.2: Landing scroll flourishes === */
+@keyframes hero-emblem-ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.hero-emblem-ring {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: hero-emblem-ring-spin 40s linear infinite;
+}
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+  transform: scaleX(0);
+  z-index: 100;
+  pointer-events: none;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-emblem-ring { animation: none; }
+}

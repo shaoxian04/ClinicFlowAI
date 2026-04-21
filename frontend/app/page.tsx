@@ -27,8 +27,42 @@ export default function Home() {
     return () => io.disconnect();
   }, []);
 
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const heroRight = document.querySelector<HTMLElement>(".land-hero-right");
+    const progress = document.querySelector<HTMLElement>(".scroll-progress");
+    if (!heroRight && !progress) return;
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        if (heroRight && !reduced) {
+          const translate = Math.min(y, 400) * 0.025;
+          heroRight.style.transform = `translate3d(0, ${translate}px, 0)`;
+        }
+        if (progress) {
+          const max = document.documentElement.scrollHeight - window.innerHeight;
+          const ratio = max > 0 ? Math.min(Math.max(y / max, 0), 1) : 0;
+          progress.style.transform = `scaleX(${ratio})`;
+        }
+        ticking = false;
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return (
     <main className="landing">
+      <div className="scroll-progress" aria-hidden="true" />
       {/* ============ HERO ============ */}
       <section className="land-section land-hero">
         <div className="land-hero-left">
@@ -240,6 +274,7 @@ export default function Home() {
               <li><Link href="/previsit/new">Pre-visit intake</Link></li>
               <li><Link href="/portal">Patient portal</Link></li>
               <li><Link href="/doctor">Doctor workspace</Link></li>
+              <li><Link href="/privacy">Privacy</Link></li>
             </ul>
           </div>
           <div>

@@ -35,7 +35,7 @@ export function HeroEmblem({ size = 320, className }: Props) {
 
       <circle cx={c} cy={c} r={r1} fill="url(#hero-disc)" />
       <circle cx={c} cy={c} r={r1} fill="none" stroke="url(#hero-ring)" strokeWidth={2.5} />
-      <circle cx={c} cy={c} r={r2} fill="none" stroke="#f6f1e7" strokeWidth={0.8} opacity={0.35} strokeDasharray="2 6" />
+      <circle className="hero-emblem-ring" cx={c} cy={c} r={r2} fill="none" stroke="#f6f1e7" strokeWidth={0.8} opacity={0.35} strokeDasharray="2 6" />
       <circle cx={c} cy={c} r={r3} fill="none" stroke="#f6f1e7" strokeWidth={0.8} opacity={0.5} />
 
       {/* 3 orbiting dots = 3 phases */}
