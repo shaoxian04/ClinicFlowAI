@@ -77,7 +77,7 @@ const PROGRESS_STEPS: StepDef[] = [
   { id: "intake", label: "Intake", targetId: "section-intake", phase: "pre" },
   { id: "capture", label: "Capture", targetId: "section-capture", phase: "visit" },
   { id: "draft", label: "Draft", targetId: "section-draft", phase: "visit" },
-  { id: "publish", label: "Publish", targetId: "section-publish", phase: "post" },
+  { id: "publish", label: "Publish", targetId: "section-publish", phase: "visit" },
 ];
 
 // Task 6.6 — pure state-deriver for the FinalizeBar. Lifted out of the
