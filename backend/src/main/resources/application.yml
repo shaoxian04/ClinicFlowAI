@@ -8,6 +8,10 @@ spring:
     username: ${SUPABASE_DB_USER:postgres}
     password: ${SUPABASE_DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        prepareThreshold: 0
+        preparedStatementCacheQueries: 0
   jpa:
     hibernate:
       ddl-auto: validate
