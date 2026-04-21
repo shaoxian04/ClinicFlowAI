@@ -30,7 +30,7 @@ public class PostVisitController {
     ) {
         List<MedicationInput> inputs = req.medications() == null ? List.of() :
             req.medications().stream()
-                .map(m -> new MedicationInput(m.name(), m.dosage(), m.frequency()))
+                .map(m -> new MedicationInput(m.name(), m.dosage(), m.frequency(), m.duration(), m.instructions()))
                 .toList();
         PostVisitWriteAppService.PostVisitResult result = svc.generate(visitId, inputs);
         return WebResult.ok(toResponse(visitId, result.summary(), result.medications()));

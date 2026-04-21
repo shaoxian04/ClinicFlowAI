@@ -72,8 +72,12 @@ public class PatientReadAppService {
         PostVisitSummaryModel s = summaries.findByVisitId(visitId).orElse(null);
         List<MedicationModel> ms = meds.findByVisitIdOrderByGmtCreateAsc(visitId);
         List<PatientVisitDetailResponse.Medication> medDtos = ms.stream()
-            // TODO(post-visit-agent): populate duration/instructions from MedicationModel once
-            // the Post-Visit agent or doctor input round-trip persists those fields.
+            // TODO(post-visit-portal): wire duration/instructions from MedicationModel now that
+            // PostVisitWriteAppService persists those fields. Replace the stubs below:
+            //   duration    → m.getDurationDays() != null ? (m.getDurationDays() + " days") : ""
+            //   NOTE: MedicationModel.durationDays is Integer; format as (durationDays + " days") when wiring.
+            //   instructions → m.getInstructions() != null ? m.getInstructions() : ""
+            //   NOTE: MedicationModel.instructions is String; pass directly.
             .map(m -> new PatientVisitDetailResponse.Medication(m.getName(), m.getDosage(), m.getFrequency(), "", ""))
             .toList();
         // TODO(post-visit-agent): populate redFlags / followUp from PostVisitSummaryModel

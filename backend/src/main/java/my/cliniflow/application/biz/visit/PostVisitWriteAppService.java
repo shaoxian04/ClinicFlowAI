@@ -20,7 +20,7 @@ import java.util.UUID;
 @Service
 public class PostVisitWriteAppService {
 
-    public record MedicationInput(String name, String dosage, String frequency) {}
+    public record MedicationInput(String name, String dosage, String frequency, String duration, String instructions) {}
 
     public record PostVisitResult(
         PostVisitSummaryModel summary,
@@ -45,6 +45,21 @@ public class PostVisitWriteAppService {
         this.meds = meds;
         this.summaries = summaries;
         this.agent = agent;
+    }
+
+    /**
+     * Parse a free-text duration string (e.g. "5 days", "7") to an integer day count.
+     * Extracts the leading numeric token; returns null if blank or non-numeric.
+     */
+    private static Integer parseDurationDays(String duration) {
+        if (duration == null || duration.isBlank()) return null;
+        String digits = duration.replaceAll("[^0-9]", "");
+        if (digits.isEmpty()) return null;
+        try {
+            return Integer.parseInt(digits);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     @Transactional
@@ -74,6 +89,8 @@ public class PostVisitWriteAppService {
                 m.setName(in.name().trim());
                 m.setDosage(in.dosage() == null ? "" : in.dosage().trim());
                 m.setFrequency(in.frequency() == null ? "" : in.frequency().trim());
+                m.setDurationDays(parseDurationDays(in.duration()));
+                m.setInstructions(in.instructions() == null || in.instructions().isBlank() ? null : in.instructions().trim());
                 saved.add(meds.save(m));
             }
         }
