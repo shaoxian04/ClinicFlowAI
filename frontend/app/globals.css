@@ -3691,3 +3691,14 @@ textarea:focus-visible,
   color: var(--ink-1);
 }
 
+/* === Task 9.2: lang-toggle fade === */
+.lang-content {
+  transition: opacity 90ms ease;
+}
+.lang-content.is-transitioning {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lang-content { transition: none; }
+}
+
