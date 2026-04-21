@@ -16,6 +16,7 @@ export default function ConsentPage() {
   const [aiProcessing, setAiProcessing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [stubNote, setStubNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const allChecked = dataUse && graphKb && aiProcessing;
 
@@ -24,24 +25,34 @@ export default function ConsentPage() {
     if (!allChecked) return;
     setBusy(true);
     setStubNote(null);
+    setError(null);
 
     try {
       await apiPost<unknown>("/api/patient/consent", {
         timestamp: new Date().toISOString(),
       } satisfies ConsentPayload);
-    } catch (err) {
-      // Graceful stub: treat any failure as accepted — backend endpoint may not exist yet
-      console.warn("[ConsentPage] /api/patient/consent stub or error — proceeding:", err);
-      setStubNote("Stub — backend pending");
-    } finally {
       markConsentGiven();
       setBusy(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Only treat "endpoint not found yet" or network failures as a graceful stub
+      if (!msg.includes("HTTP 404") && !msg.includes("fetch")) {
+        // Authoritative server rejection (e.g. 401, 403) — do NOT mark consent
+        setError("Consent could not be recorded. Please try again.");
+        setBusy(false);
+        return;
+      }
+      // 404 = stub not yet wired; proceed optimistically
+      console.warn("[ConsentPage] /api/patient/consent stub or network error — proceeding:", err);
+      const note = "Stub — backend pending";
+      setStubNote(note);
+      markConsentGiven();
+      setBusy(false);
+      if (note) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 1200));
+      }
     }
 
-    // Brief pause so stub note is visible if shown, then redirect
-    if (stubNote !== null) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 1200));
-    }
     router.replace("/portal");
   }
 
@@ -113,6 +124,7 @@ export default function ConsentPage() {
             {busy ? "Saving…" : "I agree →"}
           </button>
 
+          {error && <div className="banner banner-error">{error}</div>}
           {stubNote && (
             <p style={{ fontSize: 12, color: "var(--ink-3)", textAlign: "center", margin: 0 }}>
               {stubNote}

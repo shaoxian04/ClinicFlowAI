@@ -12,7 +12,7 @@ type LoginResponse = AuthUser & { token: string };
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("patient@demo.local");
-  const [password, setPassword] = useState("password");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
