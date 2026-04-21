@@ -1,11 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { PageHeader } from "@/app/components/PageHeader";
 import { PhaseTabs, PhaseKey } from "@/app/doctor/components/PhaseTabs";
+import {
+  ConsultationCapture,
+  ConsultationCaptureHandle,
+} from "@/app/doctor/components/ConsultationCapture";
+import { TranscriptReview } from "@/app/doctor/components/TranscriptReview";
 
 type Soap = {
   subjective: string;
@@ -61,6 +66,7 @@ export default function VisitDetailPage() {
   const [hasAiDraft, setHasAiDraft] = useState(false);
   const [notified, setNotified] = useState(false);
   const [activePhase, setActivePhase] = useState<PhaseKey>("pre");
+  const captureRef = useRef<ConsultationCaptureHandle | null>(null);
 
   useEffect(() => {
     const user = getUser();
@@ -168,25 +174,24 @@ export default function VisitDetailPage() {
     <>
       <section className="card" data-delay="1">
         <div className="card-head">
-          <h2>Consultation transcript</h2>
+          <h2>Consultation capture</h2>
           <span className="card-idx">02 / CAPTURE</span>
         </div>
-        <p>Paste or type the consultation transcript. The AI will draft a SOAP note you review below.</p>
-        <label className="field">
-          <textarea
-            className="textarea"
-            rows={6}
-            placeholder="Patient reports 3 days of productive cough with low-grade fever. Vitals…"
-            value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
-            disabled={locked}
-          />
-        </label>
-        <div className="btn-row">
-          <button className="btn btn-primary" onClick={onGenerate} disabled={busy || locked}>
-            {busy ? "Generating…" : "Generate SOAP draft"}
-          </button>
-        </div>
+        <p>Record, upload, or type the consultation — review the raw transcript before the AI drafts a SOAP note below.</p>
+        <ConsultationCapture
+          ref={captureRef}
+          visitId={visitId}
+          onTranscriptReady={(t) => setTranscript(t)}
+          locked={locked}
+        />
+        <div style={{ height: 18 }} />
+        <TranscriptReview
+          transcript={transcript}
+          onEdit={() => captureRef.current?.switchToType(transcript)}
+          onGenerate={onGenerate}
+          busy={busy}
+          disabled={locked || !transcript}
+        />
       </section>
 
       <section className="card" data-delay="2">
