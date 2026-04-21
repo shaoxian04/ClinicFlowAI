@@ -68,6 +68,11 @@ export default function AdminUsersPage() {
                     setUsers(data.users ?? []);
                 }
             } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                if (msg === "HTTP 401" || msg === "HTTP 403") {
+                    router.replace("/login");
+                    return;
+                }
                 if (!cancelled) {
                     setStub(true);
                     setUsers([]);

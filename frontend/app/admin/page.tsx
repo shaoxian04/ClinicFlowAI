@@ -19,6 +19,7 @@ export default function AdminOverviewPage() {
         }
         if (user.role !== "ADMIN") {
             router.replace("/login");
+            return;
         }
     }, [router]);
 

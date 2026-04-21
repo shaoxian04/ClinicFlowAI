@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-import { getUser, getToken } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
+import { apiGet } from "@/lib/api";
 
 import AdminNav from "../components/AdminNav";
 
@@ -30,35 +31,6 @@ type Filters = {
 
 const EMPTY_FILTERS: Filters = { user: "", action: "", dateFrom: "", dateTo: "" };
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-
-async function fetchAudit(
-    page: number,
-    filters: Filters,
-): Promise<AuditResponse> {
-    const token = getToken();
-    const params = new URLSearchParams({ page: String(page), size: "20" });
-    if (filters.user) params.set("user", filters.user);
-    if (filters.action) params.set("action", filters.action);
-    if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
-    if (filters.dateTo) params.set("dateTo", filters.dateTo);
-
-    const res = await fetch(`${BASE}/admin/audit?${params.toString()}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    type Envelope = {
-        code: number;
-        message: string;
-        data: AuditResponse | null;
-    };
-    const envelope: Envelope = await res.json();
-    if (envelope.code !== 0) throw new Error(envelope.message || `code ${envelope.code}`);
-    if (envelope.data == null) throw new Error("empty response data");
-    return envelope.data;
-}
-
 export default function AdminAuditPage() {
     const router = useRouter();
     const [loading, setLoading] = useState<boolean>(true);
@@ -74,11 +46,21 @@ export default function AdminAuditPage() {
             setLoading(true);
             setStub(false);
             try {
-                const data = await fetchAudit(page, activeFilters);
+                const params = new URLSearchParams({ page: String(page), size: "20" });
+                if (activeFilters.user) params.set("user", activeFilters.user);
+                if (activeFilters.action) params.set("action", activeFilters.action);
+                if (activeFilters.dateFrom) params.set("dateFrom", activeFilters.dateFrom);
+                if (activeFilters.dateTo) params.set("dateTo", activeFilters.dateTo);
+                const data = await apiGet<AuditResponse>(`/admin/audit?${params.toString()}`);
                 setEntries(data.entries ?? []);
                 setTotalPages(data.totalPages ?? 1);
                 setCurrentPage(data.currentPage ?? page);
             } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                if (msg === "HTTP 401" || msg === "HTTP 403") {
+                    router.replace("/login");
+                    return;
+                }
                 setStub(true);
                 setEntries([]);
                 setTotalPages(1);
@@ -88,7 +70,7 @@ export default function AdminAuditPage() {
                 setLoading(false);
             }
         },
-        [],
+        [router],
     );
 
     useEffect(() => {
