@@ -26,6 +26,8 @@ export default function LoginPage() {
       saveAuth(token, user);
       if (user.role === "PATIENT") router.replace("/portal");
       else if (user.role === "DOCTOR") router.replace("/doctor");
+      else if (user.role === "STAFF") router.replace("/staff");
+      else if (user.role === "ADMIN") router.replace("/admin");
       else router.replace("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
