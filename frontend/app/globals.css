@@ -4133,3 +4133,140 @@ textarea:focus-visible,
   font-weight: 700;
   color: var(--ink-2);
 }
+
+/* === Task 4.1: DoctorNav + VisitRow === */
+.doctor-nav-tab-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.visit-group {
+  margin-bottom: 24px;
+}
+.visit-group-details {
+  margin-bottom: 24px;
+}
+.visit-group-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 16px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+  list-style: none;
+}
+details.visit-group-details > summary.visit-group-heading {
+  cursor: pointer;
+}
+details.visit-group-details > summary.visit-group-heading::marker,
+details.visit-group-details > summary.visit-group-heading::-webkit-details-marker {
+  display: none;
+}
+details.visit-group-details > summary.visit-group-heading::after {
+  content: "▸";
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ink-3);
+  transition: transform 0.2s;
+}
+details.visit-group-details[open] > summary.visit-group-heading::after {
+  transform: rotate(90deg);
+}
+.visit-group-rows {
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+.visit-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+}
+.visit-row:last-child {
+  border-bottom: none;
+}
+.visit-row:hover { background: var(--surface-2); }
+.visit-row-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+.visit-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.visit-row-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.visit-row-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+}
+.visit-row-date {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.visit-row-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.visit-dot-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.visit-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-3);
+  background: transparent;
+}
+.visit-dot.is-done {
+  background: var(--good);
+  border-color: var(--good);
+}
+.visit-dot-label {
+  font-size: 9px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.section-heading-count {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-left: 6px;
+}

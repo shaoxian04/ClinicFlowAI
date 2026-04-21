@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
@@ -9,6 +8,8 @@ import { SkeletonGrid } from "../components/Skeleton";
 import { EmptyState } from "../components/EmptyState";
 import { Stethoscope } from "../components/Illustration";
 import { PageHeader } from "../components/PageHeader";
+import DoctorNav from "./components/DoctorNav";
+import VisitRow from "./components/VisitRow";
 
 type VisitSummary = {
   visitId: string;
@@ -20,15 +21,68 @@ type VisitSummary = {
   createdAt: string;
 };
 
-type Priority = "draft" | "final" | "awaiting";
-
-function priorityFor(v: VisitSummary): Priority {
-  if (v.soapFinalized) return "final";
-  if (v.preVisitDone) return "draft";
-  return "awaiting";
+function isThisWeek(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+  return date >= startOfWeek && date < startOfToday;
 }
 
-const PRIORITY_ORDER: Record<Priority, number> = { draft: 0, awaiting: 1, final: 2 };
+function isToday(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+type VisitGroup = {
+  heading: string;
+  visits: VisitSummary[];
+  collapsible?: boolean;
+};
+
+function groupVisits(visits: VisitSummary[]): VisitGroup[] {
+  const awaitingReview: VisitSummary[] = [];
+  const scheduledToday: VisitSummary[] = [];
+  const earlierThisWeek: VisitSummary[] = [];
+  const signedAndFiled: VisitSummary[] = [];
+
+  for (const v of visits) {
+    if (v.soapFinalized) {
+      signedAndFiled.push(v);
+    } else if (v.preVisitDone) {
+      awaitingReview.push(v);
+    } else if (isToday(v.createdAt)) {
+      scheduledToday.push(v);
+    } else if (isThisWeek(v.createdAt)) {
+      earlierThisWeek.push(v);
+    } else {
+      scheduledToday.push(v);
+    }
+  }
+
+  const groups: VisitGroup[] = [];
+
+  if (awaitingReview.length > 0) {
+    groups.push({ heading: "Awaiting your review", visits: awaitingReview });
+  }
+  if (scheduledToday.length > 0) {
+    groups.push({ heading: "Scheduled today", visits: scheduledToday });
+  }
+  if (earlierThisWeek.length > 0) {
+    groups.push({ heading: "Earlier this week", visits: earlierThisWeek });
+  }
+  if (signedAndFiled.length > 0) {
+    groups.push({ heading: "Signed & filed", visits: signedAndFiled, collapsible: true });
+  }
+
+  return groups;
+}
 
 export default function DoctorDashboard() {
   const router = useRouter();
@@ -42,75 +96,71 @@ export default function DoctorDashboard() {
     if (user.role !== "DOCTOR") { router.replace("/"); return; }
     apiGet<VisitSummary[]>("/visits")
       .then(setVisits)
-      .catch((e) => setError(e.message))
+      .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [router]);
 
-  const sorted = useMemo(
-    () =>
-      [...visits].sort((a, b) => {
-        const pa = PRIORITY_ORDER[priorityFor(a)];
-        const pb = PRIORITY_ORDER[priorityFor(b)];
-        if (pa !== pb) return pa - pb;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }),
-    [visits]
-  );
+  const groups = useMemo(() => groupVisits(visits), [visits]);
 
   return (
-    <main className="shell">
-      <PageHeader
-        eyebrow="Clinician workspace"
-        title={<>Today&apos;s <em>visits</em></>}
-        sub="AI drafts sit at the top — review, edit, and sign. Finalized visits show a doctor's seal and drop to the bottom."
-      />
-
-      {loading && <SkeletonGrid count={4} />}
-
-      {!loading && !error && sorted.length === 0 && (
-        <EmptyState
-          glyph={<Stethoscope />}
-          title="No visits yet"
-          body="Once a patient completes a pre-visit intake, it will appear here ready for you to review and sign."
+    <>
+      <DoctorNav active="today" />
+      <main className="shell">
+        <PageHeader
+          eyebrow="Clinician workspace"
+          title={<>Today&apos;s <em>visits</em></>}
+          sub="AI drafts sit at the top — review, edit, and sign. Finalized visits show a doctor's seal and drop to the bottom."
         />
-      )}
 
-      <div className="doc-grid">
-        {sorted.map((v, idx) => {
-          const priority = priorityFor(v);
-          const delay = Math.min(idx + 1, 5);
-          return (
-            <Link
+        {loading && <SkeletonGrid count={4} />}
+
+        {!loading && !error && visits.length === 0 && (
+          <EmptyState
+            glyph={<Stethoscope />}
+            title="No visits yet"
+            body="Once a patient completes a pre-visit intake, it will appear here ready for you to review and sign."
+          />
+        )}
+
+        {!loading && groups.map((group) => {
+          const rows = group.visits.map((v) => (
+            <VisitRow
               key={v.visitId}
-              href={`/doctor/visits/${v.visitId}`}
-              className="doc-tile"
-              data-priority={priority}
-              data-delay={String(delay)}
-            >
-              <div className="doc-tile-main">
-                <span className="doc-tile-name">{v.patientName}</span>
-                <div className="doc-tile-meta">
-                  <span className="pill pill-ghost">
-                    <code>{v.visitId.slice(0, 8)}</code>
-                  </span>
-                  <span className={`pill ${v.preVisitDone ? "pill-primary" : ""}`}>
-                    {v.preVisitDone ? "Pre-visit ✓" : "Pre-visit pending"}
-                  </span>
-                  {priority === "draft" && <span className="pill pill-warn">AI draft waiting</span>}
-                  {priority === "final" && <span className="pill pill-good">Signed</span>}
-                  {priority === "awaiting" && <span className="pill">Scheduled</span>}
-                  <span>{new Date(v.createdAt).toLocaleString()}</span>
-                </div>
-              </div>
-              <span className="doc-tile-action">
-                {priority === "final" ? "Open record" : "Review →"}
-              </span>
-            </Link>
+              visitId={v.visitId}
+              patientName={v.patientName}
+              date={v.createdAt}
+              preVisitDone={v.preVisitDone}
+              visitDone={v.status === "IN_PROGRESS" || v.status === "FINALIZED"}
+              postVisitDone={v.soapFinalized}
+              awaitingReview={v.preVisitDone && !v.soapFinalized}
+            />
+          ));
+
+          if (group.collapsible) {
+            return (
+              <details key={group.heading} className="visit-group-details">
+                <summary className="visit-group-heading">
+                  {group.heading}
+                  <span className="section-heading-count">{group.visits.length}</span>
+                </summary>
+                <div className="visit-group-rows">{rows}</div>
+              </details>
+            );
+          }
+
+          return (
+            <section key={group.heading} className="visit-group">
+              <h2 className="visit-group-heading">
+                {group.heading}
+                <span className="section-heading-count">{group.visits.length}</span>
+              </h2>
+              <div className="visit-group-rows">{rows}</div>
+            </section>
           );
         })}
-      </div>
 
-      {error && <div className="banner banner-error">{error}</div>}
-    </main>
+        {error && <div className="banner banner-error">{error}</div>}
+      </main>
+    </>
   );
 }
