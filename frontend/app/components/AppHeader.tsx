@@ -52,8 +52,13 @@ export function AppHeader({ children }: AppHeaderProps) {
     router.replace("/login");
   }
 
-  const home =
-    user.role === "DOCTOR" ? "/doctor" : user.role === "PATIENT" ? "/portal" : "/";
+  const HOME_BY_ROLE: Record<string, string> = {
+    PATIENT: "/portal",
+    DOCTOR: "/doctor",
+    STAFF: "/staff",
+    ADMIN: "/admin",
+  };
+  const home = HOME_BY_ROLE[user.role] ?? "/";
 
   return (
     <>

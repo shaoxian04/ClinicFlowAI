@@ -9,7 +9,7 @@ const LABELS: Record<AuthUser["role"], string> = {
 
 export function RoleChip({ role }: { role: AuthUser["role"] }) {
   return (
-    <span className={`role-chip role-chip--${role.toLowerCase()}`}>
+    <span className={`role-chip role-chip--${role.toLowerCase()}`} data-role={role}>
       {LABELS[role]}
     </span>
   );
