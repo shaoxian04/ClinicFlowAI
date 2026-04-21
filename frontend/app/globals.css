@@ -4270,3 +4270,48 @@ details.visit-group-details[open] > summary.visit-group-heading::after {
   color: var(--ink-3);
   margin-left: 6px;
 }
+
+/* === Task 5.2: Mobile breakpoints === */
+@media (max-width: 640px) {
+  /* Landing hero */
+  .land-hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 40px 0 48px;
+  }
+  .land-hero-right { display: none; }
+  .land-hero-title { font-size: 1.8rem; }
+
+  /* Landing steps + differentiators */
+  .land-steps { grid-template-columns: 1fr; }
+  .land-diff { flex-direction: column; }
+  .land-diff-divider { display: none; }
+
+  /* Doctor tile grid */
+  .doc-grid { grid-template-columns: 1fr; }
+
+  /* Portal nav tabs — horizontal scroll */
+  .portal-nav-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .portal-nav-tabs::-webkit-scrollbar { display: none; }
+
+  /* Shell padding */
+  .shell-narrow { padding-inline: 20px; }
+
+  /* Phase tabs — horizontal scroll */
+  .phase-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .phase-tablist { flex-wrap: nowrap; }
+
+  /* Med row */
+  .med-row { grid-template-columns: 1fr 1fr; }
+
+  /* Patient context panel — collapse on mobile */
+  .patient-context-panel { display: none; }
+}
