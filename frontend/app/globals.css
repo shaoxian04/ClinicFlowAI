@@ -1924,3 +1924,51 @@ body {
   from { background-position-x: -200%; }
   to { background-position-x: 200%; }
 }
+
+/* === Reduced-motion kill-switch (Task 1.2) === */
+/* Honour prefers-reduced-motion across all pages. Uses the 0.001ms trick so
+   animationend/transitionend still fire (JS that depends on them keeps working)
+   while motion is effectively disabled. Explicit transform/opacity overrides
+   ensure "rise" reveals render in their final state rather than stuck offscreen. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Stop the skeleton shimmer entirely (no flicker on the near-zero loop). */
+  .skeleton {
+    animation: none !important;
+  }
+
+  /* Neutralise the "rise" reveal transform so elements sit at their resting
+     position/opacity rather than translated down and invisible. */
+  .card,
+  .visit-tile,
+  .visit-tile[data-delay],
+  .doc-tile,
+  .doc-tile[data-delay],
+  .chat-bubble,
+  .reveal,
+  .reveal.is-in,
+  [data-delay] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Neutralise hover/parallax lifts that rely on transform. */
+  .visit-tile:hover,
+  .doc-tile:hover,
+  .land-step:hover,
+  .btn:active:not(:disabled),
+  .back-link:hover,
+  .back-to-home:hover {
+    transform: none !important;
+  }
+}
