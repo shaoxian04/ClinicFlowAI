@@ -29,6 +29,6 @@ public record PatientVisitDetailResponse(
     FollowUp followUp,
     String doctorName
 ) {
-    public record Medication(String name, String dosage, String frequency) {}
+    public record Medication(String name, String dosage, String frequency, String duration, String instructions) {}
     public record FollowUp(String when, String instruction) {}
 }

@@ -72,7 +72,9 @@ public class PatientReadAppService {
         PostVisitSummaryModel s = summaries.findByVisitId(visitId).orElse(null);
         List<MedicationModel> ms = meds.findByVisitIdOrderByGmtCreateAsc(visitId);
         List<PatientVisitDetailResponse.Medication> medDtos = ms.stream()
-            .map(m -> new PatientVisitDetailResponse.Medication(m.getName(), m.getDosage(), m.getFrequency()))
+            // TODO(post-visit-agent): populate duration/instructions from MedicationModel once
+            // the Post-Visit agent or doctor input round-trip persists those fields.
+            .map(m -> new PatientVisitDetailResponse.Medication(m.getName(), m.getDosage(), m.getFrequency(), "", ""))
             .toList();
         // TODO(post-visit-agent): populate redFlags / followUp from PostVisitSummaryModel
         // once the Post-Visit agent writes safety-net data. Requires:

@@ -44,7 +44,7 @@ type VisitDetail = {
   finalizedAt: string | null;
 };
 
-type MedRow = { name: string; dosage: string; frequency: string };
+type MedRow = { name: string; dosage: string; frequency: string; duration: string; instructions: string };
 
 type PostVisitResponse = {
   visitId: string;
@@ -53,7 +53,7 @@ type PostVisitResponse = {
   medications: { id: string; name: string; dosage: string; frequency: string }[];
 };
 
-const EMPTY_MED: MedRow = { name: "", dosage: "", frequency: "" };
+const EMPTY_MED: MedRow = { name: "", dosage: "", frequency: "", duration: "", instructions: "" };
 
 const SOAP_LABELS: Record<keyof Pick<Soap, "subjective" | "objective" | "assessment" | "plan">, string> = {
   subjective: "Subjective — what the patient reports",
@@ -515,6 +515,20 @@ export default function VisitDetailPage() {
                 placeholder="Frequency (e.g. TDS)"
                 value={m.frequency}
                 onChange={(e) => updateMed(i, { frequency: e.target.value })}
+                disabled={locked}
+              />
+              <input
+                className="input"
+                placeholder="e.g. 5 days"
+                value={m.duration}
+                onChange={(e) => updateMed(i, { duration: e.target.value })}
+                disabled={locked}
+              />
+              <input
+                className="input"
+                placeholder="e.g. Take with food"
+                value={m.instructions}
+                onChange={(e) => updateMed(i, { instructions: e.target.value })}
                 disabled={locked}
               />
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

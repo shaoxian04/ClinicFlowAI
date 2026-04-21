@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { PageHeader } from "@/app/components/PageHeader";
+import { MedicationCard } from "@/app/portal/components/MedicationCard";
 import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
 import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
 
@@ -14,7 +15,7 @@ type Detail = {
   finalizedAt: string | null;
   summaryEn: string;
   summaryMs: string;
-  medications: { name: string; dosage: string; frequency: string }[];
+  medications: { name: string; dosage: string; frequency: string; duration?: string; instructions?: string }[];
   // Task 8.1: optional safety-net payload. Backend may omit either field until
   // the Post-Visit agent populates them; we fall back to empty/null and the
   // card components render nothing in that case.
@@ -166,21 +167,19 @@ export default function PortalVisitDetail() {
             {lang === "en" ? "No medications prescribed for this visit." : "Tiada ubat ditetapkan untuk lawatan ini."}
           </p>
         ) : (
-          <ul className="meds-list">
+          <div className="med-grid">
             {detail.medications.map((m, i) => (
-              <li key={i}>
-                <span className="med-name">{m.name}</span>
-                <span className="med-meta">
-                  <span className="med-meta-label">{lang === "en" ? "Dose" : "Dos"}</span>
-                  {m.dosage}
-                </span>
-                <span className="med-meta">
-                  <span className="med-meta-label">{lang === "en" ? "How often" : "Kekerapan"}</span>
-                  {m.frequency}
-                </span>
-              </li>
+              <MedicationCard
+                key={i}
+                name={m.name}
+                dosage={m.dosage}
+                frequency={m.frequency}
+                duration={m.duration}
+                instructions={m.instructions}
+                lang={lang}
+              />
             ))}
-          </ul>
+          </div>
         )}
       </section>
 

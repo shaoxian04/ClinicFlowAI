@@ -3670,3 +3670,24 @@ textarea:focus-visible,
   letter-spacing: 0.01em;
 }
 
+/* === Task 9.1: MedicationCard extended layout === */
+.med-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+@media (max-width: 639px) {
+  .med-grid { grid-template-columns: 1fr; }
+}
+.med-card-duration,
+.med-card-instructions {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: 4px;
+}
+.med-card-duration strong,
+.med-card-instructions strong {
+  color: var(--ink-1);
+}
+
