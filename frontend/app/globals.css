@@ -1188,14 +1188,43 @@ body {
   top: 0;
   z-index: 40;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 32px;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
   background: rgba(246, 241, 231, 0.82);
   backdrop-filter: saturate(1.1) blur(10px);
   -webkit-backdrop-filter: saturate(1.1) blur(10px);
   border-bottom: 1px solid var(--line);
+  transition: box-shadow 180ms ease, backdrop-filter 180ms ease;
+}
+
+.app-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 32px;
+}
+
+/* Sentinel used by IntersectionObserver to detect when the sticky header
+   has left the top of the document (i.e. the page has scrolled). It sits
+   immediately above the header, 1px tall, and never intercepts pointer
+   events. When it exits the viewport we add `.is-stuck` to the header. */
+.app-header-sentinel {
+  height: 1px;
+  width: 100%;
+  pointer-events: none;
+}
+
+.app-header.is-stuck {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  backdrop-filter: saturate(140%) blur(6px);
+  -webkit-backdrop-filter: saturate(140%) blur(6px);
+}
+
+.app-header-subnav {
+  padding: 8px 32px;
+  border-top: 1px solid var(--line);
 }
 
 .app-header-brand {
@@ -1260,8 +1289,46 @@ body {
 }
 
 @media (max-width: 640px) {
-  .app-header { padding: 10px 20px; }
+  .app-header-row { padding: 10px 20px; }
+  .app-header-subnav { padding: 8px 20px; }
   .app-header-email { display: none; }
+}
+
+/* ============ ROLE CHIP ============ */
+/* Colour-coded role pill shown in the app header. Four variants map to the
+   four CliniFlow roles. Background uses color-mix for a soft tint over the
+   surface, text uses the full colour for legibility. */
+
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.role-chip--patient {
+  background: color-mix(in oklab, var(--primary) 18%, var(--surface));
+  color: var(--primary);
+}
+
+.role-chip--doctor {
+  background: color-mix(in oklab, var(--good) 20%, var(--surface));
+  color: var(--good-ink);
+}
+
+.role-chip--staff {
+  background: color-mix(in oklab, var(--warn) 22%, var(--surface));
+  color: var(--warn-ink);
+}
+
+.role-chip--admin {
+  background: color-mix(in oklab, var(--accent) 18%, var(--surface));
+  color: var(--accent);
 }
 
 /* ============ PORTAL SUB-NAV ============ */
