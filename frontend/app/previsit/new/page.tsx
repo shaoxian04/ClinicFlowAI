@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { apiPost } from "../../../lib/api";
 import { getToken } from "../../../lib/auth";
+import { HeroEmblem } from "../../components/HeroEmblem";
 import { PageHeader } from "../../components/PageHeader";
 
 type Session = {
@@ -30,6 +31,16 @@ const FIELD_TO_STEP: Record<string, number> = {
   currentMedications: 2,
   allergies: 3,
   done: 4,
+};
+
+const FIELD_TO_SECTION: Record<string, string> = {
+  symptoms: "What's bothering you",
+  symptomDescription: "What's bothering you",
+  duration: "How long",
+  durationDays: "How long",
+  medications: "Your medicines",
+  currentMedications: "Your medicines",
+  allergies: "Any allergies",
 };
 
 type Message = { role: "assistant" | "user"; content: string };
@@ -95,6 +106,17 @@ export default function PreVisitNewPage() {
   }
 
   const fieldEntries = Object.entries(fields);
+
+  // Group structured fields into readable sections for the completion card
+  const sectionMap: Map<string, Array<{ key: string; value: unknown }>> = new Map();
+  for (const [key, value] of fieldEntries) {
+    const section = FIELD_TO_SECTION[key];
+    if (section) {
+      const existing = sectionMap.get(section) ?? [];
+      existing.push({ key, value });
+      sectionMap.set(section, existing);
+    }
+  }
 
   const activeStep = done
     ? 4
@@ -186,33 +208,32 @@ export default function PreVisitNewPage() {
       </section>
 
       {done && (
-        <section className="card intake-summary" data-delay="2">
-          <div className="card-head">
-            <h2>What your doctor will see</h2>
-            <span className="card-idx">READY</span>
+        <div className="intake-completion-card">
+          <div className="intake-completion-header">
+            <HeroEmblem size={80} />
+            <div>
+              <p className="intake-completion-title">Your intake is ready.</p>
+              <p className="intake-completion-sub">Your doctor will see this before you arrive.</p>
+            </div>
           </div>
-          <p>
-            Thank you. This structured intake has been saved against your visit — your doctor will review it before
-            you meet.
-          </p>
-          {fieldEntries.length > 0 && (
-            <ul className="intake-fields">
-              {fieldEntries.map(([k, v]) => (
-                <li key={k}>
-                  <strong>{k.replace(/_/g, " ")}</strong>
-                  <span className="field-value">
-                    {typeof v === "object" ? JSON.stringify(v) : String(v)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="intake-completion-sections">
+            {Array.from(sectionMap.entries()).map(([section, items]) => (
+              <div key={section}>
+                <p className="intake-section-label">{section}</p>
+                {items.map(({ key, value }) => (
+                  <p key={key} className="intake-section-value">
+                    {typeof value === "object" ? JSON.stringify(value) : String(value)}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
           <div className="btn-row" style={{ marginTop: 18 }}>
             <Link href="/portal" className="btn btn-primary">
               Return to portal
             </Link>
           </div>
-        </section>
+        </div>
       )}
 
       {error && <div className="banner banner-error">{error}</div>}

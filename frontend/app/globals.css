@@ -4054,3 +4054,49 @@ textarea:focus-visible,
 }
 .intake-step.is-active .intake-dot,
 .intake-step.is-done   .intake-dot { background: var(--primary); }
+
+/* === Task 3.2: Intake completion card === */
+.intake-completion-card {
+  animation: fade-up 400ms ease forwards;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intake-completion-card { animation: none; }
+}
+.intake-completion-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.intake-completion-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+.intake-completion-sub {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 0;
+}
+.intake-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 12px 0 4px;
+}
+.intake-section-value {
+  font-size: 14px;
+  color: var(--ink);
+}
