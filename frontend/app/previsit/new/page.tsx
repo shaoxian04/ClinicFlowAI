@@ -19,6 +19,19 @@ type Session = {
   done: boolean;
 };
 
+const STEPS = ["Symptoms", "Duration", "History", "Allergies", "Ready"] as const;
+
+const FIELD_TO_STEP: Record<string, number> = {
+  symptoms: 0,
+  symptomDescription: 0,
+  duration: 1,
+  durationDays: 1,
+  medications: 2,
+  currentMedications: 2,
+  allergies: 3,
+  done: 4,
+};
+
 type Message = { role: "assistant" | "user"; content: string };
 
 export default function PreVisitNewPage() {
@@ -83,6 +96,13 @@ export default function PreVisitNewPage() {
 
   const fieldEntries = Object.entries(fields);
 
+  const activeStep = done
+    ? 4
+    : Object.keys(fields).reduce(
+        (max, key) => Math.max(max, FIELD_TO_STEP[key] ?? -1),
+        -1
+      );
+
   return (
     <main className="shell shell-narrow">
       <Link href="/portal" className="back-link">← Back to portal</Link>
@@ -92,6 +112,30 @@ export default function PreVisitNewPage() {
           title={<>Tell us how you&apos;re <em>feeling</em></>}
           sub="Answer a short, guided conversation. Your doctor walks into the room already knowing your chief complaint, duration, and any red flags — so the visit is for care, not clerical work."
         />
+      </div>
+
+      {/* Intake partners strip */}
+      <div className="intake-partners">
+        <div className="intake-partner-avatar" title="You">You</div>
+        <span className="intake-partner-sep">→</span>
+        <div className="intake-partner-avatar" title="Intake assistant">AI</div>
+        <span className="intake-partner-sep">→</span>
+        <div className="intake-partner-avatar" title="Your doctor">Dr</div>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="intake-progress" role="list" aria-label="Intake progress">
+        {STEPS.map((label, idx) => {
+          const isDone = idx < activeStep || (idx === 4 && done);
+          const isActive = idx === activeStep && !isDone;
+          const cls = `intake-step${isDone ? " is-done" : isActive ? " is-active" : ""}`;
+          return (
+            <div key={label} className={cls} role="listitem">
+              <span className="intake-dot" />
+              <span>{label}</span>
+            </div>
+          );
+        })}
       </div>
 
       <section className="card chat-card" data-delay="1">
@@ -114,9 +158,9 @@ export default function PreVisitNewPage() {
           ))}
           {busy && (
             <div className="chat-typing" aria-label="Assistant is typing">
-              <span />
-              <span />
-              <span />
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
             </div>
           )}
         </div>
