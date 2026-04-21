@@ -2068,6 +2068,107 @@ body {
   }
 }
 
+/* ============ PHASE TABS (doctor visit detail — Task 6.1) ============ */
+/* Three-phase tablist (Pre-Visit Report / Consultation / Post-Visit Preview)
+   used on the clinician visit detail page. Uses the warm-paper surface tokens
+   and the forest-teal primary for the active state. The "needs your review"
+   dot uses --accent (terracotta) to echo the .btn-accent call-to-action. */
+
+.phase-tabs {
+  margin-bottom: 18px;
+}
+
+.phase-tablist {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.phase-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  white-space: nowrap;
+}
+
+.phase-tab:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--ink);
+}
+
+.phase-tab.is-active {
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-weight: 600;
+  box-shadow: 0 2px 8px -2px rgba(29, 77, 66, 0.45);
+}
+
+.phase-tab-label {
+  display: inline-block;
+}
+
+.phase-tab-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px rgba(184, 87, 59, 0.22);
+  flex-shrink: 0;
+}
+
+.phase-tab.is-active .phase-tab-dot {
+  box-shadow: 0 0 0 2px rgba(246, 241, 231, 0.35);
+}
+
+/* Tabpanels are focusable ONLY when they contain no focusable descendants
+   (per WAI-ARIA Authoring Practices). When focusable, they pick up the
+   standard 2px accent :focus-visible ring via the Task 1.6 safety net
+   ([tabindex]:focus-visible) below — so no panel-specific focus rule is
+   needed here. Non-focusable panels stay out of the tab order entirely. */
+
+.phase-panel[hidden] {
+  display: none;
+}
+
+/* Visually-hidden utility: keeps content in the accessibility tree (for
+   screen readers) while hiding it from sighted users. Used by the red
+   "needs review" dot to convey meaning beyond colour. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .phase-tablist { gap: 2px; padding: 3px; }
+  .phase-tab { padding: 8px 12px; font-size: 12.5px; }
+}
+
 /* === Focus-visible rings (Task 1.6) === */
 /* Keyboard-only focus outlines for all interactive surfaces. Uses outline
    (not box-shadow) so the ring works with rounded corners via

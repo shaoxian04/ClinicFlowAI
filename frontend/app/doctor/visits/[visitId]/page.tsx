@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { PageHeader } from "@/app/components/PageHeader";
+import { PhaseTabs, PhaseKey } from "@/app/doctor/components/PhaseTabs";
 
 type Soap = {
   subjective: string;
@@ -59,6 +60,7 @@ export default function VisitDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasAiDraft, setHasAiDraft] = useState(false);
   const [notified, setNotified] = useState(false);
+  const [activePhase, setActivePhase] = useState<PhaseKey>("pre");
 
   useEffect(() => {
     const user = getUser();
@@ -129,6 +131,10 @@ export default function VisitDetailPage() {
     }
   }
 
+  const onPhaseChange = useCallback((key: PhaseKey) => {
+    setActivePhase(key);
+  }, []);
+
   if (!detail) {
     return (
       <main className="shell">
@@ -140,38 +146,27 @@ export default function VisitDetailPage() {
   const fields = (detail.preVisitStructured?.fields ?? {}) as Record<string, unknown>;
   const locked = soap.finalized;
 
-  return (
-    <main className="shell">
-      <PageHeader
-        eyebrow="Clinician review"
-        title={<>Visit with <em>{detail.patientName}</em></>}
-        sub="Review the pre-visit intake, capture your SOAP note, prescribe up to three medications, and publish a bilingual summary to the patient in one action."
-      />
-
-      <div className="status-row">
-        <span className={`pill ${locked ? "pill-good" : "pill-primary"}`}>{detail.status}</span>
-        {hasAiDraft && !locked && <span className="pill pill-warn">AI draft pending review</span>}
-        {locked && <span className="pill pill-good">Finalized</span>}
-        <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
+  const preVisitPanel = (
+    <section className="card" data-delay="1">
+      <div className="card-head">
+        <h2>Pre-visit intake</h2>
+        <span className="card-idx">01 / INTAKE</span>
       </div>
+      {Object.keys(fields).length === 0 ? (
+        <p className="empty">No pre-visit data captured.</p>
+      ) : (
+        <ul>
+          {Object.entries(fields).map(([k, v]) => (
+            <li key={k}><strong>{k}:</strong> {String(v)}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 
+  const consultationPanel = (
+    <>
       <section className="card" data-delay="1">
-        <div className="card-head">
-          <h2>Pre-visit intake</h2>
-          <span className="card-idx">01 / INTAKE</span>
-        </div>
-        {Object.keys(fields).length === 0 ? (
-          <p className="empty">No pre-visit data captured.</p>
-        ) : (
-          <ul>
-            {Object.entries(fields).map(([k, v]) => (
-              <li key={k}><strong>{k}:</strong> {String(v)}</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="card" data-delay="2">
         <div className="card-head">
           <h2>Consultation transcript</h2>
           <span className="card-idx">02 / CAPTURE</span>
@@ -194,7 +189,7 @@ export default function VisitDetailPage() {
         </div>
       </section>
 
-      <section className="card" data-delay="3">
+      <section className="card" data-delay="2">
         <div className="card-head">
           <h2>SOAP note</h2>
           <span className="card-idx">03 / DRAFT</span>
@@ -229,7 +224,7 @@ export default function VisitDetailPage() {
         </div>
       </section>
 
-      <section className="card" data-delay="4">
+      <section className="card" data-delay="3">
         <div className="card-head">
           <h2>Medications</h2>
           <span className="card-idx card-idx med-counter">{meds.length} / 3</span>
@@ -272,7 +267,7 @@ export default function VisitDetailPage() {
         </div>
       </section>
 
-      <section className="card finalize-card" data-delay="5">
+      <section className="card finalize-card" data-delay="4">
         <div className="card-head">
           <h2>Finalize &amp; notify</h2>
           <span className="card-idx">04 / PUBLISH</span>
@@ -290,6 +285,46 @@ export default function VisitDetailPage() {
           </div>
         )}
       </section>
+    </>
+  );
+
+  const postVisitPanel = (
+    <section className="card" data-delay="1">
+      <div className="card-head">
+        <h2>Post-visit preview</h2>
+        <span className="card-idx">05 / PREVIEW</span>
+      </div>
+      <p className="empty">Preview appears here after you finalize.</p>
+    </section>
+  );
+
+  return (
+    <main className="shell">
+      <PageHeader
+        eyebrow="Clinician review"
+        title={<>Visit with <em>{detail.patientName}</em></>}
+        sub="Review the pre-visit intake, capture your SOAP note, prescribe up to three medications, and publish a bilingual summary to the patient in one action."
+      />
+
+      <div className="status-row">
+        <span className={`pill ${locked ? "pill-good" : "pill-primary"}`}>{detail.status}</span>
+        {hasAiDraft && !locked && <span className="pill pill-warn">AI draft pending review</span>}
+        {locked && <span className="pill pill-good">Finalized</span>}
+        <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
+      </div>
+
+      <PhaseTabs
+        consultationNeedsReview={hasAiDraft && !locked}
+        postVisitNeedsReview={locked && activePhase !== "post"}
+        onActiveChange={onPhaseChange}
+        panelFocusable={{ pre: true, post: true }}
+      >
+        {{
+          pre: preVisitPanel,
+          visit: consultationPanel,
+          post: postVisitPanel,
+        }}
+      </PhaseTabs>
 
       {error && <div className="banner banner-error">{error}</div>}
     </main>
