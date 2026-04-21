@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { PortalNav } from "../components/PortalNav";
+import { SkeletonGrid } from "../components/Skeleton";
 
 type VisitSummary = {
   visitId: string;
@@ -103,7 +104,7 @@ export default function PortalHome() {
             </span>
           </div>
 
-          {!loaded && <p className="empty">Loading your visits…</p>}
+          {!loaded && <SkeletonGrid count={3} />}
 
           {loaded && visits.length === 0 && !error && (
             <div className="portal-empty">

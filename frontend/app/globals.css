@@ -1875,3 +1875,52 @@ body {
   .land-footer-bottom { flex-direction: column; gap: 6px; align-items: flex-start; }
   .intake-fields li { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* === Skeletons (Task 1.1) === */
+
+.skeleton {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in oklab, var(--ink-3) 12%, var(--paper, var(--surface-2)));
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  background-position-x: -200%;
+  animation: shimmer 1400ms linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-line {
+  height: 1em;
+  width: 60%;
+  border-radius: 4px;
+}
+
+.skeleton-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+  min-height: 112px;
+  padding: 22px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@keyframes shimmer {
+  from { background-position-x: -200%; }
+  to { background-position-x: 200%; }
+}

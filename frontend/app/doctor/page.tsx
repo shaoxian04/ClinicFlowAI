@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { SkeletonGrid } from "../components/Skeleton";
 
 type VisitSummary = {
   visitId: string;
@@ -64,7 +65,7 @@ export default function DoctorDashboard() {
         the bottom.
       </p>
 
-      {loading && <p className="empty">Loading your visits…</p>}
+      {loading && <SkeletonGrid count={4} />}
 
       {!loading && !error && sorted.length === 0 && (
         <div className="doc-empty">
