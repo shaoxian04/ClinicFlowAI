@@ -16,7 +16,6 @@ import my.cliniflow.domain.biz.visit.repository.VisitRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -89,12 +88,10 @@ public class PatientReadAppService {
         // existing UserRepository. If the doctor cannot be resolved (e.g. soft-
         // deleted user), we return nulls and the frontend hides the line.
         String doctorName = null;
-        String doctorInitials = null;
         if (v.getDoctorId() != null) {
             UserModel doctor = users.findById(v.getDoctorId()).orElse(null);
             if (doctor != null) {
                 doctorName = formatDoctorName(doctor.getFullName());
-                doctorInitials = formatDoctorInitials(doctor.getFullName());
             }
         }
 
@@ -106,8 +103,7 @@ public class PatientReadAppService {
             medDtos,
             List.of(),
             null,
-            doctorName,
-            doctorInitials
+            doctorName
         );
     }
 
@@ -127,27 +123,8 @@ public class PatientReadAppService {
         String trimmed = fullName.trim();
         if (trimmed.isEmpty()) return null;
         String lower = trimmed.toLowerCase();
-        if (lower.startsWith("dr.") || lower.startsWith("dr ")) return trimmed;
+        if (lower.startsWith("dr. ") || lower.startsWith("dr ") || lower.equals("dr") || lower.equals("dr.")) return trimmed;
         return "Dr. " + trimmed;
     }
 
-    /**
-     * Produce up to three uppercase initials from the first letter of each
-     * whitespace-separated name part. Skips any leading "Dr." / "Dr" token so
-     * initials reflect the person, not the title. Returns null for blank input.
-     */
-    private static String formatDoctorInitials(String fullName) {
-        if (fullName == null) return null;
-        String trimmed = fullName.trim();
-        if (trimmed.isEmpty()) return null;
-        StringBuilder sb = new StringBuilder(3);
-        for (String part : Arrays.asList(trimmed.split("\\s+"))) {
-            if (part.isEmpty()) continue;
-            String lower = part.toLowerCase();
-            if (lower.equals("dr") || lower.equals("dr.")) continue;
-            sb.append(Character.toUpperCase(part.charAt(0)));
-            if (sb.length() >= 3) break;
-        }
-        return sb.length() == 0 ? null : sb.toString();
-    }
 }

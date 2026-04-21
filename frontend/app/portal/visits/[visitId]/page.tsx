@@ -20,11 +20,10 @@ type Detail = {
   // card components render nothing in that case.
   redFlags?: string[];
   followUp?: { when: string; instruction: string } | null;
-  // Task 8.2: signing-doctor attribution. Both fields are nullable so the
-  // backend can stub when it can't resolve the doctor; in that case we hide
-  // the attribution line entirely (graceful fallback).
+  // Task 8.2: signing-doctor attribution. Nullable so the backend can stub
+  // when it can't resolve the doctor; in that case we hide the attribution
+  // line entirely (graceful fallback).
   doctorName?: string | null;
-  doctorInitials?: string | null;
 };
 
 // Task 8.2: bilingual strings for the signing-doctor attribution line.
@@ -152,7 +151,7 @@ export default function PortalVisitDetail() {
           summary card so patients see who confirmed their record. Hidden
           entirely when neither name nor date is available. */}
       {attributionLine && (
-        <p className="doctor-attribution" role="note">{attributionLine}</p>
+        <p className="doctor-attribution">{attributionLine}</p>
       )}
 
       <section className="card" data-delay="2" style={{ marginTop: 24 }}>
