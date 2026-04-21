@@ -16,7 +16,7 @@ Polyglot multi-service architecture, monorepo layout.
 | Reverse proxy | **Nginx** | TLS termination, routing to Next.js / Spring Boot |
 | Deployment | **Docker Compose** | Three compose files (base / dev / prod); each service in its own multi-stage-built container |
 | CI/CD | **GitHub Actions** | Build, test, Trivy scan, push to GitHub Container Registry |
-| Migrations | **Flyway** (Postgres) + Cypher bootstrap script (Neo4j) | Spring Boot owns schema; runs at startup |
+| Migrations | **Manual SQL** (Postgres — Flyway removed) + Cypher bootstrap script (Neo4j) | Apply Postgres schema changes manually via Supabase SQL editor or CLI; SQL files in `db/migration/` are reference only |
 | Resilience | **Resilience4j** (Java), **tenacity** (Python) | Circuit breakers, retries, rate limiters, timeouts |
 | Observability | **Grafana Cloud** (Prometheus/Loki/Tempo), **Sentry**, **Uptime Robot** | Metrics, logs, traces, errors, external probes |
 | Repo layout | **Monorepo** | `frontend/` (Next.js), `backend/` (Spring Boot), `agent/` (Python), `deploy/` (Docker/Nginx) |
@@ -38,7 +38,7 @@ Four contexts, per SAD §2.1: **Pre-Visit**, **Visit**, **Post-Visit**, **Manage
 - **Frontend → Spring Boot only.** Next.js never calls the Python agent or Neo4j directly. Do not use the Supabase JS client from Next.js for clinical data — all patient-data reads/writes flow through Spring Boot so RBAC and audit logging are enforced centrally.
 - **Spring Boot → Python agent** calls are authenticated (internal service token), carry an `X-Correlation-ID` header propagated end-to-end, and use Resilience4j (timeouts, circuit breaker, fallback). Fallback path when the agent is unavailable: present a manual-entry template to the doctor.
 - **Auth**: Spring Security issues JWTs. Users live in a Spring-managed `users` table (Postgres) with `password_hash` + `role`. Next.js attaches the JWT to every API call. The Python agent validates its own inbound service token.
-- **Schema ownership**: Spring Boot owns the Postgres schema via Flyway (`src/main/resources/db/migration/`). Python writes to Neo4j only; for Postgres it is read-only or calls back to Spring Boot. Avoid two writers on the same Postgres tables.
+- **Schema ownership**: Postgres schema is managed manually via the Supabase SQL editor or CLI (**Flyway was removed** — incompatible with pgbouncer transaction mode). Reference SQL lives in `src/main/resources/db/migration/` for documentation; it is not auto-applied. Python writes to Neo4j only; for Postgres it is read-only or calls back to Spring Boot. Avoid two writers on the same Postgres tables.
 - **LLM integration**: Z.AI GLM 5.1 has an OpenAI-compatible API. Configure `OPENAI_BASE_URL` + `OPENAI_API_KEY` + model name in env vars so provider swaps are config-only (PRD §8.2 R6).
 - **Doctor-in-the-loop**: every AI-generated clinical note passes through explicit doctor review-and-confirm before finalization. UI must visibly distinguish AI draft vs. human-confirmed content. This is a hard safety invariant, not a UX preference.
 - **PDPA audit log**: append-only table in Postgres, separate from business tables. Every read and every mutation of patient data writes a row. Never delete or update rows in this table from application code.

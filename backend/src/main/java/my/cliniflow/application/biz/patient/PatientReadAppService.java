@@ -89,7 +89,7 @@ public class PatientReadAppService {
             .toList();
         // TODO(post-visit-agent): populate redFlags / followUp from PostVisitSummaryModel
         // once the Post-Visit agent writes safety-net data. Requires:
-        //   1. Flyway migration to add red_flags / follow_up_* columns
+        //   1. Manual SQL migration to add red_flags / follow_up_* columns (apply via Supabase SQL editor)
         //   2. Entity fields on PostVisitSummaryModel
         //   3. Agent payload writes (see agent/app/graphs/postvisit)
         // Until wired, frontend shows empty safety surfaces (by design — graceful stub).

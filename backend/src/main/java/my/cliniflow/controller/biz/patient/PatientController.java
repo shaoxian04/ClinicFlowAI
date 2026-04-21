@@ -1,6 +1,7 @@
 package my.cliniflow.controller.biz.patient;
 
 import my.cliniflow.application.biz.patient.PatientReadAppService;
+import my.cliniflow.application.biz.patient.PatientWriteAppService;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.patient.response.PatientVisitDetailResponse;
 import my.cliniflow.controller.biz.patient.response.PatientVisitSummaryResponse;
@@ -8,6 +9,7 @@ import my.cliniflow.infrastructure.security.JwtService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,9 +18,18 @@ import java.util.UUID;
 public class PatientController {
 
     private final PatientReadAppService reads;
+    private final PatientWriteAppService writes;
 
-    public PatientController(PatientReadAppService reads) {
+    public PatientController(PatientReadAppService reads, PatientWriteAppService writes) {
         this.reads = reads;
+        this.writes = writes;
+    }
+
+    @PostMapping("/consent")
+    public WebResult<Void> recordConsent(Authentication auth) {
+        UUID userId = ((JwtService.Claims) auth.getPrincipal()).userId();
+        writes.recordConsent(userId, OffsetDateTime.now());
+        return WebResult.ok(null);
     }
 
     @GetMapping("/visits")

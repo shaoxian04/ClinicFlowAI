@@ -27,6 +27,24 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     return envelope.data;
 }
 
+/** POST to an endpoint that intentionally returns data:null on success. */
+export async function apiPostVoid(path: string, body?: unknown): Promise<void> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const envelope: WebResult<unknown> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
     const token = getToken();
     const res = await fetch(`${BASE}${path}`, {

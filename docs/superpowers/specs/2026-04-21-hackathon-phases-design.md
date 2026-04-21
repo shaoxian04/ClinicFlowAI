@@ -48,7 +48,7 @@ This plan assumes the skeleton already scaffolded:
 - `frontend/` — Next.js 14 App Router + TypeScript strict
 - `backend/` — Spring Boot 3.3.4 + Java 21 + Maven, DDD package tree for 4 aggregates (`visit`, `patient`, `user`, `adaptiverule`), controllers grouped by route (`previsit`, `visit`, `postvisit`, `patient`, `auth`)
 - `agent/` — FastAPI + LangGraph + Python 3.12, `/agents/{pre-visit,visit,post-visit,rules}` routers
-- Postgres (Supabase) via Flyway `V1__init.sql`; Neo4j 5.20 via `agent/app/graph/schema.py::apply_schema`
+- Postgres (Supabase) — schema applied manually via SQL editor (Flyway removed); Neo4j 5.20 via `agent/app/graph/schema.py::apply_schema`
 - Docker Compose with Nginx reverse proxy
 - LLM via **OpenAI-compatible** endpoint (`OPENAI_BASE_URL` / `OPENAI_API_KEY` / `OPENAI_MODEL`). Swap to Z.AI GLM by changing those three env vars.
 
@@ -198,7 +198,7 @@ A day's exit criteria is not met if any of these is violated.
 |---|---|---|
 | React Flow styling eats a full day | medium | Time-box to 2h; fall back to Neo4j Bloom for video-only |
 | LLM hallucinates clinical content in Hermes rule | low | Prompt + keyword filter + discard on any clinical term; demo a rejection on camera |
-| Supabase DDL access issues | low | Flyway already on direct port 5432, not pooler |
+| Supabase DDL access issues | low | Apply schema SQL manually via Supabase SQL editor (Flyway removed) |
 | Demo breaks live during recording | medium | Seed script is idempotent; re-run between takes |
 | Scope creep on Day 2 (SOAP editor polish) | high | Hard stop — editor just needs 4 textareas + finalize button on Day 2; polish lands Day 5 |
 | STT integration tempts "just one more thing" | medium | Explicitly out-of-scope; paste text only. Mention STT as a future hook in the video. |

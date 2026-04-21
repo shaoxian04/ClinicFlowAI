@@ -63,6 +63,7 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_BASE: /api
+      BACKEND_URL: http://backend:8080
     expose:
       - "3000"
 

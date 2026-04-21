@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiPost } from "../../lib/api";
+import { apiPostVoid } from "../../lib/api";
 import { markConsentGiven } from "../../lib/auth";
 
 type ConsentPayload = { timestamp: string };
@@ -28,7 +28,7 @@ export default function ConsentPage() {
     setError(null);
 
     try {
-      await apiPost<unknown>("/api/patient/consent", {
+      await apiPostVoid("/patient/consent", {
         timestamp: new Date().toISOString(),
       } satisfies ConsentPayload);
       markConsentGiven();

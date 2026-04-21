@@ -6,7 +6,7 @@
 
 **Architecture:** JWT-based stateless auth in Spring Boot (BCrypt + HS256). Pre-visit conversation state lives server-side inside `pre_visit_reports.structured` (JSONB) — the agent service stays stateless and receives the full history each turn. LangGraph on the agent side runs a simple "next missing field" state machine over 5 canned questions, backed by one OpenAI-compatible LLM call per turn for field extraction.
 
-**Tech Stack:** Spring Boot 3.3 / Java 21 / Maven · JJWT 0.12 · Spring Data JPA + Flyway · FastAPI + LangGraph 0.2 · `langchain-openai` 0.2 · Next.js 14 App Router · React 18.
+**Tech Stack:** Spring Boot 3.3 / Java 21 / Maven · JJWT 0.12 · Spring Data JPA · FastAPI + LangGraph 0.2 · `langchain-openai` 0.2 · Next.js 14 App Router · React 18. (**Flyway removed** — schema managed manually via Supabase.)
 
 ---
 
