@@ -7,5 +7,6 @@ public record PatientVisitSummaryResponse(
     UUID visitId,
     OffsetDateTime finalizedAt,
     String summaryEnPreview,
-    int medicationCount
+    int medicationCount,
+    String doctorName
 ) {}

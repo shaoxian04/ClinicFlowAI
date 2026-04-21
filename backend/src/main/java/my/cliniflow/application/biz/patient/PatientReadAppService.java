@@ -53,7 +53,14 @@ public class PatientReadAppService {
                 PostVisitSummaryModel s = summaries.findByVisitId(v.getId()).orElse(null);
                 int medCount = meds.findByVisitIdOrderByGmtCreateAsc(v.getId()).size();
                 String preview = s == null ? "" : truncate(s.getSummaryEn(), PREVIEW_LEN);
-                return new PatientVisitSummaryResponse(v.getId(), v.getFinalizedAt(), preview, medCount);
+                String doctorName = null;
+                if (v.getDoctorId() != null) {
+                    UserModel doctor = users.findById(v.getDoctorId()).orElse(null);
+                    if (doctor != null) {
+                        doctorName = formatDoctorName(doctor.getFullName());
+                    }
+                }
+                return new PatientVisitSummaryResponse(v.getId(), v.getFinalizedAt(), preview, medCount, doctorName);
             })
             .toList();
     }

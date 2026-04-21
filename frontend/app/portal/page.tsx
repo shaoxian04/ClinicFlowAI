@@ -10,12 +10,14 @@ import { SkeletonGrid } from "../components/Skeleton";
 import { EmptyState } from "../components/EmptyState";
 import { Envelope } from "../components/Illustration";
 import { PageHeader } from "../components/PageHeader";
+import { VisitCard } from "./components/VisitCard";
 
 type VisitSummary = {
   visitId: string;
   finalizedAt: string | null;
   summaryEnPreview: string;
   medicationCount: number;
+  doctorName?: string | null;
 };
 
 export default function PortalHome() {
@@ -116,30 +118,15 @@ export default function PortalHome() {
 
           <div className="portal-history-list">
             {visits.map((v, idx) => (
-              <Link
-                key={v.visitId}
-                href={`/portal/visits/${v.visitId}`}
-                className="visit-tile"
-                data-delay={String(Math.min(idx + 1, 5))}
-              >
-                <div className="visit-tile-head">
-                  <span className="visit-tile-title">
-                    Visit <em>{v.visitId.slice(0, 8)}</em>
-                  </span>
-                  <span className="visit-tile-date">
-                    {v.finalizedAt ? new Date(v.finalizedAt).toLocaleString() : "—"}
-                  </span>
-                </div>
-                <p className="visit-tile-preview">
-                  {v.summaryEnPreview || "(summary being prepared…)"}
-                </p>
-                <div className="visit-tile-meta">
-                  <span className="pill pill-primary">
-                    {v.medicationCount} {v.medicationCount === 1 ? "medicine" : "medicines"}
-                  </span>
-                  <span>Tap to read full summary →</span>
-                </div>
-              </Link>
+              <div key={v.visitId} data-delay={String(Math.min(idx + 1, 5))}>
+                <VisitCard
+                  visitId={v.visitId}
+                  date={v.finalizedAt ?? ""}
+                  summaryPreview={v.summaryEnPreview}
+                  doctorName={v.doctorName}
+                  status="finalized"
+                />
+              </div>
             ))}
           </div>
         </section>
