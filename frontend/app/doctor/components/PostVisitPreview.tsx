@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
+import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
 
 /**
  * Payload returned by POST /api/post-visit/:visitId/draft. Mirrors the patient
@@ -40,25 +42,16 @@ export type PostVisitPreviewProps = {
 type Lang = "en" | "ms";
 
 const COPY: Record<Lang, {
-  watchFor: string;
-  followWhen: string;
-  followWhat: string;
   noMeds: string;
   medsHeading: string;
   itemsSuffix: (n: number) => string;
 }> = {
   en: {
-    watchFor: "Watch for",
-    followWhen: "When",
-    followWhat: "What",
     noMeds: "No medications prescribed.",
     medsHeading: "Medications",
     itemsSuffix: (n) => `${n} ${n === 1 ? "item" : "items"}`,
   },
   ms: {
-    watchFor: "Gejala bahaya",
-    followWhen: "Bila",
-    followWhat: "Tindakan",
     noMeds: "Tiada ubat ditetapkan.",
     medsHeading: "Ubat-ubat",
     itemsSuffix: (n) => `${n} ${n === 1 ? "item" : "item"}`,
@@ -167,36 +160,10 @@ export function PostVisitPreview(props: PostVisitPreviewProps): JSX.Element {
             )}
           </section>
 
-          {data.redFlags && data.redFlags.length > 0 && (
-            <section className="card post-visit-preview-flags" data-delay="3" style={{ marginTop: 18 }}>
-              <div className="card-head">
-                <h2>{copy.watchFor}</h2>
-              </div>
-              <ul className="post-visit-preview-flag-list">
-                {data.redFlags.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {data.followUp && (
-            <section className="card" data-delay="4" style={{ marginTop: 18 }}>
-              <div className="card-head">
-                <h2>{lang === "en" ? "Follow-up" : "Susulan"}</h2>
-              </div>
-              <dl className="post-visit-preview-followup">
-                <div>
-                  <dt>{lang === "en" ? `${copy.followWhen} / Bila` : `${copy.followWhen} / When`}</dt>
-                  <dd>{data.followUp.when}</dd>
-                </div>
-                <div>
-                  <dt>{lang === "en" ? `${copy.followWhat} / Tindakan` : `${copy.followWhat} / What`}</dt>
-                  <dd>{data.followUp.instruction}</dd>
-                </div>
-              </dl>
-            </section>
-          )}
+          {/* Task 8.1: reuse the shared portal cards so the doctor preview
+              is visually identical to the patient view. */}
+          <RedFlagsCard items={data.redFlags ?? []} lang={lang} />
+          <FollowUpCard data={data.followUp ?? null} lang={lang} />
 
           <div className="btn-row" style={{ marginTop: 18 }}>
             <button

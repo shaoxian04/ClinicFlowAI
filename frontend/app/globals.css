@@ -3614,3 +3614,79 @@ textarea:focus-visible,
     stroke-dashoffset: 0 !important;
   }
 }
+
+/* === Task 8.1: RedFlags + FollowUp cards === */
+/* Safety-net cards at the end of a post-visit summary. Both inherit the base
+   .card shape (radius, padding, shadow, rise-in animation) — only the left
+   border and a subtle tint change. Reuses existing tokens: --danger for the
+   red-flag accent (already declared in :root), --primary for follow-up. */
+
+.redflags-card {
+  border-left: 3px solid var(--danger);
+  /* Subtle red wash so the card reads as a warning without shouting. */
+  background: color-mix(in oklab, var(--danger) 6%, var(--surface));
+}
+
+.redflags-card-head {
+  align-items: center;
+  gap: 10px;
+}
+
+.redflags-card-glyph {
+  color: var(--danger);
+  flex: 0 0 auto;
+}
+
+.redflags-card-list {
+  list-style: disc;
+  padding-left: 22px;
+  margin: 6px 0 0;
+  color: var(--ink);
+  line-height: 1.55;
+  display: block;
+}
+
+.redflags-card-list li {
+  margin: 4px 0;
+}
+
+.followup-card {
+  border-left: 3px solid var(--primary);
+  background: color-mix(in oklab, var(--primary) 5%, var(--surface));
+}
+
+.followup-card-list {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 0;
+}
+
+.followup-card-list > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.followup-card-list dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.followup-card-list dd {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .followup-card-list > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+

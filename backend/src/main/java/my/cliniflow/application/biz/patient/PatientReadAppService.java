@@ -69,12 +69,16 @@ public class PatientReadAppService {
         List<PatientVisitDetailResponse.Medication> medDtos = ms.stream()
             .map(m -> new PatientVisitDetailResponse.Medication(m.getName(), m.getDosage(), m.getFrequency()))
             .toList();
+        // Task 8.1: redFlags/followUp are placeholders until the Post-Visit
+        // agent populates them. Frontend gracefully no-ops on empty inputs.
         return new PatientVisitDetailResponse(
             v.getId(),
             v.getFinalizedAt(),
             s == null ? "" : s.getSummaryEn(),
             s == null ? "" : s.getSummaryMs(),
-            medDtos
+            medDtos,
+            List.of(),
+            null
         );
     }
 

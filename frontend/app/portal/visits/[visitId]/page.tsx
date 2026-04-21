@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { PageHeader } from "@/app/components/PageHeader";
+import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
+import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
 
 type Detail = {
   visitId: string;
@@ -13,6 +15,11 @@ type Detail = {
   summaryEn: string;
   summaryMs: string;
   medications: { name: string; dosage: string; frequency: string }[];
+  // Task 8.1: optional safety-net payload. Backend may omit either field until
+  // the Post-Visit agent populates them; we fall back to empty/null and the
+  // card components render nothing in that case.
+  redFlags?: string[];
+  followUp?: { when: string; instruction: string } | null;
 };
 
 export default function PortalVisitDetail() {
@@ -47,6 +54,8 @@ export default function PortalVisitDetail() {
   }
 
   const body = lang === "en" ? detail.summaryEn : detail.summaryMs;
+  const redFlagsList = detail.redFlags ?? [];
+  const followUpData = detail.followUp ?? null;
 
   return (
     <main className="shell shell-narrow">
@@ -121,6 +130,12 @@ export default function PortalVisitDetail() {
           </ul>
         )}
       </section>
+
+      {/* Task 8.1: safety-net cards. Red flags first (higher priority), then
+          follow-up. Both no-op on empty input so they disappear when the
+          backend has nothing to report. */}
+      <RedFlagsCard items={redFlagsList} lang={lang} />
+      <FollowUpCard data={followUpData} lang={lang} />
     </main>
   );
 }
