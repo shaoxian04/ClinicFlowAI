@@ -2067,3 +2067,55 @@ body {
     transform: none !important;
   }
 }
+
+/* === Focus-visible rings (Task 1.6) === */
+/* Keyboard-only focus outlines for all interactive surfaces. Uses outline
+   (not box-shadow) so the ring works with rounded corners via
+   outline-offset, and so it never affects layout. :focus-visible is
+   additive — mouse clicks stay ring-free while keyboard tab shows a 2px
+   accent ring at 2px offset. */
+
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-accent:focus-visible,
+.btn-ghost:focus-visible,
+.visit-tile:focus-visible,
+.doc-tile:focus-visible,
+.lang-toggle button:focus-visible,
+.portal-nav-tab:focus-visible,
+.back-link:focus-visible,
+.back-to-home:focus-visible,
+.app-header-signout:focus-visible,
+.app-header-brand:focus-visible,
+.portal-nav-brand:focus-visible,
+.land-cta-row a:focus-visible,
+.land-footer ul li a:focus-visible,
+details > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Inputs default to a primary-coloured glow on :focus (see .input:focus
+   above, which uses outline: none + box-shadow). Override with a clear
+   accent ring on keyboard focus so the baseline is still a visible ring. */
+.input:focus-visible,
+.textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Safety net — any interactive element not explicitly listed above still
+   gets a visible keyboard ring. Kept concise and after the specific rules
+   so named classes can customise border-radius via `border-radius: inherit`. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="tab"]:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
