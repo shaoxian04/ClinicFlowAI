@@ -8,6 +8,7 @@ from starlette.responses import Response
 from app.deps import require_service_token
 from app.graph.driver import close_driver
 from app.graph.schema import apply_schema
+from app.persistence import postgres
 from app.routes import post_visit, pre_visit, rules, visit
 
 log = structlog.get_logger(__name__)
@@ -19,7 +20,15 @@ async def lifespan(app: FastAPI):
         await apply_schema()
     except Exception:
         log.exception("neo4j.schema_apply_failed")
+    try:
+        await postgres.open_pool()
+    except Exception:
+        log.exception("postgres.pool_open_failed")
     yield
+    try:
+        await postgres.close_pool()
+    except Exception:
+        log.exception("postgres.pool_close_failed")
     try:
         await close_driver()
     except Exception:
