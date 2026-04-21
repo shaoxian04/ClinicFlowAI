@@ -36,7 +36,10 @@ export default function ConsentPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       // Only treat "endpoint not found yet" or network failures as a graceful stub
-      if (!msg.includes("HTTP 404") && !msg.includes("fetch")) {
+      const is404 = msg.startsWith("HTTP 404");
+      // Network failure = error that isn't an HTTP status error from api.ts
+      const isNetworkFailure = !(err instanceof Error && msg.startsWith("HTTP"));
+      if (!is404 && !isNetworkFailure) {
         // Authoritative server rejection (e.g. 401, 403) — do NOT mark consent
         setError("Consent could not be recorded. Please try again.");
         setBusy(false);
