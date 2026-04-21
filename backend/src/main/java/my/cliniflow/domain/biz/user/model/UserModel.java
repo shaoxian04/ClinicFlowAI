@@ -10,6 +10,7 @@ import java.util.UUID;
 public class UserModel {
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     @Column(nullable = false, unique = true)
@@ -33,6 +34,16 @@ public class UserModel {
 
     @Column(name = "gmt_modified", nullable = false)
     private OffsetDateTime gmtModified;
+
+    @PrePersist
+    void onInsert() {
+        OffsetDateTime now = OffsetDateTime.now();
+        gmtCreate = now;
+        gmtModified = now;
+    }
+
+    @PreUpdate
+    void onUpdate() { gmtModified = OffsetDateTime.now(); }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

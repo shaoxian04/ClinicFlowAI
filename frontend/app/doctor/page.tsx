@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { SkeletonGrid } from "../components/Skeleton";
+import { EmptyState } from "../components/EmptyState";
+import { Stethoscope } from "../components/Illustration";
+import { PageHeader } from "../components/PageHeader";
+import DoctorNav from "./components/DoctorNav";
+import VisitRow from "./components/VisitRow";
 
 type VisitSummary = {
   visitId: string;
@@ -15,6 +20,69 @@ type VisitSummary = {
   soapFinalized: boolean;
   createdAt: string;
 };
+
+function isThisWeek(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+  return date >= startOfWeek && date < startOfToday;
+}
+
+function isToday(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+type VisitGroup = {
+  heading: string;
+  visits: VisitSummary[];
+  collapsible?: boolean;
+};
+
+function groupVisits(visits: VisitSummary[]): VisitGroup[] {
+  const awaitingReview: VisitSummary[] = [];
+  const scheduledToday: VisitSummary[] = [];
+  const earlierThisWeek: VisitSummary[] = [];
+  const signedAndFiled: VisitSummary[] = [];
+
+  for (const v of visits) {
+    if (v.soapFinalized) {
+      signedAndFiled.push(v);
+    } else if (v.preVisitDone) {
+      awaitingReview.push(v);
+    } else if (isToday(v.createdAt)) {
+      scheduledToday.push(v);
+    } else if (isThisWeek(v.createdAt)) {
+      earlierThisWeek.push(v);
+    } else {
+      scheduledToday.push(v);
+    }
+  }
+
+  const groups: VisitGroup[] = [];
+
+  if (awaitingReview.length > 0) {
+    groups.push({ heading: "Awaiting your review", visits: awaitingReview });
+  }
+  if (scheduledToday.length > 0) {
+    groups.push({ heading: "Scheduled today", visits: scheduledToday });
+  }
+  if (earlierThisWeek.length > 0) {
+    groups.push({ heading: "Earlier this week", visits: earlierThisWeek });
+  }
+  if (signedAndFiled.length > 0) {
+    groups.push({ heading: "Signed & filed", visits: signedAndFiled, collapsible: true });
+  }
+
+  return groups;
+}
 
 export default function DoctorDashboard() {
   const router = useRouter();
@@ -28,47 +96,71 @@ export default function DoctorDashboard() {
     if (user.role !== "DOCTOR") { router.replace("/"); return; }
     apiGet<VisitSummary[]>("/visits")
       .then(setVisits)
-      .catch((e) => setError(e.message))
+      .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [router]);
 
-  if (loading) return <div style={{ padding: 24 }}>Loading visits…</div>;
-  if (error) return <div style={{ padding: 24, color: "crimson" }}>Error: {error}</div>;
+  const groups = useMemo(() => groupVisits(visits), [visits]);
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
-      <h1>Doctor Dashboard</h1>
-      <p>Visits assigned to you:</p>
-      {visits.length === 0 ? (
-        <p style={{ color: "#666" }}>No visits yet. Ask a patient to complete a pre-visit intake.</p>
-      ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>
-              <th style={{ padding: 8 }}>Patient</th>
-              <th style={{ padding: 8 }}>Status</th>
-              <th style={{ padding: 8 }}>Pre-visit</th>
-              <th style={{ padding: 8 }}>SOAP</th>
-              <th style={{ padding: 8 }}>Created</th>
-              <th style={{ padding: 8 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visits.map((v) => (
-              <tr key={v.visitId} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: 8 }}>{v.patientName}</td>
-                <td style={{ padding: 8 }}>{v.status}</td>
-                <td style={{ padding: 8 }}>{v.preVisitDone ? "✓" : "…"}</td>
-                <td style={{ padding: 8 }}>{v.soapFinalized ? "✓ finalized" : "draft"}</td>
-                <td style={{ padding: 8 }}>{new Date(v.createdAt).toLocaleString()}</td>
-                <td style={{ padding: 8 }}>
-                  <Link href={`/doctor/visits/${v.visitId}`}>Open →</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+    <>
+      <DoctorNav active="today" />
+      <main className="shell">
+        <PageHeader
+          eyebrow="Clinician workspace"
+          title={<>Today&apos;s <em>visits</em></>}
+          sub="AI drafts sit at the top — review, edit, and sign. Finalized visits show a doctor's seal and drop to the bottom."
+        />
+
+        {loading && <SkeletonGrid count={4} />}
+
+        {!loading && !error && visits.length === 0 && (
+          <EmptyState
+            glyph={<Stethoscope />}
+            title="No visits yet"
+            body="Once a patient completes a pre-visit intake, it will appear here ready for you to review and sign."
+          />
+        )}
+
+        {!loading && groups.map((group) => {
+          const rows = group.visits.map((v) => (
+            <VisitRow
+              key={v.visitId}
+              visitId={v.visitId}
+              patientName={v.patientName}
+              date={v.createdAt}
+              preVisitDone={v.preVisitDone}
+              visitDone={v.status === "IN_PROGRESS" || v.status === "FINALIZED"}
+              postVisitDone={v.soapFinalized}
+              awaitingReview={v.preVisitDone && !v.soapFinalized}
+            />
+          ));
+
+          if (group.collapsible) {
+            return (
+              <details key={group.heading} className="visit-group-details">
+                <summary className="visit-group-heading">
+                  {group.heading}
+                  <span className="section-heading-count">{group.visits.length}</span>
+                </summary>
+                <div className="visit-group-rows">{rows}</div>
+              </details>
+            );
+          }
+
+          return (
+            <section key={group.heading} className="visit-group">
+              <h2 className="visit-group-heading">
+                {group.heading}
+                <span className="section-heading-count">{group.visits.length}</span>
+              </h2>
+              <div className="visit-group-rows">{rows}</div>
+            </section>
+          );
+        })}
+
+        {error && <div className="banner banner-error">{error}</div>}
+      </main>
+    </>
   );
 }

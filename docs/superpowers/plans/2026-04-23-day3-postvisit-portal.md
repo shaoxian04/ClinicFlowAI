@@ -8,7 +8,7 @@
 
 **Architecture:** Spring Boot owns the `post_visit_summaries` (1 per visit) and `medications` (N per visit) JPA aggregates under the existing `visit` bounded context. Backend adds one write path (`POST /api/postvisit/{visitId}/generate`) that wraps the full post-visit workflow, and one read path (`GET /api/patient/visits`, `GET /api/patient/visits/{visitId}`). Agent exposes stateless `POST /agents/post-visit/summarize` taking `{soap, medications}` and returning `{summary_en, summary_ms}` via one LLM call in JSON mode. Next.js gets a new `/portal` tree (list + detail with language toggle) and the doctor page gains a medication editor + single merged finalize button.
 
-**Tech Stack:** Spring Boot 3.3 / Java 21 · Spring Data JPA · Flyway · FastAPI + LangChain-OpenAI · Next.js 14 App Router · React 18.
+**Tech Stack:** Spring Boot 3.3 / Java 21 · Spring Data JPA · FastAPI + LangChain-OpenAI · Next.js 14 App Router · React 18. (**Flyway removed** — schema managed manually via Supabase.)
 
 ---
 
@@ -102,14 +102,9 @@ ALTER TABLE post_visit_summaries
     ADD COLUMN summary_ms text NOT NULL DEFAULT '';
 ```
 
-- [ ] **Step 2: Verify Flyway picks it up on next boot**
+- [ ] **Step 2: Apply the migration manually via Supabase SQL editor**
 
-Run: `./mvnw spring-boot:run` (inside `backend/`, with the usual env vars).
-Expected in logs:
-```
-o.f.c.i.s.JdbcTableSchemaHistory ... Migrating schema "public" to version "3 - post visit bilingual"
-```
-Stop the server after verification (Ctrl+C).
+Flyway is not used. Paste the SQL from `V3__post_visit_bilingual.sql` into the Supabase SQL editor and run it directly.
 
 - [ ] **Step 3: Commit**
 

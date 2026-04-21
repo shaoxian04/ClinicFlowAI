@@ -27,7 +27,7 @@ Design artifacts:
 
 ## Database setup
 
-- **Postgres (Supabase)** — schema lives in `backend/src/main/resources/db/migration/V1__init.sql`. Flyway runs it automatically on backend boot (`spring.flyway.enabled=true`). JPA is in `validate` mode — schema changes go through a new `V<n>__*.sql`, never `ddl-auto=update`.
+- **Postgres (Supabase)** — schema lives in `backend/src/main/resources/db/migration/V1__init.sql`. **Flyway is NOT used** (removed — incompatible with Supabase pgbouncer). Apply schema changes manually via the Supabase SQL editor or CLI. JPA is in `none` mode (`ddl-auto: none`). The `db/migration/` SQL files are documentation/reference only — they are not auto-applied.
 - **Neo4j** — constraints + indexes in `agent/app/graph/schema.py::apply_schema`, invoked from the FastAPI lifespan on agent startup. Statements are idempotent (`IF NOT EXISTS`).
 - **PDPA invariant**: `audit_log` has DB-level triggers that reject UPDATE/DELETE — never edit that table in application code, always insert.
 
@@ -61,6 +61,12 @@ Read these before touching agent or clinical-data code:
 ## Skill usage
 
 - **Frontend design work** — when creating or redesigning UI (layouts, components, styling, visual polish), use the `frontend-design` skill before writing code.
+
+## Post-mortems (`docs/post-mortem/`)
+
+Read before making infrastructure or API changes — these are real mistakes from this project, not hypotheticals.
+
+- **`2026-04-22-backend-boot-and-schema.md`** — Docker cache pitfalls (`--no-cache` vs `--build`; `restart` vs `up -d`); Flyway exclusion silently no-ops `enabled: true`; `ddl-auto: validate` blocks startup when schema is manually managed; `apiPost` throws on void responses; component prop names must be read before use; frontend pages must confirm backend routes exist before calling them.
 
 ## Detail index (`docs/details/`)
 

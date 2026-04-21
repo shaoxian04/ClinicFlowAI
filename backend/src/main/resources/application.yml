@@ -1,24 +1,22 @@
 spring:
   application:
     name: cliniflow-backend
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
   datasource:
     url: ${SUPABASE_DB_URL:jdbc:postgresql://localhost:5432/cliniflow}
     username: ${SUPABASE_DB_USER:postgres}
     password: ${SUPABASE_DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        prepareThreshold: 0
+        preparedStatementCacheQueries: 0
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     open-in-view: false
     properties:
       hibernate:
         jdbc.time_zone: UTC
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-
 server:
   port: 8080
   forward-headers-strategy: framework
