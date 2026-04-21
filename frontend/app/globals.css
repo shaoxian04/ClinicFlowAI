@@ -3656,3 +3656,17 @@ textarea:focus-visible,
   }
 }
 
+/* === Task 8.2: Doctor attribution === */
+/* Signing-doctor caption rendered directly under the post-visit summary card
+   on the patient portal (PRD §1.3 accountability surface). Kept intentionally
+   quiet — no border, no accent — so it reads as metadata, not another card.
+   The middle-dot separator is inline in the string rather than a pseudo-
+   element so it copy-pastes cleanly. */
+.doctor-attribution {
+  margin: 10px 2px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  letter-spacing: 0.01em;
+}
+

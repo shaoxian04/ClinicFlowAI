@@ -13,6 +13,12 @@ import java.util.UUID;
  * currently returns an empty list and a {@code null} follow-up, and the frontend
  * falls back to a no-op render when either is empty. A later task populates the
  * fields from the Post-Visit agent.
+ *
+ * <p>Task 8.2 precondition: includes optional {@code doctorName} and
+ * {@code doctorInitials} so the patient portal can render a signing-doctor
+ * attribution line under the summary card (PRD §1.3, accountability surface).
+ * Both fields are nullable — when unresolved the frontend hides the attribution
+ * line entirely.
  */
 public record PatientVisitDetailResponse(
     UUID visitId,
@@ -21,7 +27,9 @@ public record PatientVisitDetailResponse(
     String summaryMs,
     List<Medication> medications,
     List<String> redFlags,
-    FollowUp followUp
+    FollowUp followUp,
+    String doctorName,
+    String doctorInitials
 ) {
     public record Medication(String name, String dosage, String frequency) {}
     public record FollowUp(String when, String instruction) {}

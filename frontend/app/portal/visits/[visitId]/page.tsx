@@ -20,7 +20,38 @@ type Detail = {
   // card components render nothing in that case.
   redFlags?: string[];
   followUp?: { when: string; instruction: string } | null;
+  // Task 8.2: signing-doctor attribution. Both fields are nullable so the
+  // backend can stub when it can't resolve the doctor; in that case we hide
+  // the attribution line entirely (graceful fallback).
+  doctorName?: string | null;
+  doctorInitials?: string | null;
 };
+
+// Task 8.2: bilingual strings for the signing-doctor attribution line.
+// EN/MS prefix + a shared middle-dot separator. Kept as a local const rather
+// than mixing into an inline ternary so the i18n surface stays visible and
+// easy to audit.
+const ATTRIBUTION_COPY: Record<"en" | "ms", { signedBy: string; signedOnly: string; separator: string }> = {
+  en: { signedBy: "Signed by", signedOnly: "Signed", separator: " · " },
+  ms: { signedBy: "Ditandatangani oleh", signedOnly: "Ditandatangani", separator: " · " },
+};
+
+/**
+ * Format a date string as "4 Apr 2026" in the active locale. Malay uses the
+ * ms-MY locale which renders short-months as Jan/Feb/Mac/Apr/Mei/Jun/Jul/Ogos/
+ * Sep/Okt/Nov/Dis. Returns null for missing input so the caller can hide the
+ * attribution line entirely.
+ */
+function formatSignedDate(iso: string | null | undefined, lang: "en" | "ms"): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(lang === "en" ? "en-GB" : "ms-MY", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export default function PortalVisitDetail() {
   const router = useRouter();
@@ -56,6 +87,22 @@ export default function PortalVisitDetail() {
   const body = lang === "en" ? detail.summaryEn : detail.summaryMs;
   const redFlagsList = detail.redFlags ?? [];
   const followUpData = detail.followUp ?? null;
+
+  // Task 8.2: compute the signing-doctor attribution line. We prefer finalizedAt
+  // as the "signed at" timestamp — the patient portal only ever sees finalized
+  // visits, so that's the semantically-correct moment of signature. When the
+  // doctor name isn't resolvable AND we have no date, we hide the line.
+  const signedDate = formatSignedDate(detail.finalizedAt, lang);
+  const attribCopy = ATTRIBUTION_COPY[lang];
+  const doctorName = detail.doctorName?.trim() || "";
+  let attributionLine: string | null = null;
+  if (doctorName && signedDate) {
+    attributionLine = `${attribCopy.signedBy} ${doctorName}${attribCopy.separator}${signedDate}`;
+  } else if (doctorName) {
+    attributionLine = `${attribCopy.signedBy} ${doctorName}`;
+  } else if (signedDate) {
+    attributionLine = `${attribCopy.signedOnly}${attribCopy.separator}${signedDate}`;
+  }
 
   return (
     <main className="shell shell-narrow">
@@ -100,6 +147,13 @@ export default function PortalVisitDetail() {
           {body || (lang === "en" ? "Summary is still being prepared…" : "Ringkasan sedang disediakan…")}
         </div>
       </section>
+
+      {/* Task 8.2: signing-doctor attribution. Rendered directly under the
+          summary card so patients see who confirmed their record. Hidden
+          entirely when neither name nor date is available. */}
+      {attributionLine && (
+        <p className="doctor-attribution" role="note">{attributionLine}</p>
+      )}
 
       <section className="card" data-delay="2" style={{ marginTop: 24 }}>
         <div className="card-head">
