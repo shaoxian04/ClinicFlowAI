@@ -1332,10 +1332,10 @@ body {
 }
 
 /* === Task 7.3: role-chip accents === */
-.role-chip[data-role="PATIENT"]  { background: var(--primary-tint); color: var(--primary); }
-.role-chip[data-role="DOCTOR"]   { background: #f6ece7; color: var(--accent); }
-.role-chip[data-role="STAFF"]    { background: #f3f4f6; color: #6b7280; }
-.role-chip[data-role="ADMIN"]    { background: #ede9fe; color: #7c3aed; }
+.role-chip[data-role="PATIENT"]  { background: var(--primary-soft); color: var(--primary); }
+.role-chip[data-role="DOCTOR"]   { background: color-mix(in oklab, var(--accent) 14%, var(--surface)); color: var(--accent); }
+.role-chip[data-role="STAFF"]    { background: var(--warn-soft); color: var(--warn-ink); }
+.role-chip[data-role="ADMIN"]    { background: color-mix(in oklab, var(--accent) 22%, var(--surface)); color: var(--accent); }
 
 /* ============ PORTAL SUB-NAV ============ */
 
