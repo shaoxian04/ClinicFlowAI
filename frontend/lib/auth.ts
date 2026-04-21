@@ -6,6 +6,7 @@ export type AuthUser = {
     email: string;
     role: "PATIENT" | "DOCTOR" | "STAFF" | "ADMIN";
     fullName: string;
+    consentGiven?: boolean;
 };
 
 export function saveAuth(token: string, user: AuthUser): void {
@@ -29,4 +30,13 @@ export function clearAuth(): void {
     if (typeof window === "undefined") return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+}
+
+export function markConsentGiven(): void {
+    if (typeof window === "undefined") return;
+    const raw = localStorage.getItem(USER_KEY);
+    if (!raw) return;
+    const user = JSON.parse(raw) as AuthUser;
+    const updated: AuthUser = { ...user, consentGiven: true };
+    localStorage.setItem(USER_KEY, JSON.stringify(updated));
 }

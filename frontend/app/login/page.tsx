@@ -89,6 +89,12 @@ export default function LoginPage() {
           </span>
         </div>
       </section>
+
+      <p style={{ textAlign: "center", marginTop: 20, fontSize: 12.5, color: "var(--ink-3)" }}>
+        <Link href="/privacy" style={{ color: "var(--ink-3)" }}>
+          Privacy Policy
+        </Link>
+      </p>
     </main>
   );
 }
