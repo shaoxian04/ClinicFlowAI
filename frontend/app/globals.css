@@ -3216,3 +3216,75 @@ textarea:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .hero-emblem-ring { animation: none; }
 }
+
+/* === Task 6.5: PostVisitPreview === */
+.post-visit-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.post-visit-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.post-visit-preview-ghost {
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px dashed var(--line-strong, var(--line));
+}
+.post-visit-preview-ghost::before {
+  content: "…";
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.post-visit-preview-flags {
+  border-left: 3px solid var(--danger);
+}
+.post-visit-preview-flag-list {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 6px 0 0;
+  color: var(--danger);
+  line-height: 1.55;
+}
+.post-visit-preview-flag-list li {
+  margin: 4px 0;
+}
+.post-visit-preview-followup {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 0;
+}
+.post-visit-preview-followup > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.post-visit-preview-followup dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+}
+.post-visit-preview-followup dd {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.post-visit-preview-ack {
+  margin: 0;
+  align-self: center;
+}
+@media (max-width: 640px) {
+  .post-visit-preview-followup > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

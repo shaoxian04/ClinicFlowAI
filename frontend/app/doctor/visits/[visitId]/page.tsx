@@ -17,6 +17,10 @@ import {
   InteractionFlags,
   keyForFlag,
 } from "@/app/doctor/components/InteractionFlags";
+import {
+  PostVisitPreview,
+  PostVisitPreviewData,
+} from "@/app/doctor/components/PostVisitPreview";
 
 type Soap = {
   subjective: string;
@@ -74,6 +78,14 @@ export default function VisitDetailPage() {
   const [activePhase, setActivePhase] = useState<PhaseKey>("pre");
   const [flags, setFlags] = useState<InteractionFlag[]>([]);
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
+  // Task 6.5: patient-summary preview state. `preview` is the latest draft
+  // payload from POST /post-visit/:id/draft; `previewAck` gates finalize;
+  // `previewUnavailable` flips true when the backend endpoint 404s so the UI
+  // can show a ghost banner without permanently blocking finalize.
+  const [preview, setPreview] = useState<PostVisitPreviewData | null>(null);
+  const [previewAck, setPreviewAck] = useState(false);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewUnavailable, setPreviewUnavailable] = useState(false);
   // Reserved for future "checking interactions…" spinner. Kept internal so the
   // fetchFlags helper can guard against overlapping requests without spamming
   // the backend on rapid medication edits.
@@ -116,11 +128,41 @@ export default function VisitDetailPage() {
     try {
       const s = await apiPost<Soap>(`/visits/${visitId}/soap/generate`, { transcript });
       setSoap(s); setHasAiDraft(true);
+      // Task 6.5: regenerating SOAP invalidates preview
+      setPreview(null);
+      setPreviewAck(false);
       // Re-check interactions with the (possibly updated) meds list now that
       // the AI draft is in place. Stub-safe — never throws.
       fetchFlags();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
+  }
+
+  async function onGeneratePreview() {
+    setPreviewBusy(true);
+    try {
+      const data = await apiPost<PostVisitPreviewData>(
+        `/post-visit/${visitId}/draft`,
+        { medications: meds },
+      );
+      setPreview(data);
+      setPreviewAck(false);
+      setPreviewUnavailable(false);
+    } catch (e) {
+      const msg = (e as Error).message;
+      // Graceful stub: a 404 means the backend /draft endpoint isn't wired
+      // yet. Surface a ghost banner in the preview panel (no page-level
+      // error) and keep finalize reachable via the "Acknowledge anyway"
+      // escape hatch. Plan line 474.
+      if (msg.startsWith("HTTP 404")) {
+        setPreview(null);
+        setPreviewUnavailable(true);
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setPreviewBusy(false);
+    }
   }
 
   // Re-check interactions whenever medications change, but only after an AI
@@ -191,6 +233,10 @@ export default function VisitDetailPage() {
     );
     if (blockedBy) {
       setError("Unacknowledged critical interactions block finalize");
+      return;
+    }
+    if (!previewAck) {
+      setError("Preview must be approved before finalizing");
       return;
     }
     if (!confirm("Finalize this SOAP and notify the patient? The record will be locked.")) return;
@@ -321,6 +367,15 @@ export default function VisitDetailPage() {
           <button className="btn" onClick={onSaveDraft} disabled={busy || locked || !hasAiDraft}>
             Save draft
           </button>
+          {hasAiDraft && !locked && (
+            <button
+              className="btn"
+              onClick={onGeneratePreview}
+              disabled={previewBusy || locked}
+            >
+              {previewBusy ? "Generating preview…" : "Generate patient preview"}
+            </button>
+          )}
         </div>
       </section>
 
@@ -403,13 +458,18 @@ export default function VisitDetailPage() {
         <button
           className="btn btn-accent"
           onClick={onFinalizeAndNotify}
-          disabled={busy || locked || !hasAiDraft || hasBlockingCritical}
+          disabled={busy || locked || !hasAiDraft || hasBlockingCritical || !previewAck}
         >
           {busy ? "Publishing…" : "Finalize & notify patient →"}
         </button>
         {hasBlockingCritical && !locked && (
           <p className="finalize-gate-note">
             Unacknowledged critical interactions must be overridden before finalizing.
+          </p>
+        )}
+        {!previewAck && !locked && !hasBlockingCritical && (
+          <p className="finalize-gate-note">
+            Approve the patient preview before finalizing.
           </p>
         )}
         {notified && (
@@ -427,7 +487,15 @@ export default function VisitDetailPage() {
         <h2>Post-visit preview</h2>
         <span className="card-idx">05 / PREVIEW</span>
       </div>
-      <p className="empty">Preview appears here after you finalize.</p>
+      <PostVisitPreview
+        data={preview}
+        acknowledged={previewAck}
+        onAcknowledge={() => setPreviewAck(true)}
+        onRegenerate={onGeneratePreview}
+        busy={previewBusy}
+        locked={locked}
+        unavailable={previewUnavailable}
+      />
     </section>
   );
 
