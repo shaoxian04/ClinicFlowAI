@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { apiPost } from "../../../lib/api";
 import { getToken } from "../../../lib/auth";
+import { PageHeader } from "../../components/PageHeader";
 
 type Session = {
   visitId: string;
@@ -85,14 +86,13 @@ export default function PreVisitNewPage() {
   return (
     <main className="shell shell-narrow">
       <Link href="/portal" className="back-link">← Back to portal</Link>
-      <span className="eyebrow" style={{ marginTop: 18, display: "inline-flex" }}>Pre-visit intake</span>
-      <h1 className="page-title">
-        Tell us how you&apos;re <em>feeling</em>
-      </h1>
-      <p className="page-sub">
-        Answer a short, guided conversation. Your doctor walks into the room already knowing your chief complaint,
-        duration, and any red flags — so the visit is for care, not clerical work.
-      </p>
+      <div style={{ marginTop: 18 }}>
+        <PageHeader
+          eyebrow="Pre-visit intake"
+          title={<>Tell us how you&apos;re <em>feeling</em></>}
+          sub="Answer a short, guided conversation. Your doctor walks into the room already knowing your chief complaint, duration, and any red flags — so the visit is for care, not clerical work."
+        />
+      </div>
 
       <section className="card chat-card" data-delay="1">
         <div className="chat-head">

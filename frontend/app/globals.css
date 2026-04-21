@@ -138,6 +138,22 @@ body {
   color: var(--ink-2);
 }
 
+/* Reusable page header: eyebrow + title + sub + actions.
+   Spacing matches the legacy inline stack (.eyebrow/.page-title/.page-sub
+   carry their own margins); this rule just groups them and anchors an
+   optional actions row below. */
+.page-header {
+  display: block;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 18px;
+}
+
 .back-link {
   display: flex;
   align-items: center;

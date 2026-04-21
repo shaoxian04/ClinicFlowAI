@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { PageHeader } from "@/app/components/PageHeader";
 
 type Detail = {
   visitId: string;
@@ -51,18 +52,21 @@ export default function PortalVisitDetail() {
     <main className="shell shell-narrow">
       <Link href="/portal" className="back-link">← All visits</Link>
 
-      <span className="eyebrow" style={{ marginTop: 18, display: "inline-flex" }}>Your visit summary</span>
-      <h1 className="page-title">
-        {lang === "en" ? (
-          <>What we <em>discussed</em></>
-        ) : (
-          <>Apa yang <em>kita bincang</em></>
-        )}
-      </h1>
-      <p className="page-sub">
-        {lang === "en" ? "Finalized on " : "Dimuktamadkan pada "}
-        {detail.finalizedAt ? new Date(detail.finalizedAt).toLocaleString(lang === "en" ? "en-MY" : "ms-MY") : "—"}.
-      </p>
+      <div style={{ marginTop: 18 }}>
+        <PageHeader
+          eyebrow="Your visit summary"
+          title={
+            lang === "en" ? (
+              <>What we <em>discussed</em></>
+            ) : (
+              <>Apa yang <em>kita bincang</em></>
+            )
+          }
+          sub={`${lang === "en" ? "Finalized on " : "Dimuktamadkan pada "}${
+            detail.finalizedAt ? new Date(detail.finalizedAt).toLocaleString(lang === "en" ? "en-MY" : "ms-MY") : "—"
+          }.`}
+        />
+      </div>
 
       <div role="tablist" className="lang-toggle" aria-label="Language">
         <button

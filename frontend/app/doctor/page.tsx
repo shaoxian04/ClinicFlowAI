@@ -8,6 +8,7 @@ import { getUser } from "@/lib/auth";
 import { SkeletonGrid } from "../components/Skeleton";
 import { EmptyState } from "../components/EmptyState";
 import { Stethoscope } from "../components/Illustration";
+import { PageHeader } from "../components/PageHeader";
 
 type VisitSummary = {
   visitId: string;
@@ -58,14 +59,11 @@ export default function DoctorDashboard() {
 
   return (
     <main className="shell">
-      <span className="eyebrow">Clinician workspace</span>
-      <h1 className="page-title">
-        Today&apos;s <em>visits</em>
-      </h1>
-      <p className="page-sub">
-        AI drafts sit at the top — review, edit, and sign. Finalized visits show a doctor&apos;s seal and drop to
-        the bottom.
-      </p>
+      <PageHeader
+        eyebrow="Clinician workspace"
+        title={<>Today&apos;s <em>visits</em></>}
+        sub="AI drafts sit at the top — review, edit, and sign. Finalized visits show a doctor's seal and drop to the bottom."
+      />
 
       {loading && <SkeletonGrid count={4} />}
 

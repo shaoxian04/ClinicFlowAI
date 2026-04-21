@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { PageHeader } from "@/app/components/PageHeader";
 
 type Soap = {
   subjective: string;
@@ -141,14 +142,11 @@ export default function VisitDetailPage() {
 
   return (
     <main className="shell">
-      <span className="eyebrow">Clinician review</span>
-      <h1 className="page-title">
-        Visit with <em>{detail.patientName}</em>
-      </h1>
-      <p className="page-sub">
-        Review the pre-visit intake, capture your SOAP note, prescribe up to three medications, and publish a bilingual
-        summary to the patient in one action.
-      </p>
+      <PageHeader
+        eyebrow="Clinician review"
+        title={<>Visit with <em>{detail.patientName}</em></>}
+        sub="Review the pre-visit intake, capture your SOAP note, prescribe up to three medications, and publish a bilingual summary to the patient in one action."
+      />
 
       <div className="status-row">
         <span className={`pill ${locked ? "pill-good" : "pill-primary"}`}>{detail.status}</span>

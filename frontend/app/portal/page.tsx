@@ -9,6 +9,7 @@ import { PortalNav } from "../components/PortalNav";
 import { SkeletonGrid } from "../components/Skeleton";
 import { EmptyState } from "../components/EmptyState";
 import { Envelope } from "../components/Illustration";
+import { PageHeader } from "../components/PageHeader";
 
 type VisitSummary = {
   visitId: string;
@@ -45,14 +46,11 @@ export default function PortalHome() {
     <>
       <PortalNav active="home" />
       <main className="shell shell-narrow portal-shell">
-        <span className="eyebrow">Patient portal</span>
-        <h1 className="page-title">
-          Welcome back, <em>{firstName}</em>.
-        </h1>
-        <p className="page-sub">
-          Start a new pre-visit chat before your appointment, or re-read any of your past consultation
-          summaries below.
-        </p>
+        <PageHeader
+          eyebrow="Patient portal"
+          title={<>Welcome back, <em>{firstName}</em>.</>}
+          sub="Start a new pre-visit chat before your appointment, or re-read any of your past consultation summaries below."
+        />
 
         {/* === Primary action === */}
         <section className="portal-cta-card" data-delay="1">
