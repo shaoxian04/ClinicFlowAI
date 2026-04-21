@@ -1,0 +1,94 @@
+-- H2-compatible test schema (translated from V1__init.sql)
+-- Triggers and plpgsql functions are omitted; extensions not supported in H2.
+
+CREATE TABLE IF NOT EXISTS users (
+    id             UUID         PRIMARY KEY DEFAULT RANDOM_UUID(),
+    email          VARCHAR(255) NOT NULL UNIQUE,
+    password_hash  VARCHAR(255) NOT NULL,
+    role           VARCHAR(32)  NOT NULL,
+    full_name      VARCHAR(255) NOT NULL,
+    is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
+    gmt_create     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS patients (
+    id               UUID         PRIMARY KEY DEFAULT RANDOM_UUID(),
+    user_id          UUID         REFERENCES users(id),
+    full_name        VARCHAR(255) NOT NULL,
+    date_of_birth    DATE,
+    gender           VARCHAR(16),
+    phone            VARCHAR(32),
+    email            VARCHAR(255),
+    gmt_create       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS visits (
+    id            UUID         PRIMARY KEY DEFAULT RANDOM_UUID(),
+    patient_id    UUID         NOT NULL REFERENCES patients(id),
+    doctor_id     UUID         NOT NULL REFERENCES users(id),
+    status        VARCHAR(32)  NOT NULL DEFAULT 'SCHEDULED',
+    started_at    TIMESTAMP WITH TIME ZONE,
+    finalized_at  TIMESTAMP WITH TIME ZONE,
+    gmt_create    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS pre_visit_reports (
+    id           UUID         PRIMARY KEY DEFAULT RANDOM_UUID(),
+    visit_id     UUID         NOT NULL UNIQUE REFERENCES visits(id),
+    structured   CLOB         NOT NULL DEFAULT '{}',
+    source       VARCHAR(32)  NOT NULL DEFAULT 'AI',
+    gmt_create   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS medical_reports (
+    id            UUID         PRIMARY KEY DEFAULT RANDOM_UUID(),
+    visit_id      UUID         NOT NULL UNIQUE REFERENCES visits(id),
+    subjective    CLOB         NOT NULL DEFAULT '',
+    objective     CLOB         NOT NULL DEFAULT '',
+    assessment    CLOB         NOT NULL DEFAULT '',
+    plan          CLOB         NOT NULL DEFAULT '',
+    ai_draft_hash VARCHAR(64),
+    is_finalized  BOOLEAN      NOT NULL DEFAULT FALSE,
+    finalized_by  UUID         REFERENCES users(id),
+    finalized_at  TIMESTAMP WITH TIME ZONE,
+    gmt_create    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_visit_summaries (
+    id              UUID         PRIMARY KEY DEFAULT RANDOM_UUID(),
+    visit_id        UUID         NOT NULL UNIQUE REFERENCES visits(id),
+    patient_summary CLOB         NOT NULL DEFAULT '',
+    gmt_create      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS medications (
+    id             UUID         PRIMARY KEY DEFAULT RANDOM_UUID(),
+    visit_id       UUID         NOT NULL REFERENCES visits(id),
+    name           VARCHAR(255) NOT NULL,
+    dosage         VARCHAR(128) NOT NULL,
+    frequency      VARCHAR(128) NOT NULL,
+    duration_days  INTEGER,
+    instructions   CLOB,
+    gmt_create     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    occurred_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    actor_user_id  UUID         REFERENCES users(id),
+    actor_role     VARCHAR(32),
+    action         VARCHAR(16)  NOT NULL,
+    resource_type  VARCHAR(64)  NOT NULL,
+    resource_id    VARCHAR(128),
+    correlation_id VARCHAR(64),
+    payload_hash   VARCHAR(64),
+    ip_address     VARCHAR(64),
+    metadata       CLOB         NOT NULL DEFAULT '{}'
+);

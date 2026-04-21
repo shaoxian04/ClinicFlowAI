@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  sql:
+    init:
+      mode: always
+
+cliniflow:
+  jwt:
+    secret: test-secret-key-that-is-at-least-32-chars-long!
+    expiry-minutes: 60
+  agent:
+    base-url: http://localhost:8099
+    service-token: test-token
+    connect-timeout-ms: 2000
+    read-timeout-ms: 15000
+  dev:
+    seeded-doctor-id: 00000000-0000-0000-0000-000000000001
+    seeded-patient-id: 00000000-0000-0000-0000-000000000010
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      llm:
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slidingWindowSize: 20
+      stt:
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slidingWindowSize: 20
+  timelimiter:
+    instances:
+      llm:
+        timeoutDuration: 8s
+      stt:
+        timeoutDuration: 15s
