@@ -39,7 +39,7 @@ const ATTRIBUTION_COPY: Record<"en" | "ms", { signedBy: string; signedOnly: stri
 // Task 9.2: bilingual strings for the medications section.
 const MEDICATIONS_COPY: Record<"en" | "ms", { heading: string; item: string; items: string; empty: string }> = {
   en: { heading: "Medications", item: "item", items: "items", empty: "No medications prescribed for this visit." },
-  ms: { heading: "Ubat-ubat", item: "item", items: "item", empty: "Tiada ubat ditetapkan untuk lawatan ini." },
+  ms: { heading: "Ubat-ubat", item: "perkara", items: "perkara", empty: "Tiada ubat ditetapkan untuk lawatan ini." },
 };
 
 /**
