@@ -3241,52 +3241,9 @@ textarea:focus-visible,
   font-family: var(--font-display);
   font-weight: 600;
 }
-.post-visit-preview-flags {
-  border-left: 3px solid var(--danger);
-}
-.post-visit-preview-flag-list {
-  list-style: disc;
-  padding-left: 20px;
-  margin: 6px 0 0;
-  color: var(--danger);
-  line-height: 1.55;
-}
-.post-visit-preview-flag-list li {
-  margin: 4px 0;
-}
-.post-visit-preview-followup {
-  display: grid;
-  gap: 10px;
-  margin: 6px 0 0;
-}
-.post-visit-preview-followup > div {
-  display: grid;
-  grid-template-columns: minmax(120px, 160px) 1fr;
-  gap: 12px;
-  align-items: baseline;
-}
-.post-visit-preview-followup dt {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin: 0;
-}
-.post-visit-preview-followup dd {
-  margin: 0;
-  color: var(--ink);
-  line-height: 1.5;
-}
 .post-visit-preview-ack {
   margin: 0;
   align-self: center;
-}
-@media (max-width: 640px) {
-  .post-visit-preview-followup > div {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
 }
 
 /* === Task 6.6: ProgressRail + FinalizeBar === */
@@ -3637,7 +3594,10 @@ textarea:focus-visible,
   flex: 0 0 auto;
 }
 
-.redflags-card-list {
+/* Selectors are scoped with their parent (.redflags-card / .followup-card)
+   to raise specificity to (0,2,0) so they win over the base `.card ul` and
+   `.card ul li` rules (0,1,1) that would otherwise paint these as pills. */
+.redflags-card .redflags-card-list {
   list-style: disc;
   padding-left: 22px;
   margin: 6px 0 0;
@@ -3646,8 +3606,14 @@ textarea:focus-visible,
   display: block;
 }
 
-.redflags-card-list li {
+.redflags-card .redflags-card-list li {
   margin: 4px 0;
+  /* Reset base `.card ul li` pill styling (background, padding, radius). */
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
 }
 
 .followup-card {
@@ -3655,20 +3621,20 @@ textarea:focus-visible,
   background: color-mix(in oklab, var(--primary) 5%, var(--surface));
 }
 
-.followup-card-list {
+.followup-card .followup-card-list {
   display: grid;
   gap: 10px;
   margin: 6px 0 0;
 }
 
-.followup-card-list > div {
+.followup-card .followup-card-list > div {
   display: grid;
   grid-template-columns: minmax(120px, 160px) 1fr;
   gap: 12px;
   align-items: baseline;
 }
 
-.followup-card-list dt {
+.followup-card .followup-card-list dt {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -3677,14 +3643,14 @@ textarea:focus-visible,
   margin: 0;
 }
 
-.followup-card-list dd {
+.followup-card .followup-card-list dd {
   margin: 0;
   color: var(--ink);
   line-height: 1.5;
 }
 
 @media (max-width: 640px) {
-  .followup-card-list > div {
+  .followup-card .followup-card-list > div {
     grid-template-columns: 1fr;
     gap: 4px;
   }

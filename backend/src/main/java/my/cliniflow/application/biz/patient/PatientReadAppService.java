@@ -69,8 +69,12 @@ public class PatientReadAppService {
         List<PatientVisitDetailResponse.Medication> medDtos = ms.stream()
             .map(m -> new PatientVisitDetailResponse.Medication(m.getName(), m.getDosage(), m.getFrequency()))
             .toList();
-        // Task 8.1: redFlags/followUp are placeholders until the Post-Visit
-        // agent populates them. Frontend gracefully no-ops on empty inputs.
+        // TODO(post-visit-agent): populate redFlags / followUp from PostVisitSummaryModel
+        // once the Post-Visit agent writes safety-net data. Requires:
+        //   1. Flyway migration to add red_flags / follow_up_* columns
+        //   2. Entity fields on PostVisitSummaryModel
+        //   3. Agent payload writes (see agent/app/graphs/postvisit)
+        // Until wired, frontend shows empty safety surfaces (by design — graceful stub).
         return new PatientVisitDetailResponse(
             v.getId(),
             v.getFinalizedAt(),
