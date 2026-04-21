@@ -1464,24 +1464,59 @@ body {
   gap: 14px;
 }
 
-.portal-empty {
-  padding: 36px 28px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-}
+/* ============ EMPTY STATE (generic) ============ */
+/* Presentational, centred empty-state block used by <EmptyState/>. */
+/* Replaces legacy .portal-empty / .doc-empty call sites. */
 
-.portal-empty-title {
-  font-family: var(--font-display);
-  font-size: 18px;
-  margin: 0 0 6px;
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: clamp(20px, 5vw, 36px);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
   color: var(--ink);
 }
 
-.portal-empty-body {
+.empty-state-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.empty-state-glyph > svg {
+  width: 34px;
+  height: 34px;
+}
+
+.empty-state-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  font-variation-settings: "opsz" 36, "SOFT" 100;
   margin: 0;
-  font-size: 14px;
+  color: var(--ink);
+}
+
+.empty-state-body {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: var(--ink-2);
+}
+
+.empty-state-action {
+  margin-top: 6px;
 }
 
 /* ============ LOGIN ============ */
@@ -1825,29 +1860,6 @@ body {
 
 .doc-tile:hover .doc-tile-action {
   gap: 10px;
-}
-
-.doc-empty {
-  padding: 48px 36px;
-  text-align: center;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-}
-
-.doc-empty-title {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 22px;
-  margin: 0 0 6px;
-  color: var(--ink);
-  font-variation-settings: "opsz" 36, "SOFT" 100;
-}
-
-.doc-empty-body {
-  color: var(--ink-2);
-  font-size: 14.5px;
-  margin: 0;
 }
 
 /* ============ RESPONSIVE OVERRIDES ============ */

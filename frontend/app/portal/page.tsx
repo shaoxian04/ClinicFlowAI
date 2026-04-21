@@ -7,6 +7,8 @@ import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { PortalNav } from "../components/PortalNav";
 import { SkeletonGrid } from "../components/Skeleton";
+import { EmptyState } from "../components/EmptyState";
+import { Envelope } from "../components/Illustration";
 
 type VisitSummary = {
   visitId: string;
@@ -107,13 +109,11 @@ export default function PortalHome() {
           {!loaded && <SkeletonGrid count={3} />}
 
           {loaded && visits.length === 0 && !error && (
-            <div className="portal-empty">
-              <h3 className="portal-empty-title">Nothing finalized yet</h3>
-              <p className="portal-empty-body">
-                When your doctor finishes and publishes a visit, it will appear here with a patient-friendly
-                summary you can re-read any time.
-              </p>
-            </div>
+            <EmptyState
+              glyph={<Envelope />}
+              title="Nothing finalized yet"
+              body="When your doctor finishes and publishes a visit, it will appear here with a patient-friendly summary you can re-read any time."
+            />
           )}
 
           <div className="portal-history-list">

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { SkeletonGrid } from "../components/Skeleton";
+import { EmptyState } from "../components/EmptyState";
+import { Stethoscope } from "../components/Illustration";
 
 type VisitSummary = {
   visitId: string;
@@ -68,12 +70,11 @@ export default function DoctorDashboard() {
       {loading && <SkeletonGrid count={4} />}
 
       {!loading && !error && sorted.length === 0 && (
-        <div className="doc-empty">
-          <h2 className="doc-empty-title">No visits yet</h2>
-          <p className="doc-empty-body">
-            Once a patient completes a pre-visit intake, it will appear here ready for you to review and sign.
-          </p>
-        </div>
+        <EmptyState
+          glyph={<Stethoscope />}
+          title="No visits yet"
+          body="Once a patient completes a pre-visit intake, it will appear here ready for you to review and sign."
+        />
       )}
 
       <div className="doc-grid">
