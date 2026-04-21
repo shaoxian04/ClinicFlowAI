@@ -7,6 +7,12 @@ type Props = {
   visitId?: string;
   rotate?: number;
   className?: string;
+  /**
+   * Task 6.6 accepts this prop; the actual reveal animation is implemented in
+   * Task 6.7. Kept as a no-op here so the FinalizeBar can pass it without the
+   * compiler complaining about an unknown prop.
+   */
+  animate?: boolean;
 };
 
 export function DoctorsSeal({
@@ -16,7 +22,11 @@ export function DoctorsSeal({
   visitId,
   rotate = -6,
   className,
+  animate: _animate,
 }: Props) {
+  // Task 6.7 will consume `animate`. Intentional no-op here — reference it so
+  // ESLint's no-unused-vars rule doesn't flare on the underscore binding.
+  void _animate;
   const outer = size / 2 - 2;
   const ring = size / 2 - 10;
   const textRadius = size / 2 - 20;

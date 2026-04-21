@@ -3288,3 +3288,264 @@ textarea:focus-visible,
     gap: 4px;
   }
 }
+
+/* === Task 6.6: ProgressRail + FinalizeBar === */
+/* Sticky left-rail step navigator + sticky bottom action bar for the doctor
+   visit workspace. The rail cohabits the visit-rail-grid with the main
+   column and the existing PatientContextPanel. Below 1200px the rail is
+   hidden (the phase tabs already convey step position on narrow screens)
+   and the grid collapses to 1fr. The finalize bar stays sticky across all
+   widths — it's the single source of truth for the publish action. */
+
+/* Tri-column extension of .visit-rail-grid: [rail | main | context]. Only
+   activates at >=1200px; below that the rail is display:none and the grid
+   falls back to the 1fr layout inherited from .visit-rail-grid. */
+@media (min-width: 1200px) {
+  .visit-rail-grid-tri {
+    grid-template-columns: 176px minmax(0, 1fr) 320px;
+    gap: 28px;
+  }
+}
+
+.progress-rail {
+  display: none; /* hidden <1200px; mobile users rely on phase tabs instead. */
+}
+
+@media (min-width: 1200px) {
+  .progress-rail {
+    display: block;
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    padding: 18px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.progress-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+/* Vertical connector line running behind the dots. Starts at the first dot
+   centre and ends at the last dot centre. 22px matches the top padding +
+   dot offset below. */
+.progress-rail-list::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  bottom: 12px;
+  width: 1px;
+  background: var(--line-strong);
+  opacity: 0.6;
+}
+
+.progress-rail-item {
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.progress-rail-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.progress-rail-step:hover {
+  color: var(--ink-2);
+  background: var(--surface-2);
+}
+
+.progress-rail-step:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.progress-rail-step.is-active {
+  color: var(--primary);
+}
+
+.progress-rail-dot {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.progress-rail-dot-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong);
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.progress-rail-step.is-active .progress-rail-dot-inner {
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.25);
+}
+
+.progress-rail-step:hover .progress-rail-dot-inner {
+  border-color: var(--primary);
+}
+
+.progress-rail-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.progress-rail-index {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.progress-rail-step.is-active .progress-rail-index {
+  color: var(--primary);
+}
+
+.progress-rail-text {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: inherit;
+}
+
+/* Finalize bar — sticky bottom. Backdrop blur + translucent surface so the
+   underlying content remains subtly visible. Sits above everything else
+   via a modest z-index. */
+.finalize-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin-top: 24px;
+  padding: 14px 22px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -8px 24px rgba(30, 28, 22, 0.08);
+  z-index: 20;
+}
+
+.finalize-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.finalize-bar-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.finalize-bar-state-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  flex: 0 0 auto;
+}
+
+.finalize-bar-state-label {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.finalize-bar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.finalize-bar-hint {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-style: italic;
+}
+
+.finalize-bar-btn {
+  min-width: 180px;
+}
+
+/* Locked-state variant: seal + timestamp caption, centred. The seal branch
+   replaces the state-label + button entirely per Task 6.6 spec. */
+.finalize-bar-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 22px;
+}
+
+.finalize-bar-seal-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.finalize-bar-seal-caption {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .finalize-bar {
+    padding: 12px 14px;
+  }
+  .finalize-bar-btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .finalize-bar-action {
+    width: 100%;
+  }
+  .finalize-bar-seal-wrap {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+}

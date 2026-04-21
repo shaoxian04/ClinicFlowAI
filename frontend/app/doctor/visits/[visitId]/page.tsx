@@ -21,6 +21,8 @@ import {
   PostVisitPreview,
   PostVisitPreviewData,
 } from "@/app/doctor/components/PostVisitPreview";
+import { ProgressRail } from "@/app/components/ProgressRail";
+import { FinalizeBar, FinalizeBarState } from "@/app/doctor/components/FinalizeBar";
 
 type Soap = {
   subjective: string;
@@ -60,6 +62,37 @@ const SOAP_LABELS: Record<keyof Pick<Soap, "subjective" | "objective" | "assessm
   plan: "Plan — treatment & follow-up",
 };
 
+// Task 6.6 — ProgressRail steps. The target ids are wired up as `id=` attrs
+// on the four section wrappers below. Labels are exact per plan spec.
+const PROGRESS_STEPS = [
+  { id: "intake", label: "Intake", targetId: "section-intake" },
+  { id: "capture", label: "Capture", targetId: "section-capture" },
+  { id: "draft", label: "Draft", targetId: "section-draft" },
+  { id: "publish", label: "Publish", targetId: "section-publish" },
+];
+
+// Task 6.6 — pure state-deriver for the FinalizeBar. Lifted out of the
+// component so it's trivially testable. Order of checks matters: "locked"
+// wins over every other state so the seal branch renders correctly.
+function deriveBarState(params: {
+  locked: boolean;
+  hasTranscript: boolean;
+  hasAiDraft: boolean;
+  previewAck: boolean;
+  hasBlockingCritical: boolean;
+}): FinalizeBarState {
+  if (params.locked) return "locked";
+  if (!params.hasTranscript) return "no-transcript";
+  if (!params.hasAiDraft) return "transcript-ready";
+  if (!params.previewAck) return "draft-ready";
+  if (params.hasBlockingCritical) return "preview-approved";
+  return "ready";
+}
+
+function formatClockLabel(d: Date): string {
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export default function VisitDetailPage() {
   const router = useRouter();
   const params = useParams<{ visitId: string }>();
@@ -86,6 +119,10 @@ export default function VisitDetailPage() {
   const [previewAck, setPreviewAck] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewUnavailable, setPreviewUnavailable] = useState(false);
+  // Task 6.6 — capture the client-side publish time the moment the visit
+  // locks. Falls back to the backend finalizedAt if that field arrives
+  // first (e.g. on page reload of an already-locked visit).
+  const [publishedAtLabel, setPublishedAtLabel] = useState<string | null>(null);
   // Reserved for future "checking interactions…" spinner. Kept internal so the
   // fetchFlags helper can guard against overlapping requests without spamming
   // the backend on rapid medication edits.
@@ -100,6 +137,12 @@ export default function VisitDetailPage() {
         setDetail(d);
         setSoap(d.soap);
         setHasAiDraft(!!d.soap.aiDraftHash);
+        if (d.soap.finalized && d.finalizedAt) {
+          const parsed = new Date(d.finalizedAt);
+          if (!Number.isNaN(parsed.getTime())) {
+            setPublishedAtLabel(formatClockLabel(parsed));
+          }
+        }
       })
       .catch((e) => setError(e.message));
   }, [visitId, router]);
@@ -244,6 +287,13 @@ export default function VisitDetailPage() {
     try {
       const s = await apiPost<Soap>(`/visits/${visitId}/soap/finalize`, soap);
       setSoap(s);
+      // Task 6.6 — capture the publish moment client-side for FinalizeBar's
+      // "Published to patient at HH:MM" caption. If the backend also returns
+      // a finalizedAt we'll still trust this client timestamp for display
+      // since the user just triggered it this very second.
+      if (s.finalized) {
+        setPublishedAtLabel(formatClockLabel(new Date()));
+      }
       const postVisit = await apiPost<PostVisitResponse>(`/postvisit/${visitId}/generate`, { medications: meds });
       setNotified(postVisit.summaryEn.length > 0 || postVisit.summaryMs.length > 0);
     } catch (e) {
@@ -288,7 +338,7 @@ export default function VisitDetailPage() {
   }
 
   const preVisitPanel = (
-    <section className="card" data-delay="1">
+    <section className="card" data-delay="1" id="section-intake">
       <div className="card-head">
         <h2>Pre-visit intake</h2>
         <span className="card-idx">01 / INTAKE</span>
@@ -313,7 +363,7 @@ export default function VisitDetailPage() {
         onAcknowledge={onAcknowledge}
         locked={locked}
       />
-      <section className="card" data-delay="1">
+      <section className="card" data-delay="1" id="section-capture">
         <div className="card-head">
           <h2>Consultation capture</h2>
           <span className="card-idx">02 / CAPTURE</span>
@@ -335,7 +385,7 @@ export default function VisitDetailPage() {
         />
       </section>
 
-      <section className="card" data-delay="2">
+      <section className="card" data-delay="2" id="section-draft">
         <div className="card-head">
           <h2>SOAP note</h2>
           <span className="card-idx">03 / DRAFT</span>
@@ -446,22 +496,16 @@ export default function VisitDetailPage() {
         </div>
       </section>
 
-      <section className="card finalize-card" data-delay="4">
+      <section className="card finalize-card" data-delay="4" id="section-publish">
         <div className="card-head">
           <h2>Finalize &amp; notify</h2>
           <span className="card-idx">04 / PUBLISH</span>
         </div>
         <p>
           One click locks the SOAP note, writes a bilingual English + Malay summary, and publishes it to the patient&apos;s
-          portal.
+          portal. Use the <strong>Ready to publish</strong> action in the bar at the bottom of the page when every gate
+          is green.
         </p>
-        <button
-          className="btn btn-accent"
-          onClick={onFinalizeAndNotify}
-          disabled={busy || locked || !hasAiDraft || hasBlockingCritical || !previewAck}
-        >
-          {busy ? "Publishing…" : "Finalize & notify patient →"}
-        </button>
         {hasBlockingCritical && !locked && (
           <p className="finalize-gate-note">
             Unacknowledged critical interactions must be overridden before finalizing.
@@ -499,6 +543,27 @@ export default function VisitDetailPage() {
     </section>
   );
 
+  // Task 6.6 — AND both gates lifted in 6.4 (no blocking critical interactions)
+  // and 6.5 (preview acknowledged). hasAiDraft check remains — we never allow
+  // finalizing a visit with no AI draft.
+  const canFinalize = hasAiDraft && !locked && !hasBlockingCritical && previewAck;
+  const barState = deriveBarState({
+    locked,
+    hasTranscript: transcript.trim().length > 0,
+    hasAiDraft,
+    previewAck,
+    hasBlockingCritical,
+  });
+  const disabledHint = locked
+    ? undefined
+    : hasBlockingCritical
+      ? "Resolve critical flags first"
+      : !hasAiDraft
+        ? "Generate the SOAP draft first"
+        : !previewAck
+          ? "Approve the preview to unlock"
+          : undefined;
+
   return (
     <main className="shell visit-shell">
       <PageHeader
@@ -516,7 +581,10 @@ export default function VisitDetailPage() {
 
       {error && <div className="banner banner-error">{error}</div>}
 
-      <div className="visit-rail-grid">
+      {/* Task 6.6 — ProgressRail sits in the left column at >=1200px; CSS
+          hides it below that to avoid crowding the phase tabs on tablets. */}
+      <div className="visit-rail-grid visit-rail-grid-tri">
+        <ProgressRail steps={PROGRESS_STEPS} />
         <div className="visit-rail-main">
           <PhaseTabs
             consultationNeedsReview={hasAiDraft && !locked}
@@ -533,6 +601,16 @@ export default function VisitDetailPage() {
         </div>
         <PatientContextPanel patientId={detail.patientId} />
       </div>
+
+      <FinalizeBar
+        state={barState}
+        canFinalize={canFinalize}
+        locked={locked}
+        busy={busy}
+        disabledHint={disabledHint}
+        publishedAtLabel={publishedAtLabel ?? undefined}
+        onFinalize={onFinalizeAndNotify}
+      />
     </main>
   );
 }
