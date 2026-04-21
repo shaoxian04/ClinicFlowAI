@@ -3690,6 +3690,35 @@ textarea:focus-visible,
 @media (max-width: 639px) {
   .med-grid { grid-template-columns: 1fr; }
 }
+/* Standalone card styles for <MedicationCard> (mirrors .meds-list li pattern) */
+.med-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.med-card .med-name {
+  font-family: var(--font-display);
+  font-weight: 440;
+  font-size: 17px;
+  color: var(--ink);
+}
+.med-card .med-meta {
+  font-size: 13px;
+  color: var(--ink-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.med-card .med-meta-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
 .med-card-duration,
 .med-card-instructions {
   font-size: 13px;
@@ -3698,7 +3727,7 @@ textarea:focus-visible,
 }
 .med-card-duration strong,
 .med-card-instructions strong {
-  color: var(--ink-1);
+  color: var(--ink);
 }
 
 /* === Task 9.2: lang-toggle fade === */

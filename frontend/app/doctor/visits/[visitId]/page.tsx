@@ -638,7 +638,9 @@ export default function VisitDetailPage() {
       />
 
       <div className="status-row">
-        <span className={`pill ${locked ? "pill-good" : "pill-primary"}`}>{detail.status}</span>
+        <span className={`pill ${locked ? "pill-good" : "pill-primary"}`}>{
+          ({ AWAITING_DOCTOR_REVIEW: "Awaiting review", IN_PROGRESS: "In progress", FINALIZED: "Finalized" } as Record<string,string>)[detail.status] ?? detail.status
+        }</span>
         {hasAiDraft && !locked && <span className="pill pill-warn">AI draft pending review</span>}
         {locked && <span className="pill pill-good">Finalized</span>}
         <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
