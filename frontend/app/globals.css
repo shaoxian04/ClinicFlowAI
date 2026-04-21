@@ -3549,3 +3549,68 @@ textarea:focus-visible,
     text-align: center;
   }
 }
+
+/* === Task 6.7: DoctorsSeal finalize animation === */
+/* Three-step choreography played when <DoctorsSeal animate /> mounts inside
+   FinalizeBar's locked state: (1) the whole seal fades in over 400ms, (2) the
+   stamp group scales 0.8 → 1.06 → 1 with a brief overshoot over 120ms, (3) the
+   top-arc "CONFIRMED · <DR NAME>" text strokes itself on via stroke-dashoffset
+   over 900ms. Timings are sequenced with animation-delay so the effect reads
+   as a single gesture: fade (0–400ms), stamp (400–520ms), draw (520–1420ms).
+   All motion is suppressed under prefers-reduced-motion — the seal appears in
+   its final state at time 0. */
+@keyframes seal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes seal-stamp {
+  0%   { transform: scale(0.8); }
+  70%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@keyframes seal-text-draw {
+  from { stroke-dashoffset: var(--seal-text-length, 600); }
+  to   { stroke-dashoffset: 0; }
+}
+
+.doctors-seal--animate {
+  animation: seal-fade-in 400ms ease-out both;
+}
+
+.doctors-seal--animate .doctors-seal-stamp {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: seal-stamp 120ms ease-out 400ms both;
+}
+
+.doctors-seal--animate .doctors-seal-text {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 0.6;
+  stroke-dasharray: var(--seal-text-length, 600);
+  stroke-dashoffset: var(--seal-text-length, 600);
+  animation: seal-text-draw 900ms ease-out 520ms both;
+}
+
+/* Defensive reduced-motion override. The global kill-switch at the top of
+   this file already neutralises animation-duration/delay; this block adds an
+   explicit belt-and-braces rule so the seal lands in its final visual state
+   even if the stroke-dashoffset / transparent-fill scaffolding would otherwise
+   leave the text invisible. */
+@media (prefers-reduced-motion: reduce) {
+  .doctors-seal--animate,
+  .doctors-seal--animate .doctors-seal-stamp,
+  .doctors-seal--animate .doctors-seal-text {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .doctors-seal--animate .doctors-seal-text {
+    fill: #f6f1e7;
+    stroke: transparent;
+    stroke-dasharray: 0 !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
