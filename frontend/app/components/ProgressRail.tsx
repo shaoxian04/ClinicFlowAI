@@ -16,6 +16,22 @@ type ProgressRailProps = {
    * the natural "top visible section" heuristic doesn't apply.
    */
   activeId?: string;
+  /**
+   * Opaque "which container is currently mounted" token. When this value
+   * changes, the rail rebuilds its IntersectionObserver so it re-observes
+   * whatever sections just came into the DOM (e.g. after a tab switch that
+   * unmounts/mounts tab-scoped content). ProgressRail doesn't need to know
+   * what the token means — only that a change implies "DOM may have
+   * swapped, re-observe now".
+   */
+  scopeKey?: string;
+  /**
+   * Optional click handler. When provided, the rail calls this INSTEAD of
+   * performing its own `scrollIntoView` — useful when the target section
+   * lives inside a tab that may be unmounted, so the parent can switch
+   * tabs first and then handle scrolling itself.
+   */
+  onStepClick?: (step: ProgressStep) => void;
 };
 
 /**
@@ -27,7 +43,7 @@ type ProgressRailProps = {
  * first step being active and pure anchor-jump behaviour (still keyboard
  * accessible).
  */
-export function ProgressRail({ steps, activeId }: ProgressRailProps) {
+export function ProgressRail({ steps, activeId, scopeKey, onStepClick }: ProgressRailProps) {
   const [internalActive, setInternalActive] = useState<string>(steps[0]?.id ?? "");
 
   useEffect(() => {
@@ -38,59 +54,77 @@ export function ProgressRail({ steps, activeId }: ProgressRailProps) {
       return;
     }
 
-    // Map target element id -> step id so the observer callback can translate.
-    const targetToStep = new Map<string, string>();
-    const observedEls: Element[] = [];
-    for (const step of steps) {
-      const el = document.getElementById(step.targetId);
-      if (!el) continue;
-      targetToStep.set(step.targetId, step.id);
-      observedEls.push(el);
-    }
-    if (observedEls.length === 0) return;
+    // Rebuild on next frame so we observe sections that React just mounted
+    // (e.g. after a tab switch). Without this, a synchronous re-run during
+    // the same commit would see stale DOM from the previous tab.
+    let io: IntersectionObserver | null = null;
+    const raf = requestAnimationFrame(() => {
+      // Map target element id -> step id so the observer callback can translate.
+      const targetToStep = new Map<string, string>();
+      const observedEls: Element[] = [];
+      for (const step of steps) {
+        const el = document.getElementById(step.targetId);
+        if (!el) continue;
+        targetToStep.set(step.targetId, step.id);
+        observedEls.push(el);
+      }
+      if (observedEls.length === 0) return;
 
-    // Track the most-visible intersecting section. If none intersect, keep the
-    // last-known active step so the rail never flickers blank on fast scrolls.
-    const visibility = new Map<string, number>();
+      // Track the most-visible intersecting section. If none intersect, keep
+      // the last-known active step so the rail never flickers blank on fast
+      // scrolls.
+      const visibility = new Map<string, number>();
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          visibility.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0);
-        }
-        let bestId: string | null = null;
-        let bestRatio = 0;
-        for (const [elId, ratio] of visibility.entries()) {
-          if (ratio > bestRatio) {
-            bestRatio = ratio;
-            bestId = elId;
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            visibility.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0);
           }
-        }
-        if (bestId) {
-          const stepId = targetToStep.get(bestId);
-          if (stepId) setInternalActive(stepId);
-        }
-      },
-      {
-        // Bias toward sections centred in the viewport, not just poking in.
-        rootMargin: "-30% 0px -50% 0px",
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-      },
-    );
+          let bestId: string | null = null;
+          let bestRatio = 0;
+          for (const [elId, ratio] of visibility.entries()) {
+            if (ratio > bestRatio) {
+              bestRatio = ratio;
+              bestId = elId;
+            }
+          }
+          if (bestId) {
+            const stepId = targetToStep.get(bestId);
+            if (stepId) setInternalActive(stepId);
+          }
+        },
+        {
+          // Bias toward sections centred in the viewport, not just poking in.
+          rootMargin: "-30% 0px -50% 0px",
+          threshold: [0, 0.25, 0.5, 0.75, 1],
+        },
+      );
 
-    observedEls.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [steps]);
+      observedEls.forEach((el) => io!.observe(el));
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      io?.disconnect();
+    };
+  }, [steps, scopeKey]);
 
   const active = activeId ?? internalActive;
 
-  const onStepClick = useCallback((targetId: string) => {
-    if (typeof window === "undefined") return;
-    const el = document.getElementById(targetId);
-    if (!el) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
-  }, []);
+  const handleClick = useCallback(
+    (step: ProgressStep) => {
+      if (onStepClick) {
+        onStepClick(step);
+        return;
+      }
+      if (typeof window === "undefined") return;
+      const el = document.getElementById(step.targetId);
+      if (!el) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    },
+    [onStepClick],
+  );
 
   return (
     <nav className="progress-rail" aria-label="Visit progress">
@@ -103,7 +137,7 @@ export function ProgressRail({ steps, activeId }: ProgressRailProps) {
                 type="button"
                 className={`progress-rail-step${isActive ? " is-active" : ""}`}
                 aria-current={isActive ? "step" : undefined}
-                onClick={() => onStepClick(step.targetId)}
+                onClick={() => handleClick(step)}
               >
                 <span className="progress-rail-dot" aria-hidden="true">
                   <span className="progress-rail-dot-inner" />

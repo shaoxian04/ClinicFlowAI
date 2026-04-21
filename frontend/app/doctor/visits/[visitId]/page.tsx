@@ -64,11 +64,20 @@ const SOAP_LABELS: Record<keyof Pick<Soap, "subjective" | "objective" | "assessm
 
 // Task 6.6 — ProgressRail steps. The target ids are wired up as `id=` attrs
 // on the four section wrappers below. Labels are exact per plan spec.
-const PROGRESS_STEPS = [
-  { id: "intake", label: "Intake", targetId: "section-intake" },
-  { id: "capture", label: "Capture", targetId: "section-capture" },
-  { id: "draft", label: "Draft", targetId: "section-draft" },
-  { id: "publish", label: "Publish", targetId: "section-publish" },
+// Each step is scoped to exactly one phase tab — PhaseTabs unmounts inactive
+// tab content, so the rail needs to know which tab to switch to before it
+// can scroll to the target section.
+type StepDef = {
+  id: string;
+  label: string;
+  targetId: string;
+  phase: PhaseKey;
+};
+const PROGRESS_STEPS: StepDef[] = [
+  { id: "intake", label: "Intake", targetId: "section-intake", phase: "pre" },
+  { id: "capture", label: "Capture", targetId: "section-capture", phase: "visit" },
+  { id: "draft", label: "Draft", targetId: "section-draft", phase: "visit" },
+  { id: "publish", label: "Publish", targetId: "section-publish", phase: "post" },
 ];
 
 // Task 6.6 — pure state-deriver for the FinalizeBar. Lifted out of the
@@ -306,6 +315,43 @@ export default function VisitDetailPage() {
   const onPhaseChange = useCallback((key: PhaseKey) => {
     setActivePhase(key);
   }, []);
+
+  // Task 6.6 fix — ProgressRail clicks need to cross tab boundaries.
+  // PhaseTabs unmounts inactive tab content, so `getElementById` returns
+  // null for any section that lives in a non-active tab. We switch the
+  // hash (which PhaseTabs listens to) then scroll on the next frame after
+  // React has mounted the new tab's DOM.
+  const onRailStepClick = useCallback((step: { phase: PhaseKey; targetId: string }) => {
+    if (typeof window === "undefined") return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const doScroll = () => {
+      const el = document.getElementById(step.targetId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    };
+    const targetHash = `#${step.phase}`;
+    if (window.location.hash !== targetHash) {
+      // Setting the hash triggers `hashchange`, which PhaseTabs uses to
+      // switch active tab. Wait two frames: one for the state update, one
+      // for React to commit the new tab's children to the DOM.
+      window.location.hash = targetHash;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(doScroll);
+      });
+    } else {
+      doScroll();
+    }
+  }, []);
+
+  // Task 6.6 fix — derive active rail step from the current tab. For tabs
+  // that contain multiple sections (consultation has capture + draft), fall
+  // back to ProgressRail's internal IntersectionObserver by leaving
+  // activeId undefined so scroll-position drives it.
+  const railActiveId = (() => {
+    const stepsInPhase = PROGRESS_STEPS.filter((s) => s.phase === activePhase);
+    if (stepsInPhase.length === 1) return stepsInPhase[0].id;
+    return undefined;
+  })();
 
   if (!detail) {
     return (
@@ -549,7 +595,12 @@ export default function VisitDetailPage() {
   const canFinalize = hasAiDraft && !locked && !hasBlockingCritical && previewAck;
   const barState = deriveBarState({
     locked,
-    hasTranscript: transcript.trim().length > 0,
+    // Task 6.6 fix (I1) — on reload of an in-progress visit the transcript
+    // client-state is "" (there's no GET rehydration for it) but hasAiDraft
+    // is set from the server's soap.aiDraftHash. Treat an existing draft as
+    // implying a prior transcript so the bar doesn't regress to
+    // "Transcript pending" after a page refresh.
+    hasTranscript: transcript.trim().length > 0 || hasAiDraft,
     hasAiDraft,
     previewAck,
     hasBlockingCritical,
@@ -584,7 +635,17 @@ export default function VisitDetailPage() {
       {/* Task 6.6 — ProgressRail sits in the left column at >=1200px; CSS
           hides it below that to avoid crowding the phase tabs on tablets. */}
       <div className="visit-rail-grid visit-rail-grid-tri">
-        <ProgressRail steps={PROGRESS_STEPS} />
+        <ProgressRail
+          steps={PROGRESS_STEPS}
+          activeId={railActiveId}
+          scopeKey={activePhase}
+          onStepClick={(step) => {
+            // PROGRESS_STEPS is StepDef[], so step has `phase`. The rail
+            // passes the exact step object through, we just re-type it.
+            const s = step as StepDef;
+            onRailStepClick(s);
+          }}
+        />
         <div className="visit-rail-main">
           <PhaseTabs
             consultationNeedsReview={hasAiDraft && !locked}
