@@ -1,0 +1,590 @@
+# Instincts generated from https://github.com/shaoxian04/ClinicFlowAI
+# Generated: 2026-04-21T16:36:28.208Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: ClinicFlowAI-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat, fix
+
+## Evidence
+
+- 55 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: V3 migration adds bilingual summary columns, chore: checkpoint prior polish work and frontend-enhancement plan
+
+---
+id: ClinicFlowAI-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Commit Length
+
+## Action
+
+Write moderate-length commit messages (~65 characters)
+
+## Evidence
+
+- Average commit message length: 65 chars
+- Based on 55 commits
+
+---
+id: ClinicFlowAI-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Naming Files
+
+## Action
+
+Use PascalCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: PascalCase
+
+---
+id: ClinicFlowAI-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: ClinicFlowAI-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~23x per month
+- Files: frontend/app/doctor/visits/[visitid]/*, frontend/app/*, frontend/app/portal/*
+
+---
+id: ClinicFlowAI-workflow-add-new-jpa-entity-and-repository
+trigger: "when doing add new jpa entity and repository"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Workflow Add New Jpa Entity And Repository
+
+## Action
+
+Follow the add-new-jpa-entity-and-repository workflow:
+1. Create a new Model class in backend/src/main/java/my/cliniflow/domain/biz/[context]/model/
+2. Create a new Repository interface in backend/src/main/java/my/cliniflow/domain/biz/[context]/repository/
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: backend/src/main/java/my/cliniflow/domain/biz/*/model/*Model.java, backend/src/main/java/my/cliniflow/domain/biz/*/repository/*Repository.java
+
+---
+id: ClinicFlowAI-workflow-add-or-update-backend-api-endpoint
+trigger: "when doing add or update backend api endpoint"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Workflow Add Or Update Backend Api Endpoint
+
+## Action
+
+Follow the add-or-update-backend-api-endpoint workflow:
+1. Add or update a Controller class in backend/src/main/java/my/cliniflow/controller/biz/[context]/
+2. Add or update Request/Response DTOs in backend/src/main/java/my/cliniflow/controller/biz/[context]/request/ and /response/
+3. Add or update Application Service logic in backend/src/main/java/my/cliniflow/application/biz/[context]/
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: backend/src/main/java/my/cliniflow/controller/biz/*/*.java, backend/src/main/java/my/cliniflow/controller/biz/*/request/*.java, backend/src/main/java/my/cliniflow/controller/biz/*/response/*.java
+
+---
+id: ClinicFlowAI-workflow-add-frontend-component-and-integrate
+trigger: "when doing add frontend component and integrate"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Workflow Add Frontend Component And Integrate
+
+## Action
+
+Follow the add-frontend-component-and-integrate workflow:
+1. Create a new component in frontend/app/components/ or a feature-specific subfolder
+2. Update one or more page files in frontend/app/[section]/[...]/page.tsx to use the new component
+3. Update frontend/app/globals.css with supporting styles if needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~6x per month
+- Files: frontend/app/components/*.tsx, frontend/app/*/components/*.tsx, frontend/app/*/page.tsx
+
+---
+id: ClinicFlowAI-workflow-add-frontend-page-or-section
+trigger: "when doing add frontend page or section"
+confidence: 0.7
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Workflow Add Frontend Page Or Section
+
+## Action
+
+Follow the add-frontend-page-or-section workflow:
+1. Create a new page file in frontend/app/[section]/[subsection]/page.tsx
+2. Optionally create or update navigation components or layout wrappers
+3. Update frontend/app/globals.css if new styles are needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~4x per month
+- Files: frontend/app/*/page.tsx, frontend/app/*/*/page.tsx, frontend/app/components/*.tsx
+
+---
+id: ClinicFlowAI-workflow-add-or-update-shared-css-theme
+trigger: "when doing add or update shared css theme"
+confidence: 0.75
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Workflow Add Or Update Shared Css Theme
+
+## Action
+
+Follow the add-or-update-shared-css-theme workflow:
+1. Edit frontend/app/globals.css to add or update CSS variables, classes, or accessibility rules
+2. Optionally update related components or page files to use the new styles
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~5x per month
+- Files: frontend/app/globals.css
+
+---
+id: ClinicFlowAI-workflow-implement-fullstack-feature-with-both-backend-and-frontend
+trigger: "when doing implement fullstack feature with both backend and frontend"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/shaoxian04/ClinicFlowAI
+---
+
+# ClinicFlowAI Workflow Implement Fullstack Feature With Both Backend And Frontend
+
+## Action
+
+Follow the implement-fullstack-feature-with-both-backend-and-frontend workflow:
+1. Add or update backend model/entity and repository
+2. Add or update backend application service and controller (API endpoint)
+3. Add or update frontend page/component to consume the new API
+4. Update frontend/app/globals.css as needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: backend/src/main/java/my/cliniflow/domain/biz/*/model/*.java, backend/src/main/java/my/cliniflow/domain/biz/*/repository/*.java, backend/src/main/java/my/cliniflow/application/biz/*/*.java
+
+---
+id: clinicflowai-naming-files-pascalcase
+trigger: "When creating a new file (component, model, etc.)"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Naming Files Pascalcase
+
+## Action
+
+Name the file using PascalCase (e.g., PostVisitSummaryModel.java, MedicationModel.java)
+
+## Evidence
+
+- Pattern in files: backend/src/main/java/my/cliniflow/domain/biz/*/model/*Model.java
+- Pattern in files: frontend/app/components/*.tsx
+
+---
+id: clinicflowai-naming-functions-camelcase
+trigger: "When defining a function in TypeScript or Java"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Naming Functions Camelcase
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- CodeStyle: functions use camelCase
+- Pattern in TypeScript and Java code
+
+---
+id: clinicflowai-naming-classes-pascalcase
+trigger: "When defining a class in TypeScript or Java"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Naming Classes Pascalcase
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- CodeStyle: classes use PascalCase
+- Pattern in files: *Model.java, *Repository.java
+
+---
+id: clinicflowai-naming-constants-screaming-snake-case
+trigger: "When defining a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Naming Constants Screaming Snake Case
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- CodeStyle: constants use SCREAMING_SNAKE_CASE
+
+---
+id: clinicflowai-import-style-mixed
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Import Style Mixed
+
+## Action
+
+Use mixed import style (both default and named imports as appropriate)
+
+## Evidence
+
+- CodeStyle: importStyle is mixed
+
+---
+id: clinicflowai-export-style-named
+trigger: "When exporting modules or functions"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Export Style Named
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- CodeStyle: exportStyle is named
+
+---
+id: clinicflowai-testing-file-location-mixed
+trigger: "When adding test files"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Testing File Location Mixed
+
+## Action
+
+Place test files alongside source files or in dedicated test folders as appropriate
+
+## Evidence
+
+- Architecture: testLocation is mixed
+- Pattern in files: **/*.test.*
+
+---
+id: clinicflowai-testing-feature-add-tests
+trigger: "When implementing a new feature"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Testing Feature Add Tests
+
+## Action
+
+Add corresponding test files for the new feature
+
+## Evidence
+
+- Workflow: feature-development includes 'Add tests for feature'
+- Pattern in files: **/*.test.*
+
+---
+id: clinicflowai-git-commit-conventional
+trigger: "When writing a commit message"
+confidence: 0.95
+domain: git
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Git Commit Conventional
+
+## Action
+
+Use conventional commit format (e.g., feat: ..., fix: ...)
+
+## Evidence
+
+- Pattern in commits: feat: V3 migration adds bilingual summary columns
+- Pattern in commits: fix(frontend): honour prefers-reduced-motion across all pages
+
+---
+id: clinicflowai-git-commit-prefixes
+trigger: "When choosing a commit type"
+confidence: 0.95
+domain: git
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Git Commit Prefixes
+
+## Action
+
+Use 'feat' for features and 'fix' for bug fixes
+
+## Evidence
+
+- Commits use 'feat' and 'fix' prefixes
+- Pattern in commits: feat: PostVisitSummary JPA entity + repo
+
+---
+id: clinicflowai-git-commit-length
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Git Commit Length
+
+## Action
+
+Keep commit messages concise, around 65 characters on average
+
+## Evidence
+
+- Commits: averageLength is 65
+
+---
+id: clinicflowai-workflow-add-new-jpa-entity-and-repository
+trigger: "When introducing a new domain model/table in the backend"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Workflow Add New Jpa Entity And Repository
+
+## Action
+
+Create a new Model class in backend/src/main/java/my/cliniflow/domain/biz/[context]/model/ and a new Repository interface in backend/src/main/java/my/cliniflow/domain/biz/[context]/repository/
+
+## Evidence
+
+- Workflow: add-new-jpa-entity-and-repository
+- Pattern in files: *Model.java, *Repository.java
+
+---
+id: clinicflowai-workflow-add-or-update-backend-api-endpoint
+trigger: "When exposing new backend functionality via REST API"
+confidence: 0.88
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Workflow Add Or Update Backend Api Endpoint
+
+## Action
+
+Add or update Controller, Request/Response DTOs, and Application Service logic in the backend
+
+## Evidence
+
+- Workflow: add-or-update-backend-api-endpoint
+- Pattern in files: controller, request, response, application folders
+
+---
+id: clinicflowai-workflow-add-frontend-component-and-integrate
+trigger: "When adding a new UI feature or visual element"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Workflow Add Frontend Component And Integrate
+
+## Action
+
+Create a new component in frontend/app/components/ or a feature-specific subfolder, update page files to use it, and update globals.css if needed
+
+## Evidence
+
+- Workflow: add-frontend-component-and-integrate
+- Pattern in files: frontend/app/components/*.tsx
+
+---
+id: clinicflowai-workflow-add-frontend-page-or-section
+trigger: "When introducing a new top-level or nested route in the frontend"
+confidence: 0.92
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Workflow Add Frontend Page Or Section
+
+## Action
+
+Create a new page file in frontend/app/[section]/[subsection]/page.tsx, update navigation/layout, and globals.css as needed
+
+## Evidence
+
+- Workflow: add-frontend-page-or-section
+- Pattern in files: frontend/app/*/page.tsx
+
+---
+id: clinicflowai-workflow-add-or-update-shared-css-theme
+trigger: "When changing global styles, adding tokens, or improving accessibility"
+confidence: 0.93
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Workflow Add Or Update Shared Css Theme
+
+## Action
+
+Edit frontend/app/globals.css and optionally update related components/pages
+
+## Evidence
+
+- Workflow: add-or-update-shared-css-theme
+- Pattern in files: frontend/app/globals.css
+
+---
+id: clinicflowai-workflow-implement-fullstack-feature
+trigger: "When delivering a new end-to-end feature or workflow"
+confidence: 0.87
+domain: workflow
+source: repo-analysis
+source_repo: shaoxian04/ClinicFlowAI
+---
+
+# Clinicflowai Workflow Implement Fullstack Feature
+
+## Action
+
+Update backend model/entity, repository, application service, controller, and corresponding frontend page/component and globals.css
+
+## Evidence
+
+- Workflow: implement-fullstack-feature-with-both-backend-and-frontend
+- Pattern in files: backend and frontend folders
+
