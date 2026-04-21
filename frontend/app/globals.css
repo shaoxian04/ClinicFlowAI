@@ -2526,3 +2526,310 @@ textarea:focus-visible,
   .transcript-review-actions { justify-content: stretch; }
   .transcript-review-actions .btn { flex: 1 1 auto; }
 }
+
+/* === Task 6.3 — PatientContextPanel === */
+
+/* Token aliases referenced by the SAD §2.4.1 spec. `--bad` maps to the
+   existing danger colour; `--pill-radius` is the fully-rounded pill corner. */
+:root {
+  --bad: var(--danger);
+  --pill-radius: 999px;
+}
+
+/* A neutral muted banner — used for the "context unavailable" hint inside the
+   context panel when the backend endpoint is not yet available (HTTP 404). */
+.banner-ghost {
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px dashed var(--line-strong);
+}
+.banner-ghost::before { content: "i"; font-family: var(--font-display); font-style: italic; font-weight: 600; }
+
+/* Widen the visit detail shell so the right rail has room to sit alongside
+   the phase tabs at >=1200px without squashing either column. Below the
+   breakpoint the shell behaves like the default one. */
+.visit-shell {
+  max-width: 1280px;
+}
+
+/* Two-column grid: LEFT = phase tabs / main content, RIGHT = context rail.
+   Single-column below 1200px — the rail collapses and the mobile trigger +
+   drawer take over. */
+.visit-rail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.visit-rail-main {
+  min-width: 0; /* let children shrink below intrinsic width in the grid track */
+}
+
+/* Default state (<1200px): the inline rail is hidden, the mobile trigger
+   button is visible in the normal page flow. */
+.pcx-rail { display: none; }
+.pcx-mobile-trigger {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.pcx-trigger-btn {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--pill-radius);
+}
+
+@media (min-width: 1200px) {
+  .visit-rail-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 32px;
+  }
+  .pcx-rail {
+    display: block;
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+  .pcx-mobile-trigger { display: none; }
+}
+
+/* Panel surface (shared by inline rail and drawer). */
+.pcx-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.pcx-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pcx-panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* Loading skeletons stacked vertically inside the panel. */
+.pcx-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 8px;
+}
+
+/* Accordion blocks. */
+.pcx-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pcx-block {
+  border-top: 1px solid var(--line);
+  padding: 10px 0 6px;
+}
+.pcx-block:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.pcx-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.pcx-block-head::-webkit-details-marker { display: none; }
+.pcx-block-head:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.pcx-block-title {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.pcx-block-count {
+  display: inline-flex;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border-radius: var(--pill-radius);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rotate indicator via summary::after since we hid the native marker. */
+.pcx-block-head::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 2px solid var(--ink-3);
+  border-bottom: 2px solid var(--ink-3);
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+}
+.pcx-block[open] > .pcx-block-head::after {
+  transform: rotate(-135deg);
+}
+/* Put the chevron AFTER the count pill by making count last explicitly. */
+.pcx-block-head { position: relative; }
+.pcx-block-head::after { order: 3; }
+.pcx-block-title { order: 1; flex: 1 1 auto; }
+.pcx-block-count { order: 2; }
+
+.pcx-block-body {
+  padding: 8px 0 6px;
+}
+
+.pcx-empty {
+  margin: 0;
+  padding: 6px 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.pcx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pcx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.pcx-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.pcx-item-meta {
+  flex: 0 0 auto;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcx-item-med .pcx-item-meta,
+.pcx-item-visit .pcx-item-meta {
+  font-family: var(--font-mono);
+}
+
+/* 6px red dot glyph for allergies. */
+.pcx-dot {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bad);
+}
+
+/* Overlay drawer for <1200px. Hidden at and above the breakpoint — the
+   inline rail takes over. */
+.pcx-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.pcx-drawer-root.is-open {
+  pointer-events: auto;
+}
+
+.pcx-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(27, 28, 26, 0.35);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.pcx-drawer-root.is-open .pcx-drawer-backdrop {
+  opacity: 1;
+}
+
+.pcx-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(380px, 92vw);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  padding: 20px 20px 24px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 220ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pcx-drawer-root.is-open .pcx-drawer {
+  transform: translateX(0);
+}
+
+.pcx-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pcx-drawer-head .eyebrow {
+  margin-bottom: 2px;
+}
+
+.pcx-drawer-close {
+  flex: 0 0 auto;
+}
+
+.pcx-drawer-body {
+  flex: 1 1 auto;
+}
+
+@media (min-width: 1200px) {
+  /* Never render the drawer at desktop width even if state leaked. */
+  .pcx-drawer-root { display: none; }
+}

@@ -11,6 +11,7 @@ import {
   ConsultationCaptureHandle,
 } from "@/app/doctor/components/ConsultationCapture";
 import { TranscriptReview } from "@/app/doctor/components/TranscriptReview";
+import { PatientContextPanel } from "@/app/doctor/components/PatientContextPanel";
 
 type Soap = {
   subjective: string;
@@ -143,7 +144,7 @@ export default function VisitDetailPage() {
 
   if (!detail) {
     return (
-      <main className="shell">
+      <main className="shell visit-shell">
         <p className="empty">Loading visit…</p>
       </main>
     );
@@ -304,7 +305,7 @@ export default function VisitDetailPage() {
   );
 
   return (
-    <main className="shell">
+    <main className="shell visit-shell">
       <PageHeader
         eyebrow="Clinician review"
         title={<>Visit with <em>{detail.patientName}</em></>}
@@ -318,20 +319,25 @@ export default function VisitDetailPage() {
         <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
       </div>
 
-      <PhaseTabs
-        consultationNeedsReview={hasAiDraft && !locked}
-        postVisitNeedsReview={locked && activePhase !== "post"}
-        onActiveChange={onPhaseChange}
-        panelFocusable={{ pre: true, post: true }}
-      >
-        {{
-          pre: preVisitPanel,
-          visit: consultationPanel,
-          post: postVisitPanel,
-        }}
-      </PhaseTabs>
-
       {error && <div className="banner banner-error">{error}</div>}
+
+      <div className="visit-rail-grid">
+        <div className="visit-rail-main">
+          <PhaseTabs
+            consultationNeedsReview={hasAiDraft && !locked}
+            postVisitNeedsReview={locked && activePhase !== "post"}
+            onActiveChange={onPhaseChange}
+            panelFocusable={{ pre: true, post: true }}
+          >
+            {{
+              pre: preVisitPanel,
+              visit: consultationPanel,
+              post: postVisitPanel,
+            }}
+          </PhaseTabs>
+        </div>
+        <PatientContextPanel patientId={detail.patientId} />
+      </div>
     </main>
   );
 }
