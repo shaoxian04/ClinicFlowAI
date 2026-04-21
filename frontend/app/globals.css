@@ -7,7 +7,7 @@
   --surface-2: #f1ebdb;
   --ink: #1b1c1a;
   --ink-2: #4a4a45;
-  --ink-3: #8a847b;
+  --ink-3: #726c63; /* darkened from #8a847b for 4.5:1 AA contrast */
   --line: #e2d9c6;
   --line-strong: #c8bda5;
 
