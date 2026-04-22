@@ -65,9 +65,17 @@ public class VisitReadAppService {
         // Convert snake_case jsonb (as agent wrote it) → camelCase DTO for the frontend.
         // @JsonAlias on PreVisitFieldsDto accepts snake_case input; Jackson writes
         // camelCase on serialization. See PreVisitFieldsDto javadoc.
-        PreVisitStructuredDto structured = (rawStructured == null || rawStructured.isEmpty())
-            ? new PreVisitStructuredDto(null, List.of(), false)
-            : mapper.convertValue(rawStructured, PreVisitStructuredDto.class);
+        PreVisitStructuredDto structured;
+        if (rawStructured == null || rawStructured.isEmpty()) {
+            structured = new PreVisitStructuredDto(null, List.of(), false);
+        } else {
+            try {
+                structured = mapper.convertValue(rawStructured, PreVisitStructuredDto.class);
+            } catch (Exception e) {
+                log.warn("[DETAIL] could not convert preVisitStructured visit={} err={}", visitId, e.toString());
+                structured = new PreVisitStructuredDto(null, List.of(), false);
+            }
+        }
         String patientName = patients.findById(v.getPatientId()).map(PatientModel::getFullName).orElse("(unknown)");
 
         String previewApprovedAtStr = r != null && r.getPreviewApprovedAt() != null
