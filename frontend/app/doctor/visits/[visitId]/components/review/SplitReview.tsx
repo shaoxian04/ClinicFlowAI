@@ -93,6 +93,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
         </div>
       )}
       <GenerateBar
+        visitId={visitId}
         onGenerate={handleGenerate}
         generating={state.generating}
         hasReport={state.report != null}
