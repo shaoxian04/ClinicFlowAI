@@ -1,10 +1,14 @@
 package my.cliniflow.infrastructure.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import my.cliniflow.controller.base.UpstreamException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.List;
 import java.util.Map;
@@ -12,6 +16,8 @@ import java.util.UUID;
 
 @Component
 public class AgentServiceClient {
+
+    private static final Logger log = LoggerFactory.getLogger(AgentServiceClient.class);
 
     private final WebClient client;
 
@@ -51,26 +57,51 @@ public class AgentServiceClient {
         boolean done
     ) {}
 
-    public SoapResult callVisitGenerate(UUID visitId, Map<String, Object> preVisit, String transcript) {
-        VisitGenerateRequest req = new VisitGenerateRequest(visitId.toString(), transcript == null ? "" : transcript, preVisit == null ? Map.of() : preVisit);
-        VisitGenerateResponse resp = withCorrelation(client.post().uri("/agents/visit/generate"))
-            .bodyValue(req)
-            .retrieve()
-            .bodyToMono(VisitGenerateResponse.class)
-            .block();
-        if (resp == null || resp.report() == null) {
-            return new SoapResult("", "", "", "");
+    public SoapResult callVisitGenerate(UUID visitId, UUID patientId, UUID doctorId, String transcript) {
+        VisitGenerateSyncRequest req = new VisitGenerateSyncRequest(
+            visitId.toString(),
+            patientId != null ? patientId.toString() : null,
+            doctorId != null ? doctorId.toString() : null,
+            transcript == null ? "" : transcript
+        );
+        log.info("[AGENT] POST /agents/report/generate-sync visitId={} patientId={} doctorId={} transcriptLen={}",
+            visitId, patientId, doctorId, req.transcript() == null ? 0 : req.transcript().length());
+        try {
+            SyncSoapResponse resp = withCorrelation(client.post().uri("/agents/report/generate-sync"))
+                .bodyValue(req)
+                .retrieve()
+                .bodyToMono(SyncSoapResponse.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /agents/report/generate-sync returned null body for visitId={}", visitId);
+                return new SoapResult("", "", "", "");
+            }
+            log.info("[AGENT] /agents/report/generate-sync OK visitId={} sLen={} oLen={} aLen={} pLen={}",
+                visitId,
+                resp.subjective() == null ? 0 : resp.subjective().length(),
+                resp.objective() == null ? 0 : resp.objective().length(),
+                resp.assessment() == null ? 0 : resp.assessment().length(),
+                resp.plan() == null ? 0 : resp.plan().length());
+            return new SoapResult(nz(resp.subjective()), nz(resp.objective()), nz(resp.assessment()), nz(resp.plan()));
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /agents/report/generate-sync HTTP {} visitId={} body={}",
+                e.getRawStatusCode(), visitId, e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /agents/report/generate-sync FAILED visitId={} error={}", visitId, e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
         }
-        SoapReport r = resp.report();
-        return new SoapResult(r.subjective(), r.objective(), r.assessment(), r.plan());
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record VisitGenerateRequest(String visitId, String transcript, Map<String, Object> preVisit) {}
+    public record VisitGenerateSyncRequest(
+        @com.fasterxml.jackson.annotation.JsonProperty("visit_id") String visitId,
+        @com.fasterxml.jackson.annotation.JsonProperty("patient_id") String patientId,
+        @com.fasterxml.jackson.annotation.JsonProperty("doctor_id") String doctorId,
+        String transcript
+    ) {}
 
-    public record VisitGenerateResponse(String visitId, SoapReport report, boolean isAiDraft) {}
-
-    public record SoapReport(String subjective, String objective, String assessment, String plan) {}
+    public record SyncSoapResponse(String subjective, String objective, String assessment, String plan) {}
 
     public record SoapResult(String subjective, String objective, String assessment, String plan) {}
 
