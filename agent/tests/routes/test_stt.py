@@ -3,7 +3,9 @@ import asyncio
 import io
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
+from fastapi import HTTPException
 from starlette.datastructures import Headers, UploadFile
 
 
@@ -52,3 +54,24 @@ def test_transcribe_empty_response_returns_empty_string():
 
     import json
     assert json.loads(result.body)["text"] == ""
+
+
+def test_transcribe_upstream_error_raises_502():
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "upstream error", request=MagicMock(), response=MagicMock(status_code=429)
+    )
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=False)
+    mock_client.post = AsyncMock(return_value=mock_resp)
+
+    with patch("app.routes.stt.httpx.AsyncClient", return_value=mock_client):
+        import importlib
+        import app.routes.stt as _m
+        importlib.reload(_m)
+        from app.routes.stt import transcribe
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(transcribe(_upload(b"audio data")))
+    assert exc_info.value.status_code == 502
