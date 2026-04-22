@@ -1,6 +1,6 @@
 // frontend/app/doctor/visits/[visitId]/components/review/GenerateBar.tsx
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { apiPostMultipart } from "@/lib/api";
 import { PhasedSpinner } from "./PhasedSpinner";
 
@@ -23,41 +23,55 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
   const [audioError, setAudioError] = useState<string | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      mediaRef.current?.stop();
+      mediaRef.current = null;
+    };
+  }, []);
 
   async function handleGenerate() {
     if (!transcript.trim()) return;
-    console.info("[REVIEW] generate click len=", transcript.length);
     await onGenerate(transcript);
     setExpanded(false);
   }
 
   async function startRecording() {
     setAudioError(null);
+    let stream: MediaStream | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
       chunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
+        stream!.getTracks().forEach((t) => t.stop());
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || "audio/webm" });
         const fd = new FormData();
         fd.append("audio", blob, "recording.webm");
+        if (!mountedRef.current) return;
         setTranscribing(true);
         try {
           const resp = await apiPostMultipart<{ transcript: string }>(`/visits/${visitId}/audio`, fd);
-          setTranscript(resp.transcript);
-          setMode("text");
+          if (mountedRef.current) {
+            setTranscript(resp.transcript);
+            setMode("text");
+          }
         } catch (e) {
-          setAudioError((e as Error).message);
+          if (mountedRef.current) setAudioError((e as Error).message);
         } finally {
-          setTranscribing(false);
+          if (mountedRef.current) setTranscribing(false);
         }
       };
       mr.start();
       mediaRef.current = mr;
       setRecording(true);
     } catch {
+      stream?.getTracks().forEach((t) => t.stop());
       setAudioError("Microphone access denied or unavailable.");
     }
   }
@@ -81,7 +95,7 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
   return (
     <section className="generate-bar">
       <div className="generate-bar-header">
-        <label>Consultation transcript</label>
+        <label htmlFor="transcript-ta">Consultation transcript</label>
         <div className="mode-tabs" role="tablist">
           {(["text", "voice", "live"] as const).map((m) => (
             <button
@@ -89,7 +103,11 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
               role="tab"
               type="button"
               className={`mode-tab${mode === m ? " active" : ""}`}
-              onClick={() => { setMode(m); setAudioError(null); }}
+              onClick={() => {
+                if (recording) stopRecording();
+                setMode(m);
+                setAudioError(null);
+              }}
               disabled={generating}
               aria-selected={mode === m}
             >
