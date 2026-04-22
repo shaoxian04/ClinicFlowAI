@@ -11,7 +11,7 @@ from app.graph.driver import close_driver
 from app.graph.schema import apply_schema
 from app.persistence import postgres
 from app.routes import patient_context as patient_context_routes
-from app.routes import pre_visit, report, rules
+from app.routes import pre_visit, report, rules, stt
 
 log = structlog.get_logger(__name__)
 
@@ -134,5 +134,11 @@ app.include_router(
 )
 app.include_router(
     patient_context_routes.router,
+    dependencies=[Depends(require_service_token)],
+)
+app.include_router(
+    stt.router,
+    prefix="/agents/stt",
+    tags=["stt"],
     dependencies=[Depends(require_service_token)],
 )
