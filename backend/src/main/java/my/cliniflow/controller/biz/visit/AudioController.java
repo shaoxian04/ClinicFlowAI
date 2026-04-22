@@ -33,11 +33,14 @@ public class AudioController {
         @RequestParam("audio") MultipartFile audio
     ) {
         log.info("[AUDIO] POST /audio visitId={} size={} contentType={}", visitId, audio.getSize(), audio.getContentType());
+        if (audio.isEmpty()) {
+            throw new IllegalArgumentException("audio file must not be empty");
+        }
         byte[] bytes;
         try {
             bytes = audio.getBytes();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read uploaded audio", e);
+            throw new IllegalArgumentException("Could not read uploaded audio");
         }
         String contentType = audio.getContentType() != null ? audio.getContentType() : "audio/webm";
         String filename = audio.getOriginalFilename() != null ? audio.getOriginalFilename() : "recording.webm";

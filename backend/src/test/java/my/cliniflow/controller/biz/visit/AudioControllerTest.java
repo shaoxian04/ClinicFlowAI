@@ -48,4 +48,15 @@ class AudioControllerTest {
         .andExpect(jsonPath("$.code").value(0))
         .andExpect(jsonPath("$.data.transcript").value("chest pain noted"));
     }
+
+    @Test
+    void audio_without_auth_returns_401() throws Exception {
+        MockMultipartFile audioFile = new MockMultipartFile(
+            "audio", "recording.webm", "audio/webm", "bytes".getBytes()
+        );
+        mvc.perform(
+            multipart("/api/visits/{id}/audio", UUID.randomUUID()).file(audioFile)
+        )
+        .andExpect(status().isUnauthorized());
+    }
 }
