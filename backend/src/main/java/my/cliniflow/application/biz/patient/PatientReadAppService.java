@@ -7,9 +7,11 @@ import my.cliniflow.domain.biz.patient.repository.PatientRepository;
 import my.cliniflow.domain.biz.user.model.UserModel;
 import my.cliniflow.domain.biz.user.repository.UserRepository;
 import my.cliniflow.domain.biz.visit.enums.VisitStatus;
+import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.MedicationModel;
 import my.cliniflow.domain.biz.visit.model.PostVisitSummaryModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
+import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicationRepository;
 import my.cliniflow.domain.biz.visit.repository.PostVisitSummaryRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
@@ -28,6 +30,7 @@ public class PatientReadAppService {
     private final PatientRepository patients;
     private final VisitRepository visits;
     private final PostVisitSummaryRepository summaries;
+    private final MedicalReportRepository medicalReports;
     private final MedicationRepository meds;
     private final UserRepository users;
 
@@ -35,12 +38,14 @@ public class PatientReadAppService {
         PatientRepository patients,
         VisitRepository visits,
         PostVisitSummaryRepository summaries,
+        MedicalReportRepository medicalReports,
         MedicationRepository meds,
         UserRepository users
     ) {
         this.patients = patients;
         this.visits = visits;
         this.summaries = summaries;
+        this.medicalReports = medicalReports;
         this.meds = meds;
         this.users = users;
     }
@@ -50,9 +55,16 @@ public class PatientReadAppService {
         if (p == null) return List.of();
         return visits.findByPatientIdAndStatusOrderByFinalizedAtDesc(p.getId(), VisitStatus.FINALIZED).stream()
             .map(v -> {
-                PostVisitSummaryModel s = summaries.findByVisitId(v.getId()).orElse(null);
+                // Prefer medical_reports.summary_en (new path, written by post-visit
+                // review refactor) and fall back to legacy post_visit_summaries for
+                // visits finalized before the refactor.
+                String summaryEn = medicalReports.findByVisitId(v.getId())
+                    .map(MedicalReportModel::getSummaryEn)
+                    .filter(s -> s != null && !s.isBlank())
+                    .orElseGet(() -> summaries.findByVisitId(v.getId())
+                        .map(PostVisitSummaryModel::getSummaryEn).orElse(""));
                 int medCount = meds.findByVisitIdOrderByGmtCreateAsc(v.getId()).size();
-                String preview = s == null ? "" : truncate(s.getSummaryEn(), PREVIEW_LEN);
+                String preview = truncate(summaryEn, PREVIEW_LEN);
                 String doctorName = null;
                 if (v.getDoctorId() != null) {
                     UserModel doctor = users.findById(v.getDoctorId()).orElse(null);
@@ -77,6 +89,7 @@ public class PatientReadAppService {
             throw new IllegalStateException("visit is not finalized yet");
         }
         PostVisitSummaryModel s = summaries.findByVisitId(visitId).orElse(null);
+        MedicalReportModel mr = medicalReports.findByVisitId(visitId).orElse(null);
         List<MedicationModel> ms = meds.findByVisitIdOrderByGmtCreateAsc(visitId);
         List<PatientVisitDetailResponse.Medication> medDtos = ms.stream()
             // TODO(post-visit-portal): wire duration/instructions from MedicationModel now that
@@ -108,11 +121,20 @@ public class PatientReadAppService {
             }
         }
 
+        // Prefer medical_reports summaries (new path); fall back to legacy
+        // post_visit_summaries for pre-refactor visits.
+        String summaryEn = (mr != null && mr.getSummaryEn() != null && !mr.getSummaryEn().isBlank())
+            ? mr.getSummaryEn()
+            : (s == null ? "" : s.getSummaryEn());
+        String summaryMs = (mr != null && mr.getSummaryMs() != null && !mr.getSummaryMs().isBlank())
+            ? mr.getSummaryMs()
+            : (s == null ? "" : s.getSummaryMs());
+
         return new PatientVisitDetailResponse(
             v.getId(),
             v.getFinalizedAt(),
-            s == null ? "" : s.getSummaryEn(),
-            s == null ? "" : s.getSummaryMs(),
+            summaryEn,
+            summaryMs,
             medDtos,
             List.of(),
             null,

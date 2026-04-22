@@ -1,0 +1,453 @@
+/* review.css — scoped styles for the doctor consultation review UI.
+   Imported by SplitReview.tsx. Color tokens match globals.css palette:
+     cream bg: #fefbf3 / #fdfaf3
+     dark green: #2f4e3a  hover: #3a6048
+     border tan: #d7d1c0  inner: #c9c3b3
+     ink: #3a3326 / #595242 / #8a8474
+*/
+
+/* ============================================================
+   Full-width tabpanel wrapper (sits outside visit-rail-grid-tri)
+   ============================================================ */
+.review-tabpanel {
+  width: 100%;
+}
+
+/* ============================================================
+   SplitReview root + two-pane grid
+   ============================================================ */
+.split-review {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.split-review-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .split-review-panes {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Error banner
+   ============================================================ */
+.banner.error {
+  background: #f8dada;
+  border: 1px solid #e29a9a;
+  color: #6a1f1f;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.banner.error button {
+  background: transparent;
+  border: 1px solid #6a1f1f;
+  color: #6a1f1f;
+  border-radius: 6px;
+  padding: 0.25rem 0.7rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ============================================================
+   Shared: .btn-primary + .badge
+   ============================================================ */
+.btn-primary {
+  background: #2f4e3a;
+  color: #fefbf3;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1.1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #3a6048;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(217, 227, 208, 0.7);
+  color: #395040;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* ============================================================
+   GenerateBar
+   ============================================================ */
+.generate-bar {
+  background: #fdfaf3;
+  border: 1px solid #d7d1c0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.generate-bar label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.generate-bar textarea {
+  border: 1px solid #c9c3b3;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font: inherit;
+  min-height: 140px;
+  resize: vertical;
+  background: #fff;
+}
+
+.generate-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.generate-bar.collapsed {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.generate-bar.collapsed span {
+  font-size: 0.9rem;
+  color: #595242;
+}
+
+.generate-bar.collapsed button {
+  font-size: 0.85rem;
+}
+
+/* ============================================================
+   ReportPanel
+   ============================================================ */
+.report-panel {
+  background: #fff;
+  border: 1px solid #d7d1c0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.report-panel.empty {
+  justify-content: center;
+  align-items: center;
+  color: #8a8474;
+  text-align: center;
+}
+
+.report-panel .card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e0d0;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.report-panel .card-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.report-panel fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.report-panel fieldset:disabled {
+  opacity: 0.7;
+}
+
+.report-panel label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #595242;
+  letter-spacing: 0.02em;
+  margin-top: 0.4rem;
+}
+
+.report-panel textarea,
+.report-panel input[type="text"] {
+  border: 1px solid #c9c3b3;
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  background: #fdfaf3;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.report-panel textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.report-panel input.saving,
+.report-panel textarea.saving {
+  background: #f3ead4;
+  border-color: #c7b77a;
+}
+
+.report-panel h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3a3326;
+  margin: 0.75rem 0 0.25rem;
+  letter-spacing: 0.03em;
+}
+
+/* ============================================================
+   Medication row (4-column input grid)
+   ============================================================ */
+.med-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.8fr 0.8fr;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.med-row input {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .med-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ============================================================
+   ReportChatPanel
+   ============================================================ */
+.chat-panel {
+  background: #fdfaf3;
+  border: 1px solid #d7d1c0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+  max-height: 650px;
+}
+
+.chat-panel .card-head {
+  border-bottom: 1px solid #e5e0d0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.chat-panel .card-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.chat-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-thread li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  max-width: 88%;
+}
+
+.chat-thread li[data-role="user"] {
+  align-self: flex-end;
+  background: #d9e3d0;
+  color: #2a3a2c;
+}
+
+.chat-thread li[data-role="assistant"] {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid #e5e0d0;
+}
+
+.chat-role {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8474;
+  font-weight: 600;
+}
+
+.chat-content {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.chat-content.muted {
+  color: #8a8474;
+  font-style: italic;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e0d0;
+}
+
+.chat-input textarea {
+  flex: 1;
+  border: 1px solid #c9c3b3;
+  border-radius: 6px;
+  padding: 0.5rem;
+  font: inherit;
+  min-height: 38px;
+  max-height: 120px;
+  resize: vertical;
+  background: #fff;
+}
+
+.chat-input button {
+  background: #2f4e3a;
+  color: #fefbf3;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #8a8474;
+}
+
+/* ============================================================
+   ReportPreview (visit-local bilingual summary panel)
+   ============================================================ */
+.report-preview {
+  background: #fdfaf3;
+  border: 1px solid #d7d1c0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.report-preview-head { display: flex; justify-content: space-between; align-items: center; }
+.report-preview-head h2 { margin: 0; font-size: 1.05rem; font-weight: 600; }
+.lang-toggle { display: inline-flex; background: #eae4d1; border-radius: 999px; padding: 3px; gap: 2px; }
+.lang-toggle button {
+  border: none; background: transparent; color: #595242;
+  padding: 0.3rem 0.9rem; border-radius: 999px;
+  font: inherit; font-size: 0.85rem; cursor: pointer;
+}
+.lang-toggle button.active { background: #2f4e3a; color: #fefbf3; font-weight: 600; }
+.summary-card {
+  background: #fff;
+  border: 1px solid #e5e0d0;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  border-left: 3px solid #2f4e3a;
+}
+.summary-card blockquote {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #2a3326;
+  white-space: pre-wrap;
+}
+.preview-empty { padding: 2rem 1rem; text-align: center; }
+.published-seal {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: rgba(217,227,208,0.6);
+  color: #2a3e2c;
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  width: fit-content;
+}
+.seal-dot { width: 10px; height: 10px; border-radius: 50%; background: #2f4e3a; }
+.publish-bar { display: flex; align-items: center; gap: 1rem; padding-top: 0.5rem; border-top: 1px solid #e5e0d0; }
+.publish-error { color: #6a1f1f; font-size: 0.85rem; }
+.muted { color: #8a8474; }
+
+/* ============================================================
+   Visit state chip (single chip in visit header)
+   ============================================================ */
+.visit-chip { background: rgba(217,227,208,0.5); color: #2a3e2c; border-radius: 999px; padding: 0.2rem 0.8rem; font-size: 0.8rem; }
+.visit-chip.chip-review { background: rgba(230,210,160,0.5); color: #5a4a1f; }
+.visit-chip.chip-published { background: rgba(202,220,190,0.7); color: #2a3e2c; font-weight: 600; }
+
+/* ============================================================
+   PhasedSpinner
+   ============================================================ */
+.phased-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #595242;
+}
+
+.spinner-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #2f4e3a;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

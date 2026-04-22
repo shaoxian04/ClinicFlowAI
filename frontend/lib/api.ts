@@ -78,6 +78,25 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
     return envelope.data;
 }
 
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const envelope: WebResult<T> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+    if (envelope.data == null) throw new Error("empty response data");
+    return envelope.data;
+}
+
 /**
  * POST multipart/form-data. The browser sets Content-Type (including the
  * multipart boundary) automatically when the body is a FormData — so we
