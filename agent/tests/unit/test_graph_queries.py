@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.graph.queries.patient_context import PatientContext, get_patient_context
 from app.graph.queries.visit_history import VisitHistoryEntry, get_visit_history
+from app.graph.queries.drug_interaction import DrugInteraction, check_drug_interactions
+from app.graph.queries.inferred_edge import record_inferred_edge
 
 
 @pytest.mark.asyncio
@@ -82,3 +84,54 @@ async def test_get_visit_history_returns_ordered_entries():
     assert [e.visit_id for e in entries] == ["v2", "v1"]
     assert entries[0].chief_complaint == "Fever"
     assert entries[1].primary_diagnosis == "Acute bronchitis"
+
+
+@pytest.mark.asyncio
+async def test_check_drug_interactions_returns_contraindications():
+    pid = uuid.uuid4()
+    session = AsyncMock()
+    result = AsyncMock()
+    rows = [
+        {"drug": "Penicillin V", "conflicts_with": "Penicillin allergy", "severity": "HIGH"},
+    ]
+
+    async def aiter():
+        for r in rows:
+            yield r
+
+    result.__aiter__ = lambda self: aiter()
+    session.run = AsyncMock(return_value=result)
+    driver = MagicMock()
+    driver.session = MagicMock(return_value=session)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("app.graph.queries.drug_interaction.get_driver", return_value=driver):
+        conflicts = await check_drug_interactions(pid, ["Penicillin V"])
+
+    assert conflicts == [DrugInteraction(drug="Penicillin V", conflicts_with="Penicillin allergy", severity="HIGH")]
+
+
+@pytest.mark.asyncio
+async def test_record_inferred_edge_invokes_merge():
+    vid = uuid.uuid4()
+    session = AsyncMock()
+    session.run = AsyncMock(return_value=AsyncMock())
+    driver = MagicMock()
+    driver.session = MagicMock(return_value=session)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("app.graph.queries.inferred_edge.get_driver", return_value=driver):
+        await record_inferred_edge(
+            visit_id=vid,
+            from_label="Visit", from_id=str(vid),
+            rel_type="SUGGESTED_DIAGNOSIS",
+            to_label="Diagnosis", to_id="ICD10:J06.9",
+            confidence=0.82,
+        )
+
+    session.run.assert_awaited_once()
+    args = session.run.await_args
+    assert "MERGE" in args.args[0]
+    assert args.kwargs["confidence"] == 0.82
