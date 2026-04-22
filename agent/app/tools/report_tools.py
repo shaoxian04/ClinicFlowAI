@@ -58,3 +58,54 @@ TOOL_ASK_DOCTOR_CLARIFICATION = ToolSpec(
     handler=_h_ask_doctor_clarification,
     permission="write",
 )
+
+
+from app.llm.openai_client import OpenAIClient as _OpenAIClient  # noqa: E402
+
+
+class GeneratePatientSummaryInput(BaseModel):
+    report: MedicalReport
+    language: str = "en"
+
+
+class GeneratePatientSummaryOutput(BaseModel):
+    summary_en: str = ""
+    summary_ms: str = ""
+
+
+_SUMMARY_SYSTEM = """You write a patient-friendly visit summary at Primary-6 \
+reading level, in both English and Malay. Output ONLY a single JSON object with \
+keys summary_en and summary_ms. No markdown, no commentary."""
+
+
+async def _h_generate_patient_summary(inp: GeneratePatientSummaryInput) -> GeneratePatientSummaryOutput:
+    if any(flag == "inferred" for flag in inp.report.confidence_flags.values()):
+        raise ValueError("generate_patient_summary rejects reports with inferred fields — finalize first")
+
+    user = f"Report JSON:\n{json.dumps(inp.report.model_dump(), ensure_ascii=False)}"
+    client = _OpenAIClient()
+    resp = await client.chat(
+        messages=[
+            {"role": "system", "content": _SUMMARY_SYSTEM},
+            {"role": "user", "content": user},
+        ],
+        tools=[],
+    )
+    try:
+        data = json.loads(resp.text)
+    except json.JSONDecodeError:
+        data = {}
+    return GeneratePatientSummaryOutput(
+        summary_en=str(data.get("summary_en", "")),
+        summary_ms=str(data.get("summary_ms", "")),
+    )
+
+
+TOOL_GENERATE_PATIENT_SUMMARY = ToolSpec(
+    name="generate_patient_summary",
+    description="Produce bilingual patient-facing summary from confirmed SOAP report.",
+    input_schema=GeneratePatientSummaryInput,
+    output_schema=GeneratePatientSummaryOutput,
+    handler=_h_generate_patient_summary,
+    permission="read",
+)
