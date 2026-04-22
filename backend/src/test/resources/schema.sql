@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS visits (
     status        VARCHAR(32)  NOT NULL DEFAULT 'SCHEDULED',
     started_at    TIMESTAMP WITH TIME ZONE,
     finalized_at  TIMESTAMP WITH TIME ZONE,
+    report_draft  CLOB,
     gmt_create    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     gmt_modified  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -46,18 +47,21 @@ CREATE TABLE IF NOT EXISTS pre_visit_reports (
 );
 
 CREATE TABLE IF NOT EXISTS medical_reports (
-    id            UUID         NOT NULL PRIMARY KEY,
-    visit_id      UUID         NOT NULL UNIQUE REFERENCES visits(id),
-    subjective    CLOB         NOT NULL DEFAULT '',
-    objective     CLOB         NOT NULL DEFAULT '',
-    assessment    CLOB         NOT NULL DEFAULT '',
-    plan          CLOB         NOT NULL DEFAULT '',
-    ai_draft_hash VARCHAR(64),
-    is_finalized  BOOLEAN      NOT NULL DEFAULT FALSE,
-    finalized_by  UUID         REFERENCES users(id),
-    finalized_at  TIMESTAMP WITH TIME ZONE,
-    gmt_create    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    gmt_modified  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    id                  UUID         NOT NULL PRIMARY KEY,
+    visit_id            UUID         NOT NULL UNIQUE REFERENCES visits(id),
+    subjective          CLOB         NOT NULL DEFAULT '',
+    objective           CLOB         NOT NULL DEFAULT '',
+    assessment          CLOB         NOT NULL DEFAULT '',
+    plan                CLOB         NOT NULL DEFAULT '',
+    ai_draft_hash       VARCHAR(64),
+    is_finalized        BOOLEAN      NOT NULL DEFAULT FALSE,
+    finalized_by        UUID         REFERENCES users(id),
+    finalized_at        TIMESTAMP WITH TIME ZONE,
+    preview_approved_at TIMESTAMP WITH TIME ZONE,
+    summary_en          CLOB,
+    summary_ms          CLOB,
+    gmt_create          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS post_visit_summaries (
