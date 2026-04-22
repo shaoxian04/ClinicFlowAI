@@ -59,4 +59,16 @@ class AudioControllerTest {
         )
         .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @WithMockUser(roles = "PATIENT")
+    void audio_returns_403_for_patient_role() throws Exception {
+        MockMultipartFile audioFile = new MockMultipartFile(
+            "audio", "recording.webm", "audio/webm", "bytes".getBytes()
+        );
+        mvc.perform(
+            multipart("/api/visits/{id}/audio", UUID.randomUUID()).file(audioFile)
+        )
+        .andExpect(status().isForbidden());
+    }
 }

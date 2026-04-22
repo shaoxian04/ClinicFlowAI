@@ -75,3 +75,35 @@ def test_transcribe_upstream_error_raises_502():
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(transcribe(_upload(b"audio data")))
     assert exc_info.value.status_code == 502
+
+
+def test_transcribe_timeout_returns_504():
+    mock_client = AsyncMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=False)
+    mock_client.post = AsyncMock(side_effect=httpx.TimeoutException("timeout"))
+
+    with patch("app.routes.stt.httpx.AsyncClient", return_value=mock_client):
+        import importlib
+        import app.routes.stt as _m
+        importlib.reload(_m)
+        from app.routes.stt import transcribe
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(transcribe(_upload(b"audio data")))
+    assert exc_info.value.status_code == 504
+
+
+def test_transcribe_network_error_returns_502():
+    mock_client = AsyncMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=False)
+    mock_client.post = AsyncMock(side_effect=httpx.ConnectError("connection refused"))
+
+    with patch("app.routes.stt.httpx.AsyncClient", return_value=mock_client):
+        import importlib
+        import app.routes.stt as _m
+        importlib.reload(_m)
+        from app.routes.stt import transcribe
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(transcribe(_upload(b"audio data")))
+    assert exc_info.value.status_code == 502

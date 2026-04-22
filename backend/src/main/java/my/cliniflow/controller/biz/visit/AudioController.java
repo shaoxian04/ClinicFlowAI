@@ -5,6 +5,7 @@ import my.cliniflow.controller.biz.visit.response.AudioTranscriptResponse;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +29,7 @@ public class AudioController {
     }
 
     @PostMapping("/audio")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'STAFF')")
     public WebResult<AudioTranscriptResponse> transcribeAudio(
         @PathVariable UUID visitId,
         @RequestParam("audio") MultipartFile audio
