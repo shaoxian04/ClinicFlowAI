@@ -167,23 +167,34 @@ export default function VisitDetailPage() {
 
       {error && <div className="banner banner-error">{error}</div>}
 
-      <div className="visit-rail-grid visit-rail-grid-tri">
-        <div className="visit-rail-main">
-          <PhaseTabs
-            consultationNeedsReview={false}
-            reportPreviewNeedsReview={locked && activePhase !== "preview"}
-            onActiveChange={onPhaseChange}
-            panelFocusable={{ pre: true, preview: true }}
-          >
-            {{
-              pre: preVisitPanel,
-              visit: consultationPanel,
-              preview: reportPreviewPanel,
-            }}
-          </PhaseTabs>
-        </div>
-        <PatientContextPanel patientId={detail.patientId} />
-      </div>
+      {/* Tab list — always rendered; panels below are context-dependent */}
+      <PhaseTabs
+        consultationNeedsReview={false}
+        reportPreviewNeedsReview={locked && activePhase !== "preview"}
+        onActiveChange={onPhaseChange}
+        panelFocusable={{ pre: true, preview: true }}
+      >
+        {{
+          pre: (
+            /* Pre-Visit: two-column layout with patient context sidebar */
+            <div className="visit-rail-grid visit-rail-grid-tri">
+              {/* Empty slot to hold the ProgressRail column position */}
+              <div aria-hidden="true" />
+              <div className="visit-rail-main">{preVisitPanel}</div>
+              <PatientContextPanel patientId={detail.patientId} />
+            </div>
+          ),
+          visit: (
+            /* Consultation: full-width review layout, no rail grid */
+            <div className="review-tabpanel">{consultationPanel}</div>
+          ),
+          preview: (
+            /* Report Preview: full-width layout */
+            <div className="review-tabpanel">{reportPreviewPanel}</div>
+          ),
+        }}
+      </PhaseTabs>
+
     </main>
   );
 }

@@ -7,6 +7,7 @@ import type { ChatTurn, ReportReviewResult, MedicalReport } from "@/lib/types/re
 import { GenerateBar } from "./GenerateBar";
 import { ReportPanel } from "./ReportPanel";
 import { ReportChatPanel } from "./ReportChatPanel";
+import "./review.css";
 
 export interface SplitReviewProps {
   visitId: string;
