@@ -16,7 +16,16 @@ class ReportAgent(BaseAgent):
         self._rules_json = rules_json
 
     def system_prompt(self, ctx: AgentContext, rules=None) -> str:
-        return build_report_system_prompt(self._rules_json)
+        base = build_report_system_prompt(self._rules_json)
+        current_draft = getattr(ctx, "current_draft", None)
+        if current_draft:
+            import json as _json
+            draft_json = _json.dumps(current_draft, ensure_ascii=False, indent=2)
+            return base + (
+                "\n\nCURRENT DRAFT STATE (authoritative — may include doctor's "
+                "direct form edits since last chat turn):\n" + draft_json
+            )
+        return base
 
     def build_user_message(self, ctx: AgentContext, user_input: str) -> str:
         return f"Visit {ctx.visit_id} — transcript / edit input:\n\n{user_input}"

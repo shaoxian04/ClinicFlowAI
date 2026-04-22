@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import AsyncIterator
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from starlette.responses import JSONResponse, StreamingResponse
+
+log = logging.getLogger(__name__)
 
 from app.agents.base import AgentContext, ClarificationRequested
 from app.agents.report_agent import ReportAgent
@@ -146,6 +149,7 @@ class EditRequest(BaseModel):
     patient_id: UUID
     doctor_id: UUID
     edit: str
+    current_draft: dict | None = None
 
 
 async def _run_stream(agent: ReportAgent, ctx: AgentContext, user_input: str) -> AsyncIterator[bytes]:
@@ -195,7 +199,13 @@ async def edit(req: EditRequest) -> StreamingResponse:
         llm=llm, registry=registry, turns=AgentTurnRepository(),
     )
     ctx = AgentContext(visit_id=req.visit_id, patient_id=req.patient_id, doctor_id=req.doctor_id)
-    return StreamingResponse(_run_stream(agent, ctx, f"Doctor edit request:\n{req.edit}"), media_type="text/event-stream")
+    # D1a bootstrap — prepend current_draft as system-context so LLM sees any
+    # silent form-row edits the backend wrote directly to visits.report_draft.
+    setattr(ctx, "current_draft", req.current_draft)
+    user_input = f"Doctor edit request:\n{req.edit}"
+    log.info("[AGENT] /agents/report/edit visit=%s has_current_draft=%s edit_len=%d",
+             req.visit_id, req.current_draft is not None, len(req.edit))
+    return StreamingResponse(_run_stream(agent, ctx, user_input), media_type="text/event-stream")
 
 
 class FinalizeRequest(BaseModel):
