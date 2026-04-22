@@ -1,5 +1,8 @@
 package my.cliniflow.application.biz.patient;
 
+import my.cliniflow.controller.base.BusinessException;
+import my.cliniflow.controller.base.ResultCode;
+import my.cliniflow.controller.base.UpstreamException;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.domain.biz.patient.repository.PatientRepository;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
@@ -34,14 +37,21 @@ public class PatientSeedDemoAppService {
 
     public int seedAll() {
         if (!enabled) {
-            throw new IllegalStateException("demo seeding disabled");
+            throw new BusinessException(ResultCode.FORBIDDEN, "demo seeding disabled in this environment");
         }
-        var all = patients.findAll().stream()
-            .map(this::toSeedPatient)
-            .toList();
+        var page = patients.findAll(org.springframework.data.domain.PageRequest.of(0, 2_000));
+        if (page.getTotalElements() > 2_000) {
+            log.warn("[SEED] patient table has {} rows; only seeding first 2000", page.getTotalElements());
+        }
+        var all = page.stream().map(this::toSeedPatient).toList();
         log.info("[SEED] sending {} patients to agent", all.size());
-        var resp = agent.seedDemoBulk(new SeedDemoBulkRequest(all));
-        return resp.seeded();
+        try {
+            var resp = agent.seedDemoBulk(new SeedDemoBulkRequest(all));
+            return resp.seeded();
+        } catch (UpstreamException e) {
+            log.error("[SEED] agent bulk seed failed: {}", e.getMessage());
+            throw e;
+        }
     }
 
     private SeedDemoPatient toSeedPatient(PatientModel p) {
