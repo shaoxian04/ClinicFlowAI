@@ -55,3 +55,25 @@ async def test_extract_slots_handles_json_fence_wrapping():
     agent = PreVisitIntakeAgent(llm=llm, registry=ToolRegistry([]), turns=AgentTurnRepository())
     slots = await agent.extract_slots([{"role": "user", "content": "hi"}])
     assert slots.chief_complaint == "fever"
+
+
+@pytest.mark.asyncio
+async def test_extract_slots_returns_empty_on_validation_error():
+    """LLM emits a structurally valid JSON that violates PreVisitSlots constraints
+    (e.g. pain_severity out of 0-10). extract_slots must swallow the
+    pydantic.ValidationError and return empty slots, not raise."""
+    llm = FakeLLM(json.dumps({"pain_severity": 15}))  # violates ge=0, le=10
+    agent = PreVisitIntakeAgent(llm=llm, registry=ToolRegistry([]), turns=AgentTurnRepository())
+    slots = await agent.extract_slots([{"role": "user", "content": "hi"}])
+    assert slots.pain_severity is None
+    assert slots.chief_complaint is None
+
+
+@pytest.mark.asyncio
+async def test_extract_slots_handles_non_json_language_fence():
+    """Some LLMs emit ```python or ```text fences despite the instructions.
+    The regex must strip any language tag, not just 'json'."""
+    llm = FakeLLM("```python\n" + json.dumps({"chief_complaint": "flu"}) + "\n```")
+    agent = PreVisitIntakeAgent(llm=llm, registry=ToolRegistry([]), turns=AgentTurnRepository())
+    slots = await agent.extract_slots([{"role": "user", "content": "hi"}])
+    assert slots.chief_complaint == "flu"

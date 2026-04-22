@@ -9,7 +9,7 @@ from app.prompts.pre_visit import SLOT_EXTRACTION_PROMPT, build_pre_visit_system
 from app.schemas.pre_visit import PreVisitSlots
 
 _log = logging.getLogger(__name__)
-_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
+_FENCE_RE = re.compile(r"^```.*$", re.MULTILINE)
 
 
 class PreVisitIntakeAgent(BaseAgent):
