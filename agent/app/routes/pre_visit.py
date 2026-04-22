@@ -73,6 +73,7 @@ async def turn_sync(req: TurnSyncRequest) -> JSONResponse:
     ctx = AgentContext(visit_id=req.visit_id, patient_id=req.patient_id, doctor_id=None)
 
     parts: list[str] = []
+    history_messages: list[dict] = []
     try:
         async for ev in agent.step(ctx, user_input=req.user_input):
             if ev.event == "message.delta":
@@ -81,7 +82,7 @@ async def turn_sync(req: TurnSyncRequest) -> JSONResponse:
                     parts.append(text)
     except ClarificationRequested:
         log.info("pre_visit.turn_sync clarification requested visit_id=%s", req.visit_id)
-    except Exception as exc:  # noqa: BLE001 — surface to caller as 5xx so backend logs body
+    except Exception as exc:  # noqa: BLE001
         log.exception("pre_visit.turn_sync failed visit_id=%s", req.visit_id)
         return JSONResponse(
             status_code=500,
@@ -92,10 +93,26 @@ async def turn_sync(req: TurnSyncRequest) -> JSONResponse:
     lowered = assistant_message.lower()
     done = any(s in lowered for s in _DONE_SENTINELS)
 
+    # Rebuild the conversation history for extraction: agent_turns rows + the
+    # just-processed user input + the assistant reply we're about to return.
+    try:
+        turns = await AgentTurnRepository().load(req.visit_id, "pre_visit")
+        history_messages = [{"role": t.role, "content": t.content} for t in turns
+                            if t.role in ("user", "assistant")]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("pre_visit.turn_sync history load failed: %s", exc)
+        history_messages = []
+    if req.user_input:
+        history_messages.append({"role": "user", "content": req.user_input})
+    if assistant_message:
+        history_messages.append({"role": "assistant", "content": assistant_message})
+
+    slots = await agent.extract_slots(history_messages)
+
     return JSONResponse(
         TurnSyncResponse(
             assistant_message=assistant_message,
-            fields={},
+            fields=slots.model_dump(),
             done=done,
         ).model_dump()
     )

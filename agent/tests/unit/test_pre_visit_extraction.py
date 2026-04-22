@@ -88,3 +88,44 @@ async def test_extract_slots_handles_inline_single_line_fence():
     agent = PreVisitIntakeAgent(llm=llm, registry=ToolRegistry([]), turns=AgentTurnRepository())
     slots = await agent.extract_slots([{"role": "user", "content": "hi"}])
     assert slots.chief_complaint == "fever"
+
+
+import uuid
+from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+
+def test_turn_sync_returns_extracted_fields(monkeypatch):
+    """turn_sync must call extract_slots and return non-empty fields."""
+    vid = uuid.uuid4()
+    pid = uuid.uuid4()
+
+    async def fake_step(self, ctx, user_input):
+        from app.llm.streaming import message_delta
+        yield message_delta("OK.")
+
+    async def fake_extract(self, history):
+        return PreVisitSlots(chief_complaint="fever", symptom_duration="2 days")
+
+    monkeypatch.setattr("app.agents.pre_visit_agent.PreVisitIntakeAgent.step", fake_step)
+    monkeypatch.setattr("app.agents.pre_visit_agent.PreVisitIntakeAgent.extract_slots", fake_extract)
+
+    # Prevent real Postgres writes from the agent-turns persistence layer.
+    async def fake_append(self, rec): return 0
+    async def fake_load(self, vid, agent_type): return []
+    monkeypatch.setattr("app.persistence.agent_turns.AgentTurnRepository.append", fake_append)
+    monkeypatch.setattr("app.persistence.agent_turns.AgentTurnRepository.load", fake_load)
+
+    client = TestClient(app)
+    r = client.post(
+        "/agents/pre-visit/turn-sync",
+        json={"visit_id": str(vid), "patient_id": str(pid), "user_input": "I have fever."},
+        headers={"X-Service-Token": "change-me"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["fields"]["chief_complaint"] == "fever"
+    assert body["fields"]["symptom_duration"] == "2 days"
