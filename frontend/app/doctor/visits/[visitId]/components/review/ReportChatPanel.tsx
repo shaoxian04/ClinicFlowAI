@@ -11,6 +11,18 @@ export interface ReportChatPanelProps {
   locked: boolean;
 }
 
+function prettify(turn: ChatTurn): ChatTurn {
+  if (turn.role !== "user") return turn;
+  // Strip the agent-internal prefix that ReportAgent.build_user_message prepends.
+  // Shape: "Visit {uuid} — transcript / edit input:\n\n<actual content>"
+  const m = turn.content.match(/^Visit [0-9a-f-]+ — transcript \/ edit input:\n\n([\s\S]*)$/);
+  if (m) return { ...turn, content: m[1] };
+  // Edit flow: "Doctor edit request:\n<actual>" (from /edit route handler)
+  const m2 = turn.content.match(/^Doctor edit request:\n([\s\S]*)$/);
+  if (m2) return { ...turn, content: m2[1] };
+  return turn;
+}
+
 export function ReportChatPanel({ turns, clarification, editing, onSubmit, locked }: ReportChatPanelProps) {
   const [draft, setDraft] = useState("");
 
@@ -18,7 +30,6 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
     if (!draft.trim() || editing || locked) return;
     const text = draft;
     setDraft("");
-    console.info("[REVIEW] chat submit len=", text.length, "clarification=", clarification?.field ?? null);
     await onSubmit(text);
   }
 
@@ -33,11 +44,15 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
     ? `Answer: ${clarification.prompt}`
     : "Ask the agent to edit something…";
 
+  const visibleTurns = turns
+    .filter(t => t.content && t.content.trim().length > 0)
+    .map(prettify);
+
   return (
     <section className="chat-panel">
       <div className="card-head"><h2>Assistant</h2></div>
       <ol className="chat-thread">
-        {turns.map((t) => (
+        {visibleTurns.map((t) => (
           <li key={t.turnIndex} data-role={t.role}>
             <div className="chat-role">{t.role === "user" ? "You" : "Assistant"}</div>
             <div className="chat-content">{t.content}</div>
