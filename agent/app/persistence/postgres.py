@@ -10,7 +10,12 @@ _pool: asyncpg.Pool | None = None
 async def open_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
-        _pool = await asyncpg.create_pool(settings.postgres_dsn, min_size=1, max_size=10)
+        _pool = await asyncpg.create_pool(
+            settings.postgres_dsn,
+            min_size=1,
+            max_size=10,
+            statement_cache_size=0,
+        )
     return _pool
 
 

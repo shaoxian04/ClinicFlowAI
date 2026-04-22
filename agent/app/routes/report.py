@@ -23,6 +23,108 @@ from app.tools.report_tools import (
 
 router = APIRouter()
 
+_DUMMY_UUID = UUID("00000000-0000-0000-0000-000000000001")
+
+
+class GenerateSyncRequest(BaseModel):
+    visit_id: UUID
+    patient_id: UUID | None = None
+    doctor_id: UUID | None = None
+    specialty: str | None = None
+    transcript: str
+
+
+class GenerateSyncResponse(BaseModel):
+    subjective: str
+    objective: str
+    assessment: str
+    plan: str
+
+
+def _report_to_flat(r: MedicalReport) -> GenerateSyncResponse:
+    subj = [r.subjective.chief_complaint]
+    if r.subjective.history_of_present_illness:
+        subj.append(r.subjective.history_of_present_illness)
+    if r.subjective.symptom_duration:
+        subj.append(f"Duration: {r.subjective.symptom_duration}")
+    if r.subjective.associated_symptoms:
+        subj.append("Associated: " + ", ".join(r.subjective.associated_symptoms))
+
+    obj: list[str] = []
+    for k, v in (r.objective.vital_signs or {}).items():
+        obj.append(f"{k}: {v}")
+    if r.objective.physical_exam:
+        obj.append(r.objective.physical_exam)
+
+    assess = [r.assessment.primary_diagnosis]
+    if r.assessment.differential_diagnoses:
+        assess.append("Differentials: " + ", ".join(r.assessment.differential_diagnoses))
+    if r.assessment.icd10_codes:
+        assess.append("ICD-10: " + ", ".join(r.assessment.icd10_codes))
+
+    plan: list[str] = []
+    for m in r.plan.medications:
+        parts = [f"{m.drug_name} {m.dose}"]
+        if m.frequency:
+            parts.append(m.frequency)
+        if m.duration:
+            parts.append(f"for {m.duration}")
+        if m.route:
+            parts.append(f"({m.route})")
+        plan.append(" ".join(parts))
+    if r.plan.investigations:
+        plan.append("Investigations: " + ", ".join(r.plan.investigations))
+    if r.plan.lifestyle_advice:
+        plan.append("Lifestyle: " + ", ".join(r.plan.lifestyle_advice))
+    fu = r.plan.follow_up
+    if fu.needed:
+        fu_text = "Follow-up needed"
+        if fu.timeframe:
+            fu_text += f" in {fu.timeframe}"
+        if fu.reason:
+            fu_text += f" ({fu.reason})"
+        plan.append(fu_text)
+    if r.plan.red_flags:
+        plan.append("Red flags: " + "; ".join(r.plan.red_flags))
+
+    return GenerateSyncResponse(
+        subjective="\n".join(subj),
+        objective="\n".join(obj) if obj else "Vitals and exam not captured.",
+        assessment="\n".join(assess),
+        plan="\n".join(plan) if plan else "Plan not captured.",
+    )
+
+
+@router.post("/generate-sync")
+async def generate_sync(req: GenerateSyncRequest) -> JSONResponse:
+    llm = OpenAIClient()
+    registry = build_registry()
+    patient_id = req.patient_id or _DUMMY_UUID
+    doctor_id = req.doctor_id or _DUMMY_UUID
+    agent = await ReportAgent.build_with_rules(
+        doctor_id=doctor_id,
+        specialty=req.specialty,
+        llm=llm, registry=registry, turns=AgentTurnRepository(),
+    )
+    ctx = AgentContext(visit_id=req.visit_id, patient_id=patient_id, doctor_id=doctor_id)
+
+    last_report: MedicalReport | None = None
+    try:
+        async for ev in agent.step(ctx, user_input=req.transcript):
+            if ev.event == "tool.call" and ev.data.get("name") == "update_soap_draft":
+                report_data = ev.data.get("args", {}).get("report")
+                if report_data:
+                    try:
+                        last_report = MedicalReport.model_validate(report_data)
+                    except Exception:
+                        pass
+    except ClarificationRequested:
+        pass
+
+    if last_report is None:
+        return JSONResponse({"subjective": "", "objective": "", "assessment": "", "plan": ""})
+    return JSONResponse(_report_to_flat(last_report).model_dump())
+
 
 class GenerateRequest(BaseModel):
     visit_id: UUID

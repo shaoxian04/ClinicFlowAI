@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, AsyncIterator
 
 import httpx
 
 from app.config import settings
 from app.llm.client import ChatResponse, StreamEvent, ToolCall
+
+_log = logging.getLogger(__name__)
 
 
 class OpenAIClient:
@@ -46,11 +49,23 @@ class OpenAIClient:
         tools: list[dict[str, Any]],
     ) -> ChatResponse:
         async with httpx.AsyncClient(timeout=self._timeout) as client:
+            payload = self._payload(messages, tools, stream=False)
             r = await client.post(
                 f"{self._base_url}/chat/completions",
                 headers=self._headers(),
-                json=self._payload(messages, tools, stream=False),
+                json=payload,
             )
+            if r.status_code >= 400:
+                _log.error(
+                    "[LLM] %s %s -> HTTP %d body=%s payload_model=%s tools=%d messages=%d",
+                    "POST",
+                    f"{self._base_url}/chat/completions",
+                    r.status_code,
+                    r.text[:2000],
+                    payload.get("model"),
+                    len(tools),
+                    len(messages),
+                )
             r.raise_for_status()
             data = r.json()
         choice = data["choices"][0]

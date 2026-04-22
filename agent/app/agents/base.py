@@ -188,20 +188,56 @@ class BaseAgent(ABC):
     async def _load_openai_messages(self, ctx: AgentContext) -> list[dict[str, Any]]:
         turns = await self._turns.load(ctx.visit_id, self.agent_type)
         out: list[dict[str, Any]] = []
-        for t in turns:
+        i = 0
+        while i < len(turns):
+            t = turns[i]
             if t.role == "system":
                 out.append({"role": "system", "content": t.content})
+                i += 1
             elif t.role == "user":
                 out.append({"role": "user", "content": t.content})
+                i += 1
             elif t.role == "assistant":
-                msg: dict[str, Any] = {"role": "assistant", "content": t.content}
-                out.append(msg)
+                # Peek ahead to see if tool turns follow — if so, this assistant
+                # message issued tool_calls and must carry them to satisfy OpenAI.
+                tool_turns: list[TurnRecord] = []
+                j = i + 1
+                while j < len(turns) and turns[j].role == "tool":
+                    tool_turns.append(turns[j])
+                    j += 1
+                if tool_turns:
+                    msg: dict[str, Any] = {
+                        "role": "assistant",
+                        "content": t.content or "",
+                        "tool_calls": [
+                            {
+                                "id": f"t{tt.turn_index}",
+                                "type": "function",
+                                "function": {
+                                    "name": tt.tool_call_name or "unknown",
+                                    "arguments": json.dumps(tt.tool_call_args or {}),
+                                },
+                            }
+                            for tt in tool_turns
+                        ],
+                    }
+                    out.append(msg)
+                    for tt in tool_turns:
+                        out.append({
+                            "role": "tool",
+                            "tool_call_id": f"t{tt.turn_index}",
+                            "content": json.dumps(tt.tool_result or {}, ensure_ascii=False),
+                        })
+                    i = j
+                else:
+                    out.append({"role": "assistant", "content": t.content})
+                    i += 1
             elif t.role == "tool":
-                out.append({
-                    "role": "tool",
-                    "tool_call_id": f"t{t.turn_index}",
-                    "content": json.dumps(t.tool_result or {}, ensure_ascii=False),
-                })
+                # Orphan tool turn with no preceding assistant (shouldn't normally happen,
+                # but can occur if history was truncated). Skip to avoid OpenAI 400.
+                i += 1
+            else:
+                i += 1
         return out
 
     @staticmethod
