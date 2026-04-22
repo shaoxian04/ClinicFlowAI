@@ -55,7 +55,7 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
       .catch((e: unknown) => {
         if (cancelled) return;
         const msg = e instanceof Error ? e.message : String(e);
-        if (msg.startsWith("HTTP 404")) {
+        if (msg.startsWith("HTTP 404") || msg.startsWith("HTTP 502") || msg.startsWith("HTTP 504")) {
           setState({ kind: "unavailable" });
           return;
         }
