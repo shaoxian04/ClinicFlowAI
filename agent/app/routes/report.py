@@ -270,6 +270,8 @@ async def get_chat(
     table; this endpoint is the only reader exposed to the backend.
     """
     allowed = {r.strip() for r in roles.split(",") if r.strip()}
+    if not allowed:
+        raise HTTPException(status_code=400, detail="roles must not be empty")
     repo = AgentTurnRepository()
     turns = await repo.load(visit_id, agent_type)
     filtered = [

@@ -2,6 +2,7 @@ import uuid
 
 import httpx
 import pytest
+import pytest_asyncio
 from testcontainers.postgres import PostgresContainer
 
 from app.main import app
@@ -15,15 +16,20 @@ def pg():
         yield pgc
 
 
-@pytest.fixture
-async def wired_pool(pg, monkeypatch):
+@pytest_asyncio.fixture(scope="module", loop_scope="module")
+async def wired_pool(pg):
     """Spin up a testcontainer Postgres, open a real pool, and create the
     schema.  Patch out the lifespan open/close noops so that TestClient does
     not double-open or attempt to connect to a non-existent host, and patch
     out the Neo4j schema apply and the OpenAI key guard so the lifespan does
     not bail before the route is reachable.
+
+    Module-scoped so that all three tests in this file share one event loop
+    and one asyncpg pool — required because function-scoped loops would close
+    the pool between tests on Windows/Python 3.10.
     """
-    monkeypatch.setattr(
+    mp = pytest.MonkeyPatch()
+    mp.setattr(
         "app.config.settings.postgres_dsn",
         pg.get_connection_url().replace("+psycopg2", ""),
     )
@@ -54,26 +60,27 @@ async def wired_pool(pg, monkeypatch):
     async def _noop_close():
         return None
 
-    monkeypatch.setattr("app.persistence.postgres.open_pool", _noop_open)
-    monkeypatch.setattr("app.persistence.postgres.close_pool", _noop_close)
+    mp.setattr("app.persistence.postgres.open_pool", _noop_open)
+    mp.setattr("app.persistence.postgres.close_pool", _noop_close)
 
     # Patch out the non-fatal Neo4j apply so no network call is made.
     async def _noop_apply():
         return None
 
-    monkeypatch.setattr("app.graph.schema.apply_schema", _noop_apply)
+    mp.setattr("app.graph.schema.apply_schema", _noop_apply)
 
     # Patch the OpenAI key so _assert_no_placeholder_secrets() does not fatal.
-    monkeypatch.setattr("app.config.settings.openai_api_key", "sk-test")
+    mp.setattr("app.config.settings.openai_api_key", "sk-test")
 
     yield
 
     # Restore the real close_pool reference before tearing down.
-    monkeypatch.setattr("app.persistence.postgres.close_pool", postgres.close_pool)
+    mp.setattr("app.persistence.postgres.close_pool", postgres.close_pool)
     await postgres.close_pool()
+    mp.undo()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="module")
 async def test_get_chat_returns_user_and_assistant_turns_only(wired_pool):
     visit_id = uuid.uuid4()
     repo = AgentTurnRepository()
@@ -118,3 +125,31 @@ async def test_get_chat_returns_user_and_assistant_turns_only(wired_pool):
     assert body["turns"][1]["content"] == "updated follow-up"
     assert "turn_index" in body["turns"][0]
     assert "created_at" in body["turns"][0]
+
+
+@pytest.mark.asyncio(loop_scope="module")
+async def test_get_chat_unknown_visit_returns_empty_turns(wired_pool):
+    """Reading chat for a visit_id that has no agent_turns rows returns HTTP 200
+    with an empty turns list — a read-only projection, not a lookup that 404s."""
+    transport = httpx.ASGITransport(app=app, raise_app_exceptions=True)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/agents/report/chat?visit_id={uuid.uuid4()}&agent_type=report",
+            headers={"X-Service-Token": "change-me"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"turns": []}
+
+
+@pytest.mark.asyncio(loop_scope="module")
+async def test_get_chat_empty_roles_returns_400(wired_pool):
+    """Passing roles= (empty) should be a 400, not silent no-op.
+    Prevents a common misconfig footgun for backend callers."""
+    transport = httpx.ASGITransport(app=app, raise_app_exceptions=True)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/agents/report/chat?visit_id={uuid.uuid4()}&agent_type=report&roles=",
+            headers={"X-Service-Token": "change-me"},
+        )
+    assert resp.status_code == 400
+    assert "roles" in resp.json()["detail"].lower()

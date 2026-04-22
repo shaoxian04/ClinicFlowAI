@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any  # still used by tool_call_args / tool_result fields
 from uuid import UUID
 
 from app.persistence.postgres import get_pool
@@ -19,7 +19,7 @@ class TurnRecord:
     tool_call_name: str | None
     tool_call_args: dict[str, Any] | None
     tool_result: dict[str, Any] | None
-    created_at: Any = None  # ISO string or datetime; added for chat read
+    created_at: str | None = None  # ISO-8601 string; isoformat() applied in load()
 
 
 class AgentTurnRepository:
