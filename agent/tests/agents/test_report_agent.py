@@ -117,3 +117,52 @@ async def test_report_agent_happy_path_persists_draft(wired, monkeypatch):
     stored = json.loads(row["report_draft"])
     assert stored["subjective"]["chief_complaint"] == "Fever"
     assert stored["assessment"]["primary_diagnosis"] == "Viral URTI"
+
+
+import pytest as _pytest
+from app.agents.base import ClarificationRequested
+
+
+@pytest.mark.asyncio
+async def test_report_agent_clarification_pauses_before_completing(wired, monkeypatch):
+    vid = uuid.uuid4()
+    pid = uuid.uuid4()
+    async with postgres.get_pool().acquire() as c:
+        await c.execute("INSERT INTO visits(id) VALUES ($1)", vid)
+
+    async def fake_patient_ctx(_inp):
+        from app.tools.graph_tools import GetPatientContextOutput
+        return GetPatientContextOutput(patient_id=str(pid))
+
+    patient_ctx_tool = replace(TOOL_GET_PATIENT_CONTEXT, handler=fake_patient_ctx)
+
+    from app.tools.report_tools import TOOL_ASK_DOCTOR_CLARIFICATION
+    llm = FakeLLM([
+        ChatResponse(text="", tool_calls=[
+            ToolCall(id="a", name="get_patient_context", arguments={"patient_id": str(pid)}),
+        ], finish_reason="tool_calls"),
+        ChatResponse(text="", tool_calls=[
+            ToolCall(id="b", name="ask_doctor_clarification",
+                     arguments={
+                         "field": "assessment.primary_diagnosis",
+                         "prompt": "What was your primary diagnosis?",
+                         "context": "Transcript mentions fever but no diagnosis stated.",
+                     }),
+        ], finish_reason="tool_calls"),
+    ])
+
+    reg = ToolRegistry([patient_ctx_tool, TOOL_ASK_DOCTOR_CLARIFICATION])
+    reg.register_allowlist("report", ["get_patient_context", "ask_doctor_clarification"])
+
+    agent = ReportAgent(llm=llm, registry=reg, turns=AgentTurnRepository())
+    ctx = AgentContext(visit_id=vid, patient_id=pid, doctor_id=uuid.uuid4())
+
+    events: list = []
+    with _pytest.raises(ClarificationRequested) as exc_info:
+        async for ev in agent.step(ctx, user_input="Transcript: fever only"):
+            events.append(ev)
+
+    assert exc_info.value.call.arguments["field"] == "assessment.primary_diagnosis"
+    kinds = [e.event for e in events]
+    assert "tool.call" in kinds
+    assert "turn.complete" in kinds
