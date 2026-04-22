@@ -19,5 +19,5 @@ def test_healthz_returns_unavailable_when_neo4j_down(monkeypatch):
     monkeypatch.setattr("app.routes.patient_context._probe_neo4j", fake_probe)
     client = TestClient(app)
     r = client.get("/agents/patient-context/healthz")
-    assert r.status_code == 200
+    assert r.status_code == 503
     assert r.json() == {"neo4j": "unavailable"}

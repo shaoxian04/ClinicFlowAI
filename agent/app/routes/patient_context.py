@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import logging
+import structlog
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
 from app.graph.driver import get_driver
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/agents/patient-context", tags=["patient-context"])
 
 
@@ -26,4 +26,4 @@ async def _probe_neo4j() -> bool:
 @router.get("/healthz")
 async def healthz() -> JSONResponse:
     ok = await _probe_neo4j()
-    return JSONResponse({"neo4j": "ok" if ok else "unavailable"})
+    return JSONResponse({"neo4j": "ok" if ok else "unavailable"}, status_code=200 if ok else 503)

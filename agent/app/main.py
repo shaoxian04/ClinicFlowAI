@@ -64,13 +64,17 @@ async def lifespan(app: FastAPI):
     #    from serving pre-visit / report turns that don't touch the graph.
     try:
         await apply_schema()
+    except Exception:
+        log.exception("neo4j.schema_apply_failed")
+
+    try:
         ok = await patient_context_routes._probe_neo4j()
         if ok:
             log.info("neo4j.probe_ok")
         else:
             log.error("neo4j.probe_failed — patient-context features will degrade")
     except Exception:
-        log.exception("neo4j.schema_apply_failed")
+        log.exception("neo4j.probe_exception")
 
     # 3. Postgres pool open is FATAL. Every route reads/writes agent_turns.
     #    A boot that logs "pool_open_failed" but accepts traffic produces
