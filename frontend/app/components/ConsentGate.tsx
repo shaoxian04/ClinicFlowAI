@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser } from "../../lib/auth";
 
@@ -10,8 +10,10 @@ type Props = {
 
 export function ConsentGate({ children }: Props) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const user = getUser();
     if (!user) {
       router.replace("/login");
@@ -22,9 +24,10 @@ export function ConsentGate({ children }: Props) {
     }
   }, [router]);
 
-  const user = typeof window !== "undefined" ? getUser() : null;
+  // Return null on first render to match SSR output (no window) — prevents hydration mismatch.
+  if (!mounted) return null;
 
-  // Render nothing while redirect is in flight for unauthenticated or non-consented patients
+  const user = getUser();
   if (!user) return null;
   if (user.role === "PATIENT" && !user.consentGiven) return null;
 

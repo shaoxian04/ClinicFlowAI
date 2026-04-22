@@ -5,14 +5,14 @@ CREATE OR REPLACE FUNCTION audit_log_agent_turn() RETURNS trigger AS $$
 BEGIN
     INSERT INTO audit_log (
         actor_user_id, action, resource_type, resource_id,
-        occurred_at, correlation_id, details
+        occurred_at, correlation_id, metadata
     ) VALUES (
         NULL,
-        'AGENT_TURN_WRITE',
+        'CREATE',
         'agent_turns',
-        NEW.visit_id,
+        NEW.visit_id::varchar,
         NEW.created_at,
-        gen_random_uuid(),
+        gen_random_uuid()::varchar,
         jsonb_build_object(
             'agent_type', NEW.agent_type,
             'turn_index', NEW.turn_index,
