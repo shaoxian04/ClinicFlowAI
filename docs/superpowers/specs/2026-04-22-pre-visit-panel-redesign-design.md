@@ -68,7 +68,9 @@ Both tracks land on the same tab and together eliminate the current "transcript 
 **In scope:**
 
 - Track A: `/turn-sync` extraction call, `PreVisitSummary` component, removal of transcript-dump fallback, field-contract typing in `frontend/lib/types/preVisit.ts`.
-- Track B: New agent route `GET /agents/patient-context/{patient_id}` (combines existing `get_patient_context` + `get_visit_history`), new backend route `GET /patients/{id}/context`, new `AgentServiceClient.getPatientContext(UUID)` method, response DTO, error mapping.
+- Track B — read path: New agent route `GET /agents/patient-context/{patient_id}` (combines existing `get_patient_context` + `get_visit_history`), new backend route `GET /patients/{id}/context`, new `AgentServiceClient.getPatientContext(UUID)` method, response DTO, error mapping.
+- Track B — Neo4j health: `GET /agents/patient-context/healthz` endpoint; non-fatal startup probe.
+- Track B — demo seed: `POST /agents/patient-context/seed-demo-bulk` agent route, `POST /patients/context/seed-demo-all` backend route (flag-gated), `/whoami` `devSeedAllowed` field, frontend "Seed demo graph (all patients)" button inside `PatientContextPanel`.
 - Both: updated unit tests for changed code paths; integration tests for the new endpoints.
 
 **Out of scope (deferred):**
@@ -193,9 +195,26 @@ Empty-section rule: if a slot is `null`/`[]`, hide that subsection entirely. Exc
 
 ## 3. Track B — Patient Context wiring
 
+### Neo4j state today (context)
+
+The Neo4j instance is schema-ready (9 constraints + 3 indexes applied on agent startup) but has **no runtime write paths**. No registration, intake, or finalize code writes to the graph. The only data that ever enters the graph comes from `agent/scripts/seed_demo_graph.py`, which must be run manually. Consequences:
+
+- Any live patient's sidebar is empty because no `:Patient` node exists for them.
+- Track B therefore needs **both** a read path (agent query route + backend proxy) and a **demo-seed** path so doctors can populate the graph for demo purposes.
+
+Runtime graph writes (on registration / intake confirmation / finalize) are deliberately out of scope — a separate sub-project.
+
 ### Agent side
 
-New route `GET /agents/patient-context/{patient_id}` combines the two existing Neo4j queries:
+**New route 1 — health check:**
+```
+GET /agents/patient-context/healthz
+→ 200 {"neo4j": "ok"} when graph is reachable
+→ 200 {"neo4j": "unavailable"} otherwise (never 500)
+```
+Also: on agent startup, after `apply_schema()`, run a one-shot `RETURN 1 AS ok` query and log the result. Failure is ERROR-level but non-fatal (agent stays up; read routes degrade gracefully).
+
+**New route 2 — patient context read** — `GET /agents/patient-context/{patient_id}` combines the two existing Neo4j queries:
 
 ```python
 @router.get("/agents/patient-context/{patient_id}")
@@ -287,6 +306,46 @@ if (msg.startsWith("HTTP 404") || msg.startsWith("HTTP 502") || msg.startsWith("
 
 No render-layer changes — DTO shape already matches.
 
+### Demo-seed path (all patients in one shot)
+
+Because no live code path writes to Neo4j, doctors need a dev-mode affordance to populate the graph so the sidebar shows non-empty data during demos.
+
+**Agent route — bulk demo seed:**
+```
+POST /agents/patient-context/seed-demo-bulk
+Body: {"patients": [{"id", "full_name", "dob", "gender"}, ...]}
+→ 200 {"seeded": <count>}
+```
+For each patient in the body:
+- `MERGE (p:Patient {id: $id})` + SET demographics
+- `MERGE` allergy edges to Penicillin + Peanuts
+- `MERGE` condition edge to Type 2 Diabetes
+- `MERGE` medication edge to Metformin 500mg
+- `MERGE` 2 historic visits with **per-patient IDs**: `v-demo-{id[:8]}-1` (2026-01-05, Cough → J06.9) and `v-demo-{id[:8]}-2` (2026-04-14, Fever → A09). Per-patient IDs prevent collisions on the `visit_id_unique` constraint.
+
+All writes are MERGE-based and idempotent — safe to re-run.
+
+**Backend route — triggers the bulk seed:**
+```
+POST /patients/context/seed-demo-all
+→ 200 {"patientsSeeded": <count>}
+→ 403 {"error":"demo seeding disabled"} when flag is off
+```
+Flag-gated by `cliniflow.dev.seed-demo-enabled=true` (default `false`; only set in `application-dev.yml`, never in the prod profile). Controller:
+1. Returns 403 if the flag is off.
+2. Reads all rows from the Postgres `patients` table.
+3. Marshals them as `{id, full_name, dob, gender}` and sends to the agent in one call.
+4. Returns the count.
+
+**`/whoami` response gains a new field:**
+```json
+{ "userId": "...", "role": "DOCTOR", "devSeedAllowed": true }
+```
+`devSeedAllowed` = the value of `cliniflow.dev.seed-demo-enabled`. Frontend uses this to decide whether to show the seed button.
+
+**Frontend affordance:**
+Inside `PatientContextPanel`, when the fetched state has **all four arrays empty** AND `devSeedAllowed === true`, render a small button labeled "Seed demo graph (all patients)" at the bottom of the panel body. Click → POST to backend → re-fetch current patient's context. Invisible in production (the flag is off, the `/whoami` value is false, the button renders nothing).
+
 ### Track B acceptance criteria
 
 1. Doctor opens Pre-Visit tab for a patient with graph-KB data → sidebar populates with real allergies, chronic conditions, active medications, recent 5 visits.
@@ -295,6 +354,9 @@ No render-layer changes — DTO shape already matches.
 4. All 4 blocks are collapsible (already the case).
 5. No changes to the intake conversation path.
 6. Integration test: `GET /patients/{id}/context` with stubbed agent returns mapped DTO.
+7. **Neo4j health**: `GET /agents/patient-context/healthz` returns `{"neo4j": "ok"}` when reachable, `{"neo4j": "unavailable"}` otherwise. Agent startup logs a non-fatal ERROR if the probe fails.
+8. **Demo seeding**: with `cliniflow.dev.seed-demo-enabled=true`, doctor clicks "Seed demo graph (all patients)" in any empty sidebar → bulk seed runs → re-fetch shows the standard bundle for current patient (2 allergies, 1 condition, 1 medication, 2 recent visits). Re-clicking is idempotent.
+9. **Production safety**: with the flag off, the button is hidden and `POST /patients/context/seed-demo-all` returns 403. Verified by a controller unit test under the default profile.
 
 ---
 
@@ -337,6 +399,8 @@ No render-layer changes — DTO shape already matches.
 | Graph missing `:HAD_VISIT` edges for older patients | Medium | Low | Accept for MVP; backfill roadmap. |
 | Medications without structured dose | Certain | Low | DTO accommodates future dose; known gap. |
 | Pre-existing visits stay at `fields={}` | Certain | Low | Legacy-visit empty-state: "Summary not captured for this legacy visit" if `history.length>0 && fields=={}`. |
+| Dev forgets to turn off `cliniflow.dev.seed-demo-enabled` in prod | Low | Medium | Flag defaults to `false`; prod profile never overrides. Unit test asserts controller 403s under default profile. |
+| Bulk seed overwrites real patient data | None | n/a | All seed writes are MERGE-based — does not delete existing edges. Re-seeding a patient already in the graph adds no duplicates. |
 
 ---
 
@@ -361,7 +425,9 @@ Each of the three merges can be reverted independently. No coordinated rollback 
 ### Out of scope / future considerations
 
 - Adding slots to `PreVisitSlots` (associated_symptoms, red_flags, aggravating/relieving, recent_exposure).
+- **Real runtime graph writes** (on patient registration / pre-visit confirmation / visit finalize). This spec only provides a dev-mode bulk seed. Populating the graph via live flows is a separate sub-project and will likely touch the Graphify pattern described in `docs/details/agent-design.md`.
 - Graph draft-visit ingestion → draft chip on recent visits.
 - Clickable recent-visits rows.
 - Caching patient context.
 - Medication dose through graph model.
+- Per-patient tailored seed data (today the demo bundle is identical for every patient — fine for demo, but a real clinical demo would want varied data).
