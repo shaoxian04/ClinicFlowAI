@@ -418,6 +418,11 @@ export default function VisitDetailPage() {
   }
 
   const fields = (detail.preVisitStructured?.fields ?? {}) as Record<string, unknown>;
+  const history = Array.isArray(detail.preVisitStructured?.history)
+    ? (detail.preVisitStructured?.history as Array<{ role?: string; content?: string }>)
+    : [];
+  const hasFields = Object.keys(fields).length > 0;
+  const hasHistory = history.length > 0;
   const locked = soap.finalized;
   const hasBlockingCritical = flags.some(
     (f) => f.severity === "critical" && !acknowledged.has(keyForFlag(f)),
@@ -445,14 +450,38 @@ export default function VisitDetailPage() {
         <h2>Pre-visit intake</h2>
         <span className="card-idx">01 / INTAKE</span>
       </div>
-      {Object.keys(fields).length === 0 ? (
-        <p className="empty">No pre-visit data captured.</p>
-      ) : (
+      {hasFields && (
         <ul>
           {Object.entries(fields).map(([k, v]) => (
             <li key={k}><strong>{k}:</strong> {String(v)}</li>
           ))}
         </ul>
+      )}
+      {hasHistory && (
+        <div className="previsit-transcript" style={{ marginTop: hasFields ? "1rem" : 0 }}>
+          {!hasFields && (
+            <p className="muted" style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}>
+              Structured fields not yet captured — showing the patient&apos;s intake conversation below.
+            </p>
+          )}
+          <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
+            {history.map((m, i) => {
+              const role = (m.role ?? "").toLowerCase();
+              const label = role === "user" ? "Patient" : role === "assistant" ? "Assistant" : role || "—";
+              return (
+                <li key={i} style={{ borderLeft: "2px solid #cfd7cc", paddingLeft: "0.75rem" }}>
+                  <div style={{ fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#6a7468" }}>
+                    {label}
+                  </div>
+                  <div style={{ whiteSpace: "pre-wrap" }}>{m.content ?? ""}</div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+      {!hasFields && !hasHistory && (
+        <p className="empty">No pre-visit data captured.</p>
       )}
     </section>
   );

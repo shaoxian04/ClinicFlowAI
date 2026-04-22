@@ -67,7 +67,9 @@ public class PreVisitWriteAppService {
 
         appendHistory(r, "user", userMessage);
 
-        AgentServiceClient.PreVisitTurnResult result = agent.callPreVisitTurn(r.getStructured());
+        AgentServiceClient.PreVisitTurnResult result = agent.callPreVisitTurn(
+            v.getId(), v.getPatientId(), userMessage
+        );
 
         appendHistory(r, "assistant", result.assistantMessage());
         r.getStructured().put("fields", result.fields());

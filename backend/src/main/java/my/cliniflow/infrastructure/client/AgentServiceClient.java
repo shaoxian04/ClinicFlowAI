@@ -32,12 +32,41 @@ public class AgentServiceClient {
             .build();
     }
 
-    public PreVisitTurnResult callPreVisitTurn(Map<String, Object> structured) {
-        return withCorrelation(client.post().uri("/agents/pre-visit/turn"))
-            .bodyValue(new PreVisitTurnRequest(structured))
-            .retrieve()
-            .bodyToMono(PreVisitTurnResult.class)
-            .block();
+    public PreVisitTurnResult callPreVisitTurn(UUID visitId, UUID patientId, String userInput) {
+        PreVisitTurnSyncRequest req = new PreVisitTurnSyncRequest(
+            visitId.toString(),
+            patientId.toString(),
+            userInput == null ? "" : userInput
+        );
+        log.info("[AGENT] POST /agents/pre-visit/turn-sync visitId={} patientId={} userInputLen={}",
+            visitId, patientId, req.userInput().length());
+        try {
+            PreVisitTurnSyncResponse resp = withCorrelation(client.post().uri("/agents/pre-visit/turn-sync"))
+                .bodyValue(req)
+                .retrieve()
+                .bodyToMono(PreVisitTurnSyncResponse.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /agents/pre-visit/turn-sync returned null body for visitId={}", visitId);
+                return new PreVisitTurnResult("", Map.of(), false);
+            }
+            log.info("[AGENT] /agents/pre-visit/turn-sync OK visitId={} msgLen={} done={}",
+                visitId,
+                resp.assistantMessage() == null ? 0 : resp.assistantMessage().length(),
+                resp.done());
+            return new PreVisitTurnResult(
+                resp.assistantMessage() == null ? "" : resp.assistantMessage(),
+                resp.fields() == null ? Map.of() : resp.fields(),
+                resp.done()
+            );
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /agents/pre-visit/turn-sync HTTP {} visitId={} body={}",
+                e.getRawStatusCode(), visitId, e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /agents/pre-visit/turn-sync FAILED visitId={} error={}", visitId, e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
     }
 
     private WebClient.RequestBodySpec withCorrelation(WebClient.RequestBodySpec spec) {
@@ -49,7 +78,17 @@ public class AgentServiceClient {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record PreVisitTurnRequest(Map<String, Object> structured) {}
+    public record PreVisitTurnSyncRequest(
+        @com.fasterxml.jackson.annotation.JsonProperty("visit_id") String visitId,
+        @com.fasterxml.jackson.annotation.JsonProperty("patient_id") String patientId,
+        @com.fasterxml.jackson.annotation.JsonProperty("user_input") String userInput
+    ) {}
+
+    public record PreVisitTurnSyncResponse(
+        @com.fasterxml.jackson.annotation.JsonProperty("assistant_message") String assistantMessage,
+        Map<String, Object> fields,
+        boolean done
+    ) {}
 
     public record PreVisitTurnResult(
         String assistantMessage,

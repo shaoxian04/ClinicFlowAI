@@ -22,25 +22,61 @@ class TurnRecord:
 
 
 class AgentTurnRepository:
-    async def append(self, rec: TurnRecord) -> None:
+    async def append(self, rec: TurnRecord) -> int:
+        """Insert a turn, auto-recovering from (visit_id, agent_type, turn_index)
+        unique-key collisions that happen when:
+          1. a partial prior run already wrote a turn at this index (e.g. a
+             Neo4j transient error aborted step() mid-loop and left the
+             system-prompt row behind). A retry must be able to proceed.
+          2. pgbouncer transaction-mode produces read-your-writes
+             inconsistency across requests — next_turn_index may briefly
+             return a stale value right after a commit on a different
+             backend.
+
+        On collision, we re-read the real max turn_index and retry ONCE at
+        that index. Returns the turn_index that was actually persisted, so
+        callers can keep their counter in sync.
+        """
         pool = get_pool()
-        await pool.execute(
+        returned = await pool.fetchrow(
             """
             INSERT INTO agent_turns
               (visit_id, agent_type, turn_index, role, content, reasoning,
                tool_call_name, tool_call_args, tool_result)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb)
+            ON CONFLICT (visit_id, agent_type, turn_index) DO NOTHING
+            RETURNING turn_index
             """,
-            rec.visit_id,
-            rec.agent_type,
-            rec.turn_index,
-            rec.role,
-            rec.content,
-            rec.reasoning,
-            rec.tool_call_name,
+            rec.visit_id, rec.agent_type, rec.turn_index, rec.role, rec.content,
+            rec.reasoning, rec.tool_call_name,
             json.dumps(rec.tool_call_args) if rec.tool_call_args is not None else None,
             json.dumps(rec.tool_result) if rec.tool_result is not None else None,
         )
+        if returned is not None:
+            return int(returned["turn_index"])
+
+        # Collision: some other row occupies this index. Recompute and retry.
+        real_next = await self.next_turn_index(rec.visit_id, rec.agent_type)
+        returned = await pool.fetchrow(
+            """
+            INSERT INTO agent_turns
+              (visit_id, agent_type, turn_index, role, content, reasoning,
+               tool_call_name, tool_call_args, tool_result)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb)
+            ON CONFLICT (visit_id, agent_type, turn_index) DO NOTHING
+            RETURNING turn_index
+            """,
+            rec.visit_id, rec.agent_type, real_next, rec.role, rec.content,
+            rec.reasoning, rec.tool_call_name,
+            json.dumps(rec.tool_call_args) if rec.tool_call_args is not None else None,
+            json.dumps(rec.tool_result) if rec.tool_result is not None else None,
+        )
+        if returned is None:
+            raise RuntimeError(
+                f"agent_turns append failed twice at {rec.visit_id}/{rec.agent_type} "
+                f"(tried turn_index={rec.turn_index} then {real_next})"
+            )
+        return int(returned["turn_index"])
 
     async def load(self, visit_id: UUID, agent_type: str) -> list[TurnRecord]:
         pool = get_pool()

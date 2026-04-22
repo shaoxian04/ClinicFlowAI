@@ -205,7 +205,20 @@ class BaseAgent(ABC):
                 while j < len(turns) and turns[j].role == "tool":
                     tool_turns.append(turns[j])
                     j += 1
-                if tool_turns:
+                # Filter out malformed tool turns (tool_call_name is NULL — marker
+                # of a partial/aborted prior step() that left a half-written row).
+                # Replaying these produces an assistant message with {name:"unknown"}
+                # tool_calls that OpenAI rejects with 400. agent_turns is
+                # append-only so we can't delete them — skip at load time instead.
+                valid_tool_turns = [tt for tt in tool_turns if tt.tool_call_name]
+                if tool_turns and not valid_tool_turns:
+                    # The whole assistant+tools group is broken. Drop the assistant
+                    # message too since OpenAI requires tool_calls if any tool rows
+                    # followed it; without valid tools, the safest replay is to skip
+                    # the pair entirely and continue.
+                    i = j
+                    continue
+                if valid_tool_turns:
                     msg: dict[str, Any] = {
                         "role": "assistant",
                         "content": t.content or "",
@@ -214,15 +227,15 @@ class BaseAgent(ABC):
                                 "id": f"t{tt.turn_index}",
                                 "type": "function",
                                 "function": {
-                                    "name": tt.tool_call_name or "unknown",
+                                    "name": tt.tool_call_name,
                                     "arguments": json.dumps(tt.tool_call_args or {}),
                                 },
                             }
-                            for tt in tool_turns
+                            for tt in valid_tool_turns
                         ],
                     }
                     out.append(msg)
-                    for tt in tool_turns:
+                    for tt in valid_tool_turns:
                         out.append({
                             "role": "tool",
                             "tool_call_id": f"t{tt.turn_index}",
