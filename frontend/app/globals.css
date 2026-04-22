@@ -4344,3 +4344,15 @@ details.visit-group-details[open] > summary.visit-group-heading::after {
   /* Patient context panel — collapse on mobile */
   .patient-context-panel { display: none; }
 }
+
+.pcx-seed-bar {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #d7d1c0;
+  text-align: center;
+}
+.pcx-seed-error {
+  color: #6a1f1f;
+  font-size: 0.8rem;
+  margin: 0.4rem 0 0;
+}

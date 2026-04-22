@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 import { SkeletonLine } from "@/app/components/Skeleton";
 
 type Allergy = { id: string; label: string };
@@ -263,6 +264,45 @@ function PanelBody({ state }: { state: FetchState }) {
           )}
         </div>
       </details>
+
+      <SeedDemoButton
+        allEmpty={
+          allergies.length === 0 &&
+          chronicConditions.length === 0 &&
+          activeMedications.length === 0 &&
+          recentVisits.length === 0
+        }
+      />
+    </div>
+  );
+}
+
+function SeedDemoButton({ allEmpty }: { allEmpty: boolean }) {
+  const user = getUser();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (!allEmpty || !user?.devSeedAllowed) return null;
+
+  async function click() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await apiPost("/patients/context/seed-demo-all", {});
+      window.location.reload();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="pcx-seed-bar">
+      <button type="button" className="btn btn-ghost" onClick={click} disabled={busy}>
+        {busy ? "Seeding…" : "Seed demo graph (all patients)"}
+      </button>
+      {err && <p className="pcx-seed-error">{err}</p>}
     </div>
   );
 }
