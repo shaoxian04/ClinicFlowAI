@@ -373,4 +373,40 @@ public class AgentServiceClient {
         @com.fasterxml.jackson.annotation.JsonProperty("tool_call_name") String toolCallName,
         @com.fasterxml.jackson.annotation.JsonProperty("created_at") String createdAt
     ) {}
+
+    public SttResult callStt(byte[] audioBytes, String contentType, String filename) {
+        org.springframework.http.client.MultipartBodyBuilder builder =
+            new org.springframework.http.client.MultipartBodyBuilder();
+        builder.part("audio", new org.springframework.core.io.ByteArrayResource(audioBytes) {
+            @Override public String getFilename() { return filename; }
+        }).contentType(org.springframework.http.MediaType.parseMediaType(contentType));
+
+        String cid = MDC.get("correlationId");
+        log.info("[AGENT] POST /agents/stt/transcribe size={} contentType={}", audioBytes.length, contentType);
+        try {
+            SttResponse resp = client.post()
+                .uri("/agents/stt/transcribe")
+                .contentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA)
+                .headers(h -> { if (cid != null) h.add("X-Correlation-ID", cid); })
+                .body(org.springframework.web.reactive.function.BodyInserters.fromMultipartData(builder.build()))
+                .retrieve()
+                .bodyToMono(SttResponse.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /agents/stt/transcribe returned null body");
+                return new SttResult("");
+            }
+            log.info("[AGENT] /agents/stt/transcribe OK textLen={}", resp.text() == null ? 0 : resp.text().length());
+            return new SttResult(resp.text() == null ? "" : resp.text());
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /agents/stt/transcribe HTTP {} body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /agents/stt/transcribe FAILED error={}", e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
+    public record SttResponse(String text) {}
+    public record SttResult(String text) {}
 }
