@@ -4,7 +4,6 @@ import my.cliniflow.application.biz.patient.PatientReadAppService;
 import my.cliniflow.application.biz.patient.PatientSeedDemoAppService;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse;
 import my.cliniflow.controller.biz.patient.response.SeedDemoResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,9 +36,6 @@ public class DoctorPatientController {
 
     @PostMapping("/context/seed-demo-all")
     public ResponseEntity<SeedDemoResponse> seedDemoAll() {
-        if (!seed.isEnabled()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
         int n = seed.seedAll();
         return ResponseEntity.ok(new SeedDemoResponse(n));
     }

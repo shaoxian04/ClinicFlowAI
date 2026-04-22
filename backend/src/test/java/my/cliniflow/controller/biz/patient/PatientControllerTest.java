@@ -50,15 +50,18 @@ class PatientControllerTest {
     @Test
     @WithMockUser(roles = "DOCTOR")
     void seedDemoAll_returns_403_when_flag_off() throws Exception {
-        when(seed.isEnabled()).thenReturn(false);
+        when(seed.seedAll()).thenThrow(new my.cliniflow.controller.base.BusinessException(
+            my.cliniflow.controller.base.ResultCode.FORBIDDEN,
+            "demo seeding disabled in this environment"
+        ));
         mvc.perform(post("/api/patients/context/seed-demo-all"))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value(40300));
     }
 
     @Test
     @WithMockUser(roles = "DOCTOR")
     void seedDemoAll_returns_count_when_flag_on() throws Exception {
-        when(seed.isEnabled()).thenReturn(true);
         when(seed.seedAll()).thenReturn(7);
         mvc.perform(post("/api/patients/context/seed-demo-all"))
             .andExpect(status().isOk())
