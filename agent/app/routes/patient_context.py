@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import structlog
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from starlette.responses import JSONResponse
 from uuid import UUID
 
@@ -35,10 +35,16 @@ async def healthz() -> JSONResponse:
 
 @router.get("/{patient_id}")
 async def patient_context(patient_id: UUID) -> JSONResponse:
-    ctx, visits = await asyncio.gather(
+    results = await asyncio.gather(
         get_patient_context(patient_id),
         get_visit_history(patient_id, limit=5),
+        return_exceptions=True,
     )
+    if any(isinstance(r, Exception) for r in results):
+        errs = [r for r in results if isinstance(r, Exception)]
+        log.error("neo4j.patient_context_query_failed patient_id=%s errors=%s", patient_id, errs)
+        raise HTTPException(status_code=503, detail="patient graph unavailable")
+    ctx, visits = results
     return JSONResponse({
         "patient_id": str(patient_id),
         "allergies":   list(ctx.allergies),

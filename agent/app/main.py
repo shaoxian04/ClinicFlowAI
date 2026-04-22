@@ -132,4 +132,7 @@ app.include_router(
     tags=["rules"],
     dependencies=[Depends(require_service_token)],
 )
-app.include_router(patient_context_routes.router)
+app.include_router(
+    patient_context_routes.router,
+    dependencies=[Depends(require_service_token)],
+)

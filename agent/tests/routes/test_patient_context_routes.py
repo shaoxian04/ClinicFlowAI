@@ -11,7 +11,7 @@ def test_healthz_returns_ok_when_neo4j_up(monkeypatch):
         return True
     monkeypatch.setattr("app.routes.patient_context._probe_neo4j", fake_probe)
     client = TestClient(app)
-    r = client.get("/agents/patient-context/healthz")
+    r = client.get("/agents/patient-context/healthz", headers={"X-Service-Token": "change-me"})
     assert r.status_code == 200
     assert r.json() == {"neo4j": "ok"}
 
@@ -21,7 +21,7 @@ def test_healthz_returns_unavailable_when_neo4j_down(monkeypatch):
         return False
     monkeypatch.setattr("app.routes.patient_context._probe_neo4j", fake_probe)
     client = TestClient(app)
-    r = client.get("/agents/patient-context/healthz")
+    r = client.get("/agents/patient-context/healthz", headers={"X-Service-Token": "change-me"})
     assert r.status_code == 503
     assert r.json() == {"neo4j": "unavailable"}
 
@@ -47,9 +47,9 @@ def neo4j_app(neo4j, monkeypatch):
     monkeypatch.setenv("NEO4J_URI", neo4j.get_connection_url())
     monkeypatch.setenv("NEO4J_USER", "neo4j")
     monkeypatch.setenv("NEO4J_PASSWORD", neo4j.NEO4J_ADMIN_PASSWORD)
-    asyncio.get_event_loop().run_until_complete(close_driver())
+    asyncio.run(close_driver())
     yield
-    asyncio.get_event_loop().run_until_complete(close_driver())
+    asyncio.run(close_driver())
 
 
 def test_get_patient_context_returns_empty_for_unknown_patient(neo4j_app):
@@ -69,6 +69,7 @@ def test_get_patient_context_returns_seeded_data(neo4j_app):
     import asyncio
     from app.graph.driver import get_driver
     pid = str(uuid.uuid4())
+    vid = str(uuid.uuid4())
     driver = get_driver()
     async def seed():
         async with driver.session() as session:
@@ -77,12 +78,12 @@ def test_get_patient_context_returns_seeded_data(neo4j_app):
                 MERGE (a:Allergy {name: 'Penicillin'}) MERGE (p)-[:ALLERGIC_TO]->(a)
                 MERGE (c:Condition {name: 'Asthma'}) MERGE (p)-[:HAS_CONDITION]->(c)
                 MERGE (m:Medication {name: 'Salbutamol'}) MERGE (p)-[:TAKES]->(m)
-                MERGE (v:Visit {id: 'v1'}) SET v.visited_at='2026-01-01', v.patient_id=$pid
+                MERGE (v:Visit {id: $vid}) SET v.visited_at='2026-01-01', v.patient_id=$pid
                 MERGE (p)-[:HAD_VISIT]->(v)
                 MERGE (d:Diagnosis {code: 'J06.9', name: 'URTI'})
                 MERGE (v)-[:DIAGNOSED_AS]->(d)
-            """, pid=pid)
-    asyncio.get_event_loop().run_until_complete(seed())
+            """, pid=pid, vid=vid)
+    asyncio.run(seed())
     client = TestClient(app)
     r = client.get(f"/agents/patient-context/{pid}")
     assert r.status_code == 200
