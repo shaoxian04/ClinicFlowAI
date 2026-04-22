@@ -17,6 +17,7 @@ import my.cliniflow.domain.biz.visit.repository.VisitRepository;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -122,22 +123,20 @@ public class ReportReviewAppService {
 
     // ───── GET /report/chat ───────────────────────────────────────────────────
     public ChatTurnsResponse getChat(UUID visitId) {
+        log.info("[REVIEW] getChat visit={}", visitId);
         var fromAgent = agent.getReportChat(visitId);
         List<ChatTurnsResponse.ChatTurn> mapped = fromAgent.turns().stream()
             .map(t -> new ChatTurnsResponse.ChatTurn(t.turnIndex(), t.role(), t.content(), t.toolCallName(), t.createdAt()))
             .toList();
-        log.info("[REVIEW] getChat visit={} turns={}", visitId, mapped.size());
+        log.info("[REVIEW] getChat returned visit={} turns={}", visitId, mapped.size());
         return new ChatTurnsResponse(mapped);
     }
 
     // ───── POST /report/approve ───────────────────────────────────────────────
     @Transactional
     public ApproveResponse approve(UUID visitId) {
-        MedicalReportModel r = reports.findByVisitId(visitId).orElseGet(() -> {
-            MedicalReportModel m = new MedicalReportModel();
-            m.setVisitId(visitId);
-            return m;
-        });
+        MedicalReportModel r = reports.findByVisitId(visitId).orElseThrow(
+            () -> new ResourceNotFoundException("medical report for visit", visitId));
         if (r.isFinalized()) throw new ConflictException("report already finalized");
         OffsetDateTime now = OffsetDateTime.now();
         r.setPreviewApprovedAt(now);
@@ -189,11 +188,19 @@ public class ReportReviewAppService {
 
         // PDPA audit: explicit INSERT — no DB trigger covers medical_reports (V1 schema).
         // Runs inside the same @Transactional; rolls back if anything above fails.
+        //
+        // action='UPDATE' — closest legal value per audit_log CHECK constraint;
+        // the actual event type is in metadata.event='finalized'. Don't change
+        // this to 'CREATE' — it would be equally wrong and confuse audit queries.
+        String correlationId = MDC.get("correlationId");
+        if (correlationId == null || correlationId.isEmpty()) {
+            correlationId = UUID.randomUUID().toString();
+        }
         jdbc.update(
-            "INSERT INTO audit_log(occurred_at, actor_user_id, actor_role, action, resource_type, resource_id, metadata) "
-            + "VALUES (?,?,?,?,?,?,?::jsonb)",
+            "INSERT INTO audit_log(occurred_at, actor_user_id, actor_role, action, resource_type, resource_id, correlation_id, metadata) "
+            + "VALUES (?,?,?,?,?,?,?,?::jsonb)",
             now, doctorId, "DOCTOR", "UPDATE", "medical_reports", visitId.toString(),
-            "{\"event\":\"finalized\"}"
+            correlationId, "{\"event\":\"finalized\",\"visit_id\":\"" + visitId + "\"}"
         );
 
         log.info("[REVIEW] finalize OK visit={} doctor={} summaryEnLen={} summaryMsLen={}",
@@ -266,9 +273,13 @@ public class ReportReviewAppService {
         if (p == null) return "";
         StringBuilder sb = new StringBuilder();
         if (p.medications() != null) for (var m : p.medications()) {
-            sb.append(m.drugName()).append(" ").append(m.dose());
-            if (m.frequency() != null) sb.append(" ").append(m.frequency());
-            if (m.duration() != null) sb.append(" for ").append(m.duration());
+            if (m == null) continue;
+            String name = m.drugName();
+            if (name == null || name.isBlank()) continue;  // skip empty med slots
+            sb.append(name);
+            if (m.dose() != null && !m.dose().isBlank()) sb.append(" ").append(m.dose());
+            if (m.frequency() != null && !m.frequency().isBlank()) sb.append(" ").append(m.frequency());
+            if (m.duration() != null && !m.duration().isBlank()) sb.append(" for ").append(m.duration());
             sb.append("\n");
         }
         if (p.investigations() != null && !p.investigations().isEmpty())
