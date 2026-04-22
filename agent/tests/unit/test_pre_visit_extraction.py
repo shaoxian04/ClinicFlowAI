@@ -91,7 +91,6 @@ async def test_extract_slots_handles_inline_single_line_fence():
 
 
 import uuid
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -107,7 +106,9 @@ def test_turn_sync_returns_extracted_fields(monkeypatch):
         from app.llm.streaming import message_delta
         yield message_delta("OK.")
 
+    captured_history: list = []
     async def fake_extract(self, history):
+        captured_history.append(history)  # store the history arg for assertions
         return PreVisitSlots(chief_complaint="fever", symptom_duration="2 days")
 
     monkeypatch.setattr("app.agents.pre_visit_agent.PreVisitIntakeAgent.step", fake_step)
@@ -129,3 +130,12 @@ def test_turn_sync_returns_extracted_fields(monkeypatch):
     body = r.json()
     assert body["fields"]["chief_complaint"] == "fever"
     assert body["fields"]["symptom_duration"] == "2 days"
+
+    # Verify extract_slots was called once with history that ends with the
+    # current user input (load() was monkeypatched to return [], so the only
+    # contribution should be the fallback append of the current turn).
+    assert len(captured_history) == 1
+    hist = captured_history[0]
+    assert hist[-2] == {"role": "user", "content": "I have fever."}
+    assert hist[-1]["role"] == "assistant"
+    assert hist[-1]["content"]  # non-empty
