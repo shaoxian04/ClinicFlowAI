@@ -47,9 +47,11 @@ public class SoapController {
     }
 
     private static VisitDetailResponse.Soap toSoap(MedicalReportModel r) {
+        String previewApprovedAtStr = r.getPreviewApprovedAt() != null ? r.getPreviewApprovedAt().toString() : null;
         return new VisitDetailResponse.Soap(
             r.getSubjective(), r.getObjective(), r.getAssessment(), r.getPlan(),
-            r.isFinalized(), r.getAiDraftHash()
+            r.isFinalized(), r.getAiDraftHash(),
+            previewApprovedAtStr, r.getSummaryEn(), r.getSummaryMs()
         );
     }
 }

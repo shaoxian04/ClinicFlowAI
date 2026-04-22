@@ -7,11 +7,9 @@ import { getUser } from "@/lib/auth";
 import { PageHeader } from "@/app/components/PageHeader";
 import { PhaseTabs, PhaseKey } from "@/app/doctor/components/PhaseTabs";
 import { PatientContextPanel } from "@/app/doctor/components/PatientContextPanel";
-import {
-  ReportPreview,
-  ReportPreviewData,
-} from "@/app/doctor/components/ReportPreview";
 import { SplitReview } from "./components/review/SplitReview";
+import { ReportPreview } from "./components/ReportPreview";
+import type { MedicalReport } from "@/lib/types/report";
 
 type Soap = {
   subjective: string;
@@ -34,7 +32,15 @@ type VisitDetail = {
   soap: Soap;
   createdAt: string;
   finalizedAt: string | null;
+  reportDraft?: MedicalReport | null;
 };
+
+function visitStateChip(detail: VisitDetail): { label: string; tone: "draft" | "review" | "published" } {
+  if (detail.soap?.finalized) return { label: "Published", tone: "published" };
+  if (detail.soap?.previewApprovedAt) return { label: "Approved — awaiting publish", tone: "review" };
+  if (detail.status === "FINALIZED") return { label: "Finalized", tone: "published" };
+  return { label: "In progress", tone: "draft" };
+}
 
 export default function VisitDetailPage() {
   const router = useRouter();
@@ -43,19 +49,18 @@ export default function VisitDetailPage() {
   const [detail, setDetail] = useState<VisitDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activePhase, setActivePhase] = useState<PhaseKey>("pre");
-  // Report preview state — populated when the doctor navigates to the preview
-  // tab after approving the report in SplitReview.
-  const [preview] = useState<ReportPreviewData | null>(null);
+
+  const refetch = useCallback(() => {
+    apiGet<VisitDetail>(`/visits/${visitId}`)
+      .then((d) => setDetail(d))
+      .catch((e) => setError(e.message));
+  }, [visitId]);
 
   useEffect(() => {
     const user = getUser();
     if (!user || user.role !== "DOCTOR") { router.replace("/login"); return; }
-    apiGet<VisitDetail>(`/visits/${visitId}`)
-      .then((d) => {
-        setDetail(d);
-      })
-      .catch((e) => setError(e.message));
-  }, [visitId, router]);
+    refetch();
+  }, [visitId, router, refetch]);
 
   const onPhaseChange = useCallback((key: PhaseKey) => {
     setActivePhase(key);
@@ -76,6 +81,8 @@ export default function VisitDetailPage() {
   const hasFields = Object.keys(fields).length > 0;
   const hasHistory = history.length > 0;
   const locked = detail.soap.finalized;
+
+  const chip = visitStateChip(detail);
 
   const preVisitPanel = (
     <section className="card" data-delay="1" id="section-intake">
@@ -122,7 +129,7 @@ export default function VisitDetailPage() {
   const consultationPanel = (
     <SplitReview
       visitId={visitId}
-      initialReport={null}
+      initialReport={detail.reportDraft ?? null}
       initialApproved={detail.soap.previewApprovedAt != null}
       locked={locked}
       onNavigateToPreview={() => {
@@ -132,21 +139,15 @@ export default function VisitDetailPage() {
   );
 
   const reportPreviewPanel = (
-    <section className="card" data-delay="1">
-      <div className="card-head">
-        <h2>Report preview</h2>
-        <span className="card-idx">05 / PREVIEW</span>
-      </div>
-      <ReportPreview
-        data={preview}
-        acknowledged={false}
-        onAcknowledge={() => {}}
-        onRegenerate={() => {}}
-        busy={false}
-        locked={locked}
-        unavailable={false}
-      />
-    </section>
+    <ReportPreview
+      visitId={visitId}
+      summaryEn={detail.soap?.summaryEn}
+      summaryMs={detail.soap?.summaryMs}
+      finalized={detail.soap?.finalized ?? false}
+      approved={detail.soap?.previewApprovedAt != null}
+      finalizedAt={detail.finalizedAt}
+      onPublished={refetch}
+    />
   );
 
   return (
@@ -158,10 +159,7 @@ export default function VisitDetailPage() {
       />
 
       <div className="status-row">
-        <span className={`pill ${locked ? "pill-good" : "pill-primary"}`}>{
-          ({ AWAITING_DOCTOR_REVIEW: "Awaiting review", IN_PROGRESS: "In progress", FINALIZED: "Finalized" } as Record<string,string>)[detail.status] ?? detail.status
-        }</span>
-        {locked && <span className="pill pill-good">Finalized</span>}
+        <span className={`visit-chip chip-${chip.tone}`}>{chip.label}</span>
         <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
       </div>
 
