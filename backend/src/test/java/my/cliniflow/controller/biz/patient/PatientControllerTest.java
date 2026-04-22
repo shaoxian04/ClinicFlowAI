@@ -44,7 +44,7 @@ class PatientControllerTest {
         ));
         mvc.perform(get("/api/patients/" + pid + "/context").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.allergies[0].label").value("Penicillin"));
+            .andExpect(jsonPath("$.data.allergies[0].label").value("Penicillin"));
     }
 
     @Test

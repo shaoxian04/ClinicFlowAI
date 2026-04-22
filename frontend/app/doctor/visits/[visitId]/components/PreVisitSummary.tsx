@@ -73,20 +73,20 @@ export function PreVisitSummary({ fields, done, capturedAt }: PreVisitSummaryPro
         </div>
       )}
 
-      {(f.knownAllergies.length > 0 ||
-        f.currentMedications.length > 0 ||
-        f.relevantHistory.length > 0) && (
+      {((f.knownAllergies?.length ?? 0) > 0 ||
+        (f.currentMedications?.length ?? 0) > 0 ||
+        (f.relevantHistory?.length ?? 0) > 0) && (
         <div className={styles.divider}>Confirmed with patient</div>
       )}
 
-      {f.knownAllergies.length > 0 && (
-        <ChipSection label="Known allergies" items={f.knownAllergies} />
+      {(f.knownAllergies?.length ?? 0) > 0 && (
+        <ChipSection label="Known allergies" items={f.knownAllergies ?? []} />
       )}
-      {f.currentMedications.length > 0 && (
-        <ChipSection label="Current medications" items={f.currentMedications} />
+      {(f.currentMedications?.length ?? 0) > 0 && (
+        <ChipSection label="Current medications" items={f.currentMedications ?? []} />
       )}
-      {f.relevantHistory.length > 0 && (
-        <ChipSection label="Relevant history" items={f.relevantHistory} />
+      {(f.relevantHistory?.length ?? 0) > 0 && (
+        <ChipSection label="Relevant history" items={f.relevantHistory ?? []} />
       )}
 
       {capturedAt && (

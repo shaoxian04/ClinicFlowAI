@@ -30,8 +30,8 @@ public class DoctorPatientController {
     }
 
     @GetMapping("/{patientId}/context")
-    public PatientContextResponse getContext(@PathVariable UUID patientId) {
-        return reads.getContext(patientId);
+    public WebResult<PatientContextResponse> getContext(@PathVariable UUID patientId) {
+        return WebResult.ok(reads.getContext(patientId));
     }
 
     @PostMapping("/context/seed-demo-all")

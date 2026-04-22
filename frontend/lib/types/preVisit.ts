@@ -18,8 +18,8 @@ export function isPreVisitFieldsEmpty(f: PreVisitFields | null | undefined): boo
     !f.chiefComplaint &&
     !f.symptomDuration &&
     f.painSeverity == null &&
-    f.knownAllergies.length === 0 &&
-    f.currentMedications.length === 0 &&
-    f.relevantHistory.length === 0
+    (f.knownAllergies?.length ?? 0) === 0 &&
+    (f.currentMedications?.length ?? 0) === 0 &&
+    (f.relevantHistory?.length ?? 0) === 0
   );
 }
