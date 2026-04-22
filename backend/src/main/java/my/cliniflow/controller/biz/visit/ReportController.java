@@ -1,130 +1,93 @@
+// backend/src/main/java/my/cliniflow/controller/biz/visit/ReportController.java
 package my.cliniflow.controller.biz.visit;
 
 import jakarta.validation.Valid;
-import my.cliniflow.application.biz.visit.VisitReadAppService;
-import my.cliniflow.controller.biz.visit.request.ReportClarifyRequest;
-import my.cliniflow.controller.biz.visit.request.ReportEditRequest;
-import my.cliniflow.controller.biz.visit.request.ReportFinalizeRequest;
-import my.cliniflow.controller.biz.visit.request.ReportGenerateRequest;
+import my.cliniflow.application.biz.visit.ReportReviewAppService;
+import my.cliniflow.controller.base.WebResult;
+import my.cliniflow.controller.biz.visit.request.ReportClarifySyncRequest;
+import my.cliniflow.controller.biz.visit.request.ReportDraftPatchRequest;
+import my.cliniflow.controller.biz.visit.request.ReportEditSyncRequest;
+import my.cliniflow.controller.biz.visit.request.ReportGenerateSyncRequest;
+import my.cliniflow.controller.biz.visit.response.ApproveResponse;
+import my.cliniflow.controller.biz.visit.response.ChatTurnsResponse;
+import my.cliniflow.controller.biz.visit.response.FinalizeResponse;
+import my.cliniflow.controller.biz.visit.response.ReportReviewResult;
+import my.cliniflow.domain.biz.visit.dto.MedicalReportDto;
 import my.cliniflow.infrastructure.security.JwtService;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/visits/{visitId}/report")
 public class ReportController {
 
-    private final WebClient agentClient;
-    private final String serviceToken;
-    private final VisitReadAppService visitReads;
+    private static final Logger log = LoggerFactory.getLogger(ReportController.class);
 
-    public ReportController(
-        WebClient.Builder builder,
-        @Value("${cliniflow.agent.base-url}") String agentBaseUrl,
-        @Value("${cliniflow.agent.service-token}") String serviceToken,
-        VisitReadAppService visitReads
-    ) {
-        this.agentClient = builder.baseUrl(agentBaseUrl).build();
-        this.serviceToken = serviceToken;
-        this.visitReads = visitReads;
+    private final ReportReviewAppService svc;
+
+    public ReportController(ReportReviewAppService svc) {
+        this.svc = svc;
     }
 
-    private record AgentCtx(UUID doctorId, UUID patientId) {}
-
-    private AgentCtx resolveCtx(UUID visitId, Authentication auth) {
-        UUID callerId = ((JwtService.Claims) auth.getPrincipal()).userId();
-        VisitReadAppService.DoctorAndPatient dp = visitReads.findDoctorAndPatient(visitId);
-        UUID doctorId = dp.doctorId() != null ? dp.doctorId() : callerId;
-        return new AgentCtx(doctorId, dp.patientId());
-    }
-
-    @PostMapping(value = "/generate", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> generate(
+    @PostMapping("/generate-sync")
+    public WebResult<ReportReviewResult> generateSync(
         @PathVariable UUID visitId,
-        @Valid @RequestBody ReportGenerateRequest req,
-        Authentication auth
+        @Valid @RequestBody ReportGenerateSyncRequest req
     ) {
-        AgentCtx ctx = resolveCtx(visitId, auth);
-        Map<String, Object> body = new HashMap<>();
-        body.put("visit_id", visitId.toString());
-        body.put("patient_id", ctx.patientId().toString());
-        body.put("doctor_id", ctx.doctorId().toString());
-        body.put("specialty", req.specialty());
-        body.put("transcript", req.transcript());
-        return agentClient.post()
-            .uri("/agents/report/generate")
-            .header("X-Service-Token", serviceToken)
-            .bodyValue(body)
-            .retrieve()
-            .bodyToFlux(String.class);
+        log.info("[REVIEW] POST /generate-sync visit={}", visitId);
+        return WebResult.ok(svc.generate(visitId, req.transcript(), req.specialty()));
     }
 
-    @PostMapping(value = "/clarify", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> clarify(
+    @PostMapping("/clarify-sync")
+    public WebResult<ReportReviewResult> clarifySync(
         @PathVariable UUID visitId,
-        @Valid @RequestBody ReportClarifyRequest req,
-        Authentication auth
+        @Valid @RequestBody ReportClarifySyncRequest req
     ) {
-        AgentCtx ctx = resolveCtx(visitId, auth);
-        return agentClient.post()
-            .uri("/agents/report/clarify")
-            .header("X-Service-Token", serviceToken)
-            .bodyValue(Map.of(
-                "visit_id", visitId.toString(),
-                "patient_id", ctx.patientId().toString(),
-                "doctor_id", ctx.doctorId().toString(),
-                "answer", req.answer()
-            ))
-            .retrieve()
-            .bodyToFlux(String.class);
+        log.info("[REVIEW] POST /clarify-sync visit={}", visitId);
+        return WebResult.ok(svc.clarify(visitId, req.answer()));
     }
 
-    @PostMapping(value = "/edit", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> edit(
+    @PostMapping("/edit-sync")
+    public WebResult<ReportReviewResult> editSync(
         @PathVariable UUID visitId,
-        @Valid @RequestBody ReportEditRequest req,
-        Authentication auth
+        @Valid @RequestBody ReportEditSyncRequest req
     ) {
-        AgentCtx ctx = resolveCtx(visitId, auth);
-        return agentClient.post()
-            .uri("/agents/report/edit")
-            .header("X-Service-Token", serviceToken)
-            .bodyValue(Map.of(
-                "visit_id", visitId.toString(),
-                "patient_id", ctx.patientId().toString(),
-                "doctor_id", ctx.doctorId().toString(),
-                "edit", req.edit()
-            ))
-            .retrieve()
-            .bodyToFlux(String.class);
+        log.info("[REVIEW] POST /edit-sync visit={}", visitId);
+        return WebResult.ok(svc.edit(visitId, req.instruction()));
+    }
+
+    @PatchMapping("/draft")
+    public WebResult<MedicalReportDto> patchDraft(
+        @PathVariable UUID visitId,
+        @Valid @RequestBody ReportDraftPatchRequest req
+    ) {
+        log.info("[REVIEW] PATCH /draft visit={} path={}", visitId, req.path());
+        return WebResult.ok(svc.patchDraft(visitId, req.path(), req.value()));
+    }
+
+    @GetMapping("/chat")
+    public WebResult<ChatTurnsResponse> getChat(@PathVariable UUID visitId) {
+        log.info("[REVIEW] GET /chat visit={}", visitId);
+        return WebResult.ok(svc.getChat(visitId));
+    }
+
+    @PostMapping("/approve")
+    public WebResult<ApproveResponse> approve(@PathVariable UUID visitId) {
+        log.info("[REVIEW] POST /approve visit={}", visitId);
+        return WebResult.ok(svc.approve(visitId));
     }
 
     @PostMapping("/finalize")
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public ResponseEntity<Map<String, Object>> finalizeReport(
+    public WebResult<FinalizeResponse> finalizeReport(
         @PathVariable UUID visitId,
-        @Valid @RequestBody(required = false) ReportFinalizeRequest req
+        Authentication auth
     ) {
-        Map<String, Object> result = (Map<String, Object>) agentClient.post()
-            .uri("/agents/report/finalize")
-            .header("X-Service-Token", serviceToken)
-            .bodyValue(Map.of("visit_id", visitId.toString()))
-            .retrieve()
-            .bodyToMono(Map.class)
-            .block();
-        return ResponseEntity.ok(result);
+        UUID doctorId = ((JwtService.Claims) auth.getPrincipal()).userId();
+        log.info("[REVIEW] POST /finalize visit={} doctor={}", visitId, doctorId);
+        return WebResult.ok(svc.finalize(visitId, doctorId));
     }
 }
