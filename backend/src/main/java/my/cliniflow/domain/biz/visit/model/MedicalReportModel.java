@@ -39,6 +39,15 @@ public class MedicalReportModel {
     @Column(name = "finalized_at")
     private OffsetDateTime finalizedAt;
 
+    @Column(name = "preview_approved_at")
+    private OffsetDateTime previewApprovedAt;
+
+    @Column(name = "summary_en", columnDefinition = "text")
+    private String summaryEn;
+
+    @Column(name = "summary_ms", columnDefinition = "text")
+    private String summaryMs;
+
     @Column(name = "gmt_create", nullable = false, updatable = false)
     private OffsetDateTime gmtCreate;
 
@@ -74,4 +83,10 @@ public class MedicalReportModel {
     public void setFinalizedBy(UUID v) { this.finalizedBy = v; }
     public OffsetDateTime getFinalizedAt() { return finalizedAt; }
     public void setFinalizedAt(OffsetDateTime v) { this.finalizedAt = v; }
+    public OffsetDateTime getPreviewApprovedAt() { return previewApprovedAt; }
+    public void setPreviewApprovedAt(OffsetDateTime v) { this.previewApprovedAt = v; }
+    public String getSummaryEn() { return summaryEn; }
+    public void setSummaryEn(String v) { this.summaryEn = v; }
+    public String getSummaryMs() { return summaryMs; }
+    public void setSummaryMs(String v) { this.summaryMs = v; }
 }
