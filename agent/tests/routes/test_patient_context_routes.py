@@ -93,3 +93,32 @@ def test_get_patient_context_returns_seeded_data(neo4j_app):
     assert "Salbutamol" in body["medications"]
     assert len(body["recent_visits"]) == 1
     assert body["recent_visits"][0]["primary_diagnosis"] == "URTI"
+
+
+def test_seed_demo_bulk_creates_bundle_per_patient(neo4j_app):
+    client = TestClient(app)
+    pid1 = str(uuid.uuid4())
+    pid2 = str(uuid.uuid4())
+
+    r = client.post("/agents/patient-context/seed-demo-bulk", json={
+        "patients": [
+            {"id": pid1, "full_name": "Alice", "dob": "1990-01-01", "gender": "FEMALE"},
+            {"id": pid2, "full_name": "Bob",   "dob": "1985-05-05", "gender": "MALE"},
+        ]
+    }, headers={"X-Service-Token": "change-me"})
+    assert r.status_code == 200
+    assert r.json()["seeded"] == 2
+
+    ctx1 = client.get(f"/agents/patient-context/{pid1}", headers={"X-Service-Token": "change-me"}).json()
+    assert "Penicillin" in ctx1["allergies"]
+    assert "Type 2 Diabetes" in ctx1["conditions"]
+    assert len(ctx1["recent_visits"]) == 2
+
+    # Idempotent: re-run doesn't duplicate
+    r2 = client.post("/agents/patient-context/seed-demo-bulk", json={
+        "patients": [{"id": pid1, "full_name": "Alice", "dob": "1990-01-01", "gender": "FEMALE"}]
+    }, headers={"X-Service-Token": "change-me"})
+    assert r2.status_code == 200
+    ctx1b = client.get(f"/agents/patient-context/{pid1}", headers={"X-Service-Token": "change-me"}).json()
+    assert len(ctx1b["allergies"]) == 2       # Penicillin + Peanuts
+    assert len(ctx1b["recent_visits"]) == 2   # still 2, not 4

@@ -3,11 +3,13 @@ from __future__ import annotations
 import asyncio
 import structlog
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from starlette.responses import JSONResponse
 from uuid import UUID
 
 from app.graph.driver import get_driver
 from app.graph.queries.patient_context import get_patient_context
+from app.graph.queries.seed_demo import seed_demo_bundle
 from app.graph.queries.visit_history import get_visit_history
 
 log = structlog.get_logger(__name__)
@@ -60,3 +62,21 @@ async def patient_context(patient_id: UUID) -> JSONResponse:
             for v in visits
         ],
     })
+
+
+class SeedDemoPatient(BaseModel):
+    id: str
+    full_name: str
+    dob: str | None = None
+    gender: str | None = None
+
+
+class SeedDemoBulkRequest(BaseModel):
+    patients: list[SeedDemoPatient]
+
+
+@router.post("/seed-demo-bulk")
+async def seed_demo_bulk(req: SeedDemoBulkRequest) -> JSONResponse:
+    n = await seed_demo_bundle([p.model_dump() for p in req.patients])
+    log.info("seed_demo_bulk applied for %d patients", n)
+    return JSONResponse({"seeded": n})
