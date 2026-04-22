@@ -41,7 +41,7 @@ class PreVisitControllerIntegrationTest {
             .path("data").path("token").asText();
 
         // Stub agent reply
-        when(agent.callPreVisitTurn(any())).thenReturn(
+        when(agent.callPreVisitTurn(any(), any(), any())).thenReturn(
             new AgentServiceClient.PreVisitTurnResult(
                 "How long have you had this?",
                 Map.of("chief_complaint", "headache"),
