@@ -9,7 +9,7 @@ from app.deps import require_service_token
 from app.graph.driver import close_driver
 from app.graph.schema import apply_schema
 from app.persistence import postgres
-from app.routes import post_visit, pre_visit, rules, visit
+from app.routes import pre_visit, report, rules
 
 log = structlog.get_logger(__name__)
 
@@ -61,15 +61,9 @@ app.include_router(
     dependencies=[Depends(require_service_token)],
 )
 app.include_router(
-    visit.router,
-    prefix="/agents/visit",
-    tags=["visit"],
-    dependencies=[Depends(require_service_token)],
-)
-app.include_router(
-    post_visit.router,
-    prefix="/agents/post-visit",
-    tags=["post-visit"],
+    report.router,
+    prefix="/agents/report",
+    tags=["report"],
     dependencies=[Depends(require_service_token)],
 )
 app.include_router(
