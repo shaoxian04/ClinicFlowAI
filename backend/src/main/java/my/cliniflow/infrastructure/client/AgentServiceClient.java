@@ -330,6 +330,40 @@ public class AgentServiceClient {
         }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SeedDemoBulkRequest(List<SeedDemoPatient> patients) {
+        public record SeedDemoPatient(
+            String id,
+            @com.fasterxml.jackson.annotation.JsonProperty("full_name") String fullName,
+            String dob,
+            String gender
+        ) {}
+    }
+    public record SeedDemoBulkResponse(int seeded) {}
+
+    public SeedDemoBulkResponse seedDemoBulk(SeedDemoBulkRequest body) {
+        log.info("[AGENT] POST /agents/patient-context/seed-demo-bulk n={}", body.patients().size());
+        try {
+            SeedDemoBulkResponse resp = withCorrelation(client.post().uri("/agents/patient-context/seed-demo-bulk"))
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(SeedDemoBulkResponse.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /seed-demo-bulk returned null body");
+                return new SeedDemoBulkResponse(0);
+            }
+            log.info("[AGENT] /seed-demo-bulk OK seeded={}", resp.seeded());
+            return resp;
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /seed-demo-bulk HTTP {} body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /seed-demo-bulk FAILED error={}", e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
     public record ChatTurnsDto(List<ChatTurnDto> turns) {}
 
     public record ChatTurnDto(
