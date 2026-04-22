@@ -19,6 +19,7 @@ class TurnRecord:
     tool_call_name: str | None
     tool_call_args: dict[str, Any] | None
     tool_result: dict[str, Any] | None
+    created_at: Any = None  # ISO string or datetime; added for chat read
 
 
 class AgentTurnRepository:
@@ -83,7 +84,7 @@ class AgentTurnRepository:
         rows = await pool.fetch(
             """
             SELECT visit_id, agent_type, turn_index, role, content, reasoning,
-                   tool_call_name, tool_call_args, tool_result
+                   tool_call_name, tool_call_args, tool_result, created_at
             FROM agent_turns
             WHERE visit_id = $1 AND agent_type = $2
             ORDER BY turn_index ASC
@@ -102,6 +103,7 @@ class AgentTurnRepository:
                 tool_call_name=r["tool_call_name"],
                 tool_call_args=json.loads(r["tool_call_args"]) if r["tool_call_args"] else None,
                 tool_result=json.loads(r["tool_result"]) if r["tool_result"] else None,
+                created_at=r["created_at"].isoformat() if r["created_at"] else None,
             )
             for r in rows
         ]

@@ -5,7 +5,7 @@ import logging
 from typing import AsyncIterator
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from starlette.responses import JSONResponse, StreamingResponse
 
@@ -256,3 +256,32 @@ async def finalize(req: FinalizeRequest) -> JSONResponse:
         "summary_en": summary.summary_en,
         "summary_ms": summary.summary_ms,
     })
+
+
+@router.get("/chat")
+async def get_chat(
+    visit_id: UUID,
+    agent_type: str = Query("report"),
+    roles: str = Query("user,assistant"),
+) -> JSONResponse:
+    """Return persisted chat turns for the given visit+agent, filtered by role.
+
+    Read-only projection of agent_turns. The agent is the sole writer of this
+    table; this endpoint is the only reader exposed to the backend.
+    """
+    allowed = {r.strip() for r in roles.split(",") if r.strip()}
+    repo = AgentTurnRepository()
+    turns = await repo.load(visit_id, agent_type)
+    filtered = [
+        {
+            "turn_index": t.turn_index,
+            "role": t.role,
+            "content": t.content,
+            "tool_call_name": t.tool_call_name,
+            "created_at": t.created_at,
+        }
+        for t in turns if t.role in allowed
+    ]
+    log.info("[AGENT] GET /agents/report/chat visit=%s agent=%s total=%d filtered=%d",
+             visit_id, agent_type, len(turns), len(filtered))
+    return JSONResponse({"turns": filtered})
