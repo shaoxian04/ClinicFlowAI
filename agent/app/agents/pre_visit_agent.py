@@ -9,7 +9,8 @@ from app.prompts.pre_visit import SLOT_EXTRACTION_PROMPT, build_pre_visit_system
 from app.schemas.pre_visit import PreVisitSlots
 
 _log = logging.getLogger(__name__)
-_FENCE_RE = re.compile(r"^```.*$", re.MULTILINE)
+_OPEN_FENCE_RE = re.compile(r"^```[a-zA-Z_-]*\s*", re.MULTILINE)   # opening fence + optional language tag
+_CLOSE_FENCE_RE = re.compile(r"\s*```\s*$", re.MULTILINE)          # closing fence, tolerates trailing whitespace
 
 
 class PreVisitIntakeAgent(BaseAgent):
@@ -36,7 +37,8 @@ class PreVisitIntakeAgent(BaseAgent):
                 ],
                 tools=[],
             )
-            text = _FENCE_RE.sub("", resp.text or "").strip()
+            raw = resp.text or ""
+            text = _CLOSE_FENCE_RE.sub("", _OPEN_FENCE_RE.sub("", raw)).strip()
             data = json.loads(text)
             return PreVisitSlots.model_validate(data)
         except Exception as exc:  # noqa: BLE001 — last-resort graceful fallback

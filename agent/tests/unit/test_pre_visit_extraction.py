@@ -77,3 +77,14 @@ async def test_extract_slots_handles_non_json_language_fence():
     agent = PreVisitIntakeAgent(llm=llm, registry=ToolRegistry([]), turns=AgentTurnRepository())
     slots = await agent.extract_slots([{"role": "user", "content": "hi"}])
     assert slots.chief_complaint == "flu"
+
+
+@pytest.mark.asyncio
+async def test_extract_slots_handles_inline_single_line_fence():
+    """LLM emits the JSON on the same line as the opening fence.
+    Previously this was broken by the ^```.*$ regex which ate the whole line."""
+    payload = json.dumps({"chief_complaint": "fever"})
+    llm = FakeLLM(f"```json {payload} ```")
+    agent = PreVisitIntakeAgent(llm=llm, registry=ToolRegistry([]), turns=AgentTurnRepository())
+    slots = await agent.extract_slots([{"role": "user", "content": "hi"}])
+    assert slots.chief_complaint == "fever"
