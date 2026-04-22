@@ -2,14 +2,14 @@
 
 import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
-export type PhaseKey = "pre" | "visit" | "post";
+export type PhaseKey = "pre" | "visit" | "preview";
 
 type PhaseTabsProps = {
-  children: { pre: ReactNode; visit: ReactNode; post: ReactNode };
+  children: { pre: ReactNode; visit: ReactNode; preview: ReactNode };
   /** Show a red "needs your review" dot on the consultation tab. */
   consultationNeedsReview?: boolean;
-  /** Show a red "needs your review" dot on the post-visit tab. */
-  postVisitNeedsReview?: boolean;
+  /** Show a red "needs your review" dot on the report preview tab. */
+  reportPreviewNeedsReview?: boolean;
   /** Called after the active tab changes (user click, hash change, or initial hash read). */
   onActiveChange?: (key: PhaseKey) => void;
   /**
@@ -20,7 +20,7 @@ type PhaseTabsProps = {
    * Defaults to `false` for every panel — opt in only for panels whose
    * contents are purely static (plain text, no inputs/buttons/links).
    */
-  panelFocusable?: { pre?: boolean; visit?: boolean; post?: boolean };
+  panelFocusable?: { pre?: boolean; visit?: boolean; preview?: boolean };
 };
 
 type TabDef = {
@@ -32,13 +32,13 @@ type TabDef = {
 const TABS: TabDef[] = [
   { key: "pre", label: "Pre-Visit Report", hash: "#pre" },
   { key: "visit", label: "Consultation", hash: "#visit" },
-  { key: "post", label: "Post-Visit Preview", hash: "#post" },
+  { key: "preview", label: "Report Preview", hash: "#preview" },
 ];
 
 const HASH_TO_KEY: Record<string, PhaseKey> = {
   "#pre": "pre",
   "#visit": "visit",
-  "#post": "post",
+  "#preview": "preview",
 };
 
 function readHashKey(): PhaseKey {
@@ -65,7 +65,7 @@ function readHashKey(): PhaseKey {
 export function PhaseTabs({
   children,
   consultationNeedsReview = false,
-  postVisitNeedsReview = false,
+  reportPreviewNeedsReview = false,
   onActiveChange,
   panelFocusable,
 }: PhaseTabsProps) {
@@ -73,7 +73,7 @@ export function PhaseTabs({
   const tabRefs = useRef<Record<PhaseKey, HTMLButtonElement | null>>({
     pre: null,
     visit: null,
-    post: null,
+    preview: null,
   });
   const onActiveChangeRef = useRef(onActiveChange);
 
@@ -147,7 +147,7 @@ export function PhaseTabs({
   const needsDot: Record<PhaseKey, boolean> = {
     pre: false,
     visit: consultationNeedsReview,
-    post: postVisitNeedsReview,
+    preview: reportPreviewNeedsReview,
   };
 
   return (
