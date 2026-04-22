@@ -23,6 +23,9 @@ import {
 } from "@/app/doctor/components/PostVisitPreview";
 import { ProgressRail } from "@/app/components/ProgressRail";
 import { FinalizeBar, FinalizeBarState } from "@/app/doctor/components/FinalizeBar";
+import { ReasoningPanel, ReasoningEntry } from "@/app/components/ReasoningPanel";
+import { parseAgentSse } from "@/lib/agentSse";
+import { getToken } from "@/lib/auth";
 
 type Soap = {
   subjective: string;
@@ -136,6 +139,8 @@ export default function VisitDetailPage() {
   // fetchFlags helper can guard against overlapping requests without spamming
   // the backend on rapid medication edits.
   const [, setFlagsLoading] = useState(false);
+  const [reasoningEntries, setReasoningEntries] = useState<ReasoningEntry[]>([]);
+  const [turnActive, setTurnActive] = useState(false);
   const captureRef = useRef<ConsultationCaptureHandle | null>(null);
 
   useEffect(() => {
@@ -174,9 +179,47 @@ export default function VisitDetailPage() {
     }
   }, [visitId, meds]);
 
+  async function runReportGenerate(t: string) {
+    setReasoningEntries([]);
+    setTurnActive(true);
+    try {
+      const token = getToken();
+      const resp = await fetch(`/api/visits/${visitId}/report/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ transcript: t }),
+      });
+      if (!resp.ok) { setTurnActive(false); return; }
+      for await (const ev of parseAgentSse(resp)) {
+        if (ev.type === "reasoning.delta") {
+          setReasoningEntries((prev) => [...prev, { kind: "reasoning", text: ev.text }]);
+        } else if (ev.type === "tool.call") {
+          setReasoningEntries((prev) => [
+            ...prev,
+            { kind: "tool_call", text: `${ev.name}(${JSON.stringify(ev.args).slice(0, 80)})` },
+          ]);
+        } else if (ev.type === "tool.result") {
+          setReasoningEntries((prev) => [
+            ...prev,
+            { kind: "tool_result", text: `${ev.name}: ${JSON.stringify(ev.result).slice(0, 80)}` },
+          ]);
+        } else if (ev.type === "turn.complete") {
+          setTurnActive(false);
+        }
+      }
+    } catch {
+      setTurnActive(false);
+    }
+  }
+
   async function onGenerate() {
     if (!transcript.trim()) { setError("Transcript is required"); return; }
     setBusy(true); setError(null);
+    void runReportGenerate(transcript);
     try {
       const s = await apiPost<Soap>(`/visits/${visitId}/soap/generate`, { transcript });
       setSoap(s); setHasAiDraft(true);
@@ -431,6 +474,7 @@ export default function VisitDetailPage() {
         />
       </section>
 
+      <ReasoningPanel entries={reasoningEntries} turnActive={turnActive} />
       <section className="card" data-delay="2" id="section-draft">
         <div className="card-head">
           <h2>SOAP note</h2>
