@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-fixture-1",
+  "object": "chat.completion",
+  "created": 1714000000,
+  "model": "gpt-4o-mini",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "<thinking>Draft complete, no tools needed.</thinking>Report generated and persisted."
+      }
+    }
+  ]
+}
