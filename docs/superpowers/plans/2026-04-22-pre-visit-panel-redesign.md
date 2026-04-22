@@ -555,6 +555,102 @@ git commit -m "feat(frontend): add PreVisitSummary component"
 
 ---
 
+### Task 5b: Backend DTO — `PreVisitFieldsDto` and typed `VisitDetailResponse.preVisitStructured`
+
+**Files:**
+- Create: `backend/src/main/java/my/cliniflow/domain/biz/visit/dto/PreVisitFieldsDto.java`
+- Create: `backend/src/main/java/my/cliniflow/domain/biz/visit/dto/PreVisitStructuredDto.java`
+- Modify: `backend/src/main/java/my/cliniflow/controller/biz/visit/response/VisitDetailResponse.java`
+- Modify: the read-app-service that builds `VisitDetailResponse` (find via `grep -rn "new VisitDetailResponse" backend/src/main/java`)
+
+**Why this task exists:** the agent writes `pre_visit_structured.fields` to Postgres as snake_case jsonb. Today the backend exposes it as `Map<String, Object>` which Jackson serializes with snake_case keys preserved. The frontend type (Task 4) is camelCase. Without this task, the `as PreVisitFields` cast in Task 6 is a lie and every field access returns `undefined`.
+
+- [ ] **Step 1: Create `PreVisitFieldsDto`**
+
+```java
+package my.cliniflow.domain.biz.visit.dto;
+
+import com.fasterxml.jackson.annotation.JsonAlias;
+import java.util.List;
+
+public record PreVisitFieldsDto(
+    @JsonAlias("chief_complaint")     String chiefComplaint,
+    @JsonAlias("symptom_duration")    String symptomDuration,
+    @JsonAlias("pain_severity")       Integer painSeverity,
+    @JsonAlias("known_allergies")     List<String> knownAllergies,
+    @JsonAlias("current_medications") List<String> currentMedications,
+    @JsonAlias("relevant_history")    List<String> relevantHistory
+) {}
+```
+
+- [ ] **Step 2: Create `PreVisitStructuredDto`**
+
+```java
+package my.cliniflow.domain.biz.visit.dto;
+
+import java.util.List;
+import java.util.Map;
+
+public record PreVisitStructuredDto(
+    PreVisitFieldsDto fields,
+    List<Map<String, String>> history,
+    Boolean done
+) {}
+```
+
+- [ ] **Step 3: Modify `VisitDetailResponse`**
+
+Change the `preVisitStructured` component from `Map<String, Object>` to the typed DTO:
+
+```java
+// Before:
+Map<String, Object> preVisitStructured,
+
+// After:
+PreVisitStructuredDto preVisitStructured,
+```
+
+Add import: `import my.cliniflow.domain.biz.visit.dto.PreVisitStructuredDto;`
+
+- [ ] **Step 4: Update the producer**
+
+Find the code that builds `VisitDetailResponse` (likely in `VisitReadAppService`):
+
+```bash
+grep -rn "new VisitDetailResponse" backend/src/main/java
+```
+
+At that call site, replace the `Map<String, Object>` argument with a conversion. Add an autowired `ObjectMapper mapper` field if not already present. Convert:
+
+```java
+Map<String, Object> raw = /* current raw map from PreVisitReportModel.getStructured() */;
+PreVisitStructuredDto structured = raw == null
+    ? new PreVisitStructuredDto(null, List.of(), false)
+    : mapper.convertValue(raw, PreVisitStructuredDto.class);
+```
+
+Pass `structured` where the old map used to go.
+
+- [ ] **Step 5: Compile**
+
+Run: `cd backend && ./mvnw -q -DskipTests package`
+Expected: BUILD SUCCESS. Jackson's `convertValue` uses `@JsonAlias` to read snake_case from the Map entries; the resulting DTO has camelCase Java field names and Jackson serializes them as camelCase on the wire.
+
+- [ ] **Step 6: Run backend tests**
+
+Run: `cd backend && ./mvnw -q test`
+Expected: all PASS. If `VisitReadAppServiceTest` or similar exists and asserts the old Map shape, update those assertions to the new typed shape.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add backend/src/main/java/my/cliniflow/domain/biz/visit/dto/PreVisitFieldsDto.java backend/src/main/java/my/cliniflow/domain/biz/visit/dto/PreVisitStructuredDto.java backend/src/main/java/my/cliniflow/controller/biz/visit/response/VisitDetailResponse.java backend/src/main/java/my/cliniflow/application/biz/visit/VisitReadAppService.java
+git commit -m "feat(backend): type preVisitStructured with snake→camel DTO boundary"
+```
+(Adjust last file path if the producer lives elsewhere.)
+
+---
+
 ### Task 6: Replace transcript rendering with `PreVisitSummary` in page.tsx
 
 **Files:**
@@ -947,21 +1043,21 @@ git commit -m "feat(backend): add PatientContextResponse DTO"
 
 - [ ] **Step 1: Add the agent-side DTO and the new client method**
 
-Add to `AgentServiceClient.java`, as an inner record near the other agent response records:
+Add to `AgentServiceClient.java`, as an inner record near the other agent response records. Add `import com.fasterxml.jackson.annotation.JsonProperty;` if not already imported.
 
 ```java
 public record AgentPatientContext(
-    String patient_id,
-    List<String> allergies,
-    List<String> conditions,
-    List<String> medications,
-    List<AgentRecentVisit> recent_visits
+    @JsonProperty("patient_id")    String patientId,
+    List<String>                   allergies,
+    List<String>                   conditions,
+    List<String>                   medications,
+    @JsonProperty("recent_visits") List<AgentRecentVisit> recentVisits
 ) {
     public record AgentRecentVisit(
-        String visit_id,
-        String visited_at,
-        String primary_diagnosis,
-        String chief_complaint
+        @JsonProperty("visit_id")          String visitId,
+        @JsonProperty("visited_at")        String visitedAt,
+        @JsonProperty("primary_diagnosis") String primaryDiagnosis,
+        @JsonProperty("chief_complaint")   String chiefComplaint
     ) {}
 }
 ```
@@ -1026,7 +1122,7 @@ public PatientContextResponse getContext(UUID patientId) {
         mapLabeled(a.allergies()),
         mapLabeled(a.conditions()),
         mapMeds(a.medications()),
-        mapVisits(a.recent_visits())
+        mapVisits(a.recentVisits())
     );
 }
 
@@ -1050,18 +1146,18 @@ private static List<RecentVisit> mapVisits(List<AgentPatientContext.AgentRecentV
     if (rv == null) return List.of();
     return rv.stream()
         .map(v -> new RecentVisit(
-            v.visit_id(),
-            v.visited_at() != null ? v.visited_at() : "",
+            v.visitId(),
+            v.visitedAt() != null ? v.visitedAt() : "",
             chooseDiagnosis(v)
         ))
         .toList();
 }
 
 private static String chooseDiagnosis(AgentPatientContext.AgentRecentVisit v) {
-    if (v.primary_diagnosis() != null && !v.primary_diagnosis().isBlank())
-        return v.primary_diagnosis();
-    if (v.chief_complaint() != null && !v.chief_complaint().isBlank())
-        return v.chief_complaint();
+    if (v.primaryDiagnosis() != null && !v.primaryDiagnosis().isBlank())
+        return v.primaryDiagnosis();
+    if (v.chiefComplaint() != null && !v.chiefComplaint().isBlank())
+        return v.chiefComplaint();
     return "—";
 }
 
@@ -1420,7 +1516,12 @@ Add record + method to `AgentServiceClient.java`:
 
 ```java
 public record SeedDemoBulkRequest(List<SeedDemoPatient> patients) {
-    public record SeedDemoPatient(String id, String full_name, String dob, String gender) {}
+    public record SeedDemoPatient(
+        String id,
+        @JsonProperty("full_name") String fullName,
+        String dob,
+        String gender
+    ) {}
 }
 public record SeedDemoBulkResponse(int seeded) {}
 
