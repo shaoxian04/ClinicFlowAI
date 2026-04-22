@@ -24,6 +24,7 @@ import {
 import { ProgressRail } from "@/app/components/ProgressRail";
 import { FinalizeBar, FinalizeBarState } from "@/app/doctor/components/FinalizeBar";
 import { ReasoningPanel, ReasoningEntry } from "@/app/components/ReasoningPanel";
+import { ConfidenceBadge, ConfidenceFlag } from "@/app/components/ConfidenceBadge";
 import { parseAgentSse } from "@/lib/agentSse";
 import { getToken } from "@/lib/auth";
 
@@ -63,6 +64,13 @@ const SOAP_LABELS: Record<keyof Pick<Soap, "subjective" | "objective" | "assessm
   objective: "Objective — exam & measurements",
   assessment: "Assessment — clinical judgment",
   plan: "Plan — treatment & follow-up",
+};
+
+const SOAP_FLAG_KEYS: Record<keyof Pick<Soap, "subjective" | "objective" | "assessment" | "plan">, string> = {
+  subjective: "subjective.chief_complaint",
+  objective: "objective.vital_signs",
+  assessment: "assessment.primary_diagnosis",
+  plan: "plan.follow_up_decision",
 };
 
 // Task 6.6 — ProgressRail steps. The target ids are wired up as `id=` attrs
@@ -141,6 +149,7 @@ export default function VisitDetailPage() {
   const [, setFlagsLoading] = useState(false);
   const [reasoningEntries, setReasoningEntries] = useState<ReasoningEntry[]>([]);
   const [turnActive, setTurnActive] = useState(false);
+  const [confidenceFlags, setConfidenceFlags] = useState<Record<string, ConfidenceFlag>>({});
   const captureRef = useRef<ConsultationCaptureHandle | null>(null);
 
   useEffect(() => {
@@ -202,6 +211,10 @@ export default function VisitDetailPage() {
             ...prev,
             { kind: "tool_call", text: `${ev.name}(${JSON.stringify(ev.args).slice(0, 80)})` },
           ]);
+          if (ev.name === "update_soap_draft") {
+            const report = (ev.args as { report?: { confidence_flags?: Record<string, ConfidenceFlag> } }).report;
+            if (report?.confidence_flags) setConfidenceFlags(report.confidence_flags);
+          }
         } else if (ev.type === "tool.result") {
           setReasoningEntries((prev) => [
             ...prev,
@@ -493,7 +506,10 @@ export default function VisitDetailPage() {
         <div style={{ height: 14 }} />
         {(["subjective", "objective", "assessment", "plan"] as const).map((k) => (
           <label className="field" key={k}>
-            <span className="field-label">{SOAP_LABELS[k]}</span>
+            <span className="field-label" style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+              {SOAP_LABELS[k]}
+              <ConfidenceBadge flag={confidenceFlags[SOAP_FLAG_KEYS[k]]} />
+            </span>
             <textarea
               className={`textarea ${locked ? "textarea-locked" : ""}`}
               rows={3}
