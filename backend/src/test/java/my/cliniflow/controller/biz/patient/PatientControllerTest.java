@@ -65,6 +65,6 @@ class PatientControllerTest {
         when(seed.seedAll()).thenReturn(7);
         mvc.perform(post("/api/patients/context/seed-demo-all"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.patientsSeeded").value(7));
+            .andExpect(jsonPath("$.data.patientsSeeded").value(7));
     }
 }

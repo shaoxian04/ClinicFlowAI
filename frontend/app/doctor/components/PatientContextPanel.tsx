@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPostVoid } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { SkeletonLine } from "@/app/components/Skeleton";
 
@@ -278,9 +278,11 @@ function PanelBody({ state }: { state: FetchState }) {
 }
 
 function SeedDemoButton({ allEmpty }: { allEmpty: boolean }) {
-  const user = getUser();
+  const [user, setUser] = useState<ReturnType<typeof getUser>>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => { setUser(getUser()); }, []);
 
   if (!allEmpty || !user?.devSeedAllowed) return null;
 
@@ -288,10 +290,11 @@ function SeedDemoButton({ allEmpty }: { allEmpty: boolean }) {
     setBusy(true);
     setErr(null);
     try {
-      await apiPost("/patients/context/seed-demo-all", {});
+      await apiPostVoid("/patients/context/seed-demo-all", {});
       window.location.reload();
+      return; // prevent finally from updating state after reload
     } catch (e) {
-      setErr((e as Error).message);
+      setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }

@@ -2,9 +2,9 @@ package my.cliniflow.controller.biz.patient;
 
 import my.cliniflow.application.biz.patient.PatientReadAppService;
 import my.cliniflow.application.biz.patient.PatientSeedDemoAppService;
+import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse;
 import my.cliniflow.controller.biz.patient.response.SeedDemoResponse;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,8 +35,8 @@ public class DoctorPatientController {
     }
 
     @PostMapping("/context/seed-demo-all")
-    public ResponseEntity<SeedDemoResponse> seedDemoAll() {
+    public WebResult<SeedDemoResponse> seedDemoAll() {
         int n = seed.seedAll();
-        return ResponseEntity.ok(new SeedDemoResponse(n));
+        return WebResult.ok(new SeedDemoResponse(n));
     }
 }
