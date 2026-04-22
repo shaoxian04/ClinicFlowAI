@@ -1,8 +1,10 @@
 package my.cliniflow.controller.biz.patient;
 
 import my.cliniflow.application.biz.patient.PatientReadAppService;
+import my.cliniflow.application.biz.patient.PatientSeedDemoAppService;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Labeled;
+import my.cliniflow.controller.biz.patient.response.SeedDemoResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,6 +21,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -29,6 +32,7 @@ class PatientControllerTest {
 
     @Autowired MockMvc mvc;
     @MockBean PatientReadAppService reads;
+    @MockBean PatientSeedDemoAppService seed;
 
     @Test
     @WithMockUser(roles = "DOCTOR")
@@ -41,5 +45,23 @@ class PatientControllerTest {
         mvc.perform(get("/api/patients/" + pid + "/context").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.allergies[0].label").value("Penicillin"));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void seedDemoAll_returns_403_when_flag_off() throws Exception {
+        when(seed.isEnabled()).thenReturn(false);
+        mvc.perform(post("/api/patients/context/seed-demo-all"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void seedDemoAll_returns_count_when_flag_on() throws Exception {
+        when(seed.isEnabled()).thenReturn(true);
+        when(seed.seedAll()).thenReturn(7);
+        mvc.perform(post("/api/patients/context/seed-demo-all"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.patientsSeeded").value(7));
     }
 }
