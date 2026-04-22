@@ -35,6 +35,28 @@ async def healthz() -> JSONResponse:
     return JSONResponse({"neo4j": "ok" if ok else "unavailable"}, status_code=200 if ok else 503)
 
 
+class SeedDemoPatient(BaseModel):
+    id: str
+    full_name: str
+    dob: str | None = None
+    gender: str | None = None
+
+
+class SeedDemoBulkRequest(BaseModel):
+    patients: list[SeedDemoPatient]
+
+
+@router.post("/seed-demo-bulk")
+async def seed_demo_bulk(req: SeedDemoBulkRequest) -> JSONResponse:
+    try:
+        n = await seed_demo_bundle([p.model_dump() for p in req.patients])
+    except Exception as exc:
+        log.error("seed_demo_bulk.failed", error=str(exc))
+        raise HTTPException(status_code=503, detail="seed failed: neo4j unavailable")
+    log.info("seed_demo_bulk.applied", count=n)
+    return JSONResponse({"seeded": n})
+
+
 @router.get("/{patient_id}")
 async def patient_context(patient_id: UUID) -> JSONResponse:
     results = await asyncio.gather(
@@ -62,21 +84,3 @@ async def patient_context(patient_id: UUID) -> JSONResponse:
             for v in visits
         ],
     })
-
-
-class SeedDemoPatient(BaseModel):
-    id: str
-    full_name: str
-    dob: str | None = None
-    gender: str | None = None
-
-
-class SeedDemoBulkRequest(BaseModel):
-    patients: list[SeedDemoPatient]
-
-
-@router.post("/seed-demo-bulk")
-async def seed_demo_bulk(req: SeedDemoBulkRequest) -> JSONResponse:
-    n = await seed_demo_bundle([p.model_dump() for p in req.patients])
-    log.info("seed_demo_bulk applied for %d patients", n)
-    return JSONResponse({"seeded": n})

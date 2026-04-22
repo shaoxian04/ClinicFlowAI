@@ -22,8 +22,8 @@ MERGE (p)-[:HAS_CONDITION]->(c)
 MERGE (m:Medication {name: 'Metformin 500mg'})
 MERGE (p)-[:TAKES]->(m)
 
-WITH p, pat, substring(pat.id, 0, 8) AS prefix
-MERGE (v1:Visit {id: 'v-demo-' + prefix + '-1'})
+WITH p, pat
+MERGE (v1:Visit {id: 'v-demo-' + pat.id + '-1'})
   SET v1.visited_at = '2026-01-05', v1.patient_id = pat.id
 MERGE (p)-[:HAD_VISIT]->(v1)
 MERGE (s1:Symptom {name: 'Cough'})
@@ -31,7 +31,7 @@ MERGE (v1)-[:PRESENTED_WITH]->(s1)
 MERGE (d1:Diagnosis {code: 'J06.9', name: 'Acute upper respiratory infection'})
 MERGE (v1)-[:DIAGNOSED_AS]->(d1)
 
-MERGE (v2:Visit {id: 'v-demo-' + prefix + '-2'})
+MERGE (v2:Visit {id: 'v-demo-' + pat.id + '-2'})
   SET v2.visited_at = '2026-04-14', v2.patient_id = pat.id
 MERGE (p)-[:HAD_VISIT]->(v2)
 MERGE (s2:Symptom {name: 'Fever'})

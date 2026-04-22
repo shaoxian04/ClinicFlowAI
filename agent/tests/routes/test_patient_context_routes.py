@@ -114,6 +114,11 @@ def test_seed_demo_bulk_creates_bundle_per_patient(neo4j_app):
     assert "Type 2 Diabetes" in ctx1["conditions"]
     assert len(ctx1["recent_visits"]) == 2
 
+    ctx2 = client.get(f"/agents/patient-context/{pid2}", headers={"X-Service-Token": "change-me"}).json()
+    assert "Penicillin" in ctx2["allergies"]
+    assert "Type 2 Diabetes" in ctx2["conditions"]
+    assert len(ctx2["recent_visits"]) == 2
+
     # Idempotent: re-run doesn't duplicate
     r2 = client.post("/agents/patient-context/seed-demo-bulk", json={
         "patients": [{"id": pid1, "full_name": "Alice", "dob": "1990-01-01", "gender": "FEMALE"}]
