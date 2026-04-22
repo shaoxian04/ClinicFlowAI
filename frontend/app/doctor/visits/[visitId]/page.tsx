@@ -30,11 +30,11 @@ type VisitDetail = {
   patientId: string;
   patientName: string;
   status: string;
-  preVisitStructured: {
+  preVisitStructured?: {
     fields?: PreVisitFields;
     history?: Array<{ role: string; content: string }>;
     done?: boolean;
-  };
+  } | null;
   soap: Soap;
   createdAt: string;
   finalizedAt: string | null;
@@ -88,7 +88,7 @@ export default function VisitDetailPage() {
     <PreVisitSummary
       fields={detail.preVisitStructured?.fields}
       done={!!detail.preVisitStructured?.done}
-      capturedAt={detail.createdAt}
+      capturedAt={null}
     />
   );
 
