@@ -1,0 +1,59 @@
+/* frontend/app/doctor/visits/[visitId]/components/PreVisitSummary.module.css */
+.card {
+  background: #fff;
+  border: 1px solid #d7d1c0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #e5e0d0;
+  padding-bottom: 0.5rem;
+}
+.head h2 { margin: 0; font-size: 1.1rem; font-weight: 600; color: #2f4e3a; }
+.idx {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8474;
+}
+.section { display: flex; flex-direction: column; gap: 0.3rem; }
+.label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6a7468;
+  font-weight: 600;
+}
+.value { font-size: 0.95rem; color: #2a3326; line-height: 1.4; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.divider {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8474;
+  border-top: 1px solid #e5e0d0;
+  padding-top: 0.75rem;
+  margin-top: 0.2rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.chip {
+  display: inline-block;
+  background: #d9e3d0;
+  color: #2a3a2c;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.82rem;
+}
+.foot {
+  font-size: 0.75rem;
+  color: #8a8474;
+  border-top: 1px solid #e5e0d0;
+  padding-top: 0.5rem;
+}
+.muted { color: #8a8474; margin: 0; }
