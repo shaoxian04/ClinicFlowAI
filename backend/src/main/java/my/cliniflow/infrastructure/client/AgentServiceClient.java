@@ -269,6 +269,44 @@ public class AgentServiceClient {
         }
     }
 
+    public AgentPatientContext getPatientContext(UUID patientId) {
+        log.info("[AGENT] GET /agents/patient-context/{}", patientId);
+        try {
+            AgentPatientContext resp = client.get()
+                .uri("/agents/patient-context/{id}", patientId)
+                .retrieve()
+                .bodyToMono(AgentPatientContext.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /agents/patient-context/{} returned null body", patientId);
+                return new AgentPatientContext(patientId.toString(), List.of(), List.of(), List.of(), List.of());
+            }
+            return resp;
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /agents/patient-context/{} HTTP {} body={}",
+                patientId, e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /agents/patient-context/{} FAILED err={}", patientId, e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
+    public record AgentPatientContext(
+        @com.fasterxml.jackson.annotation.JsonProperty("patient_id")    String patientId,
+        List<String>                                                     allergies,
+        List<String>                                                     conditions,
+        List<String>                                                     medications,
+        @com.fasterxml.jackson.annotation.JsonProperty("recent_visits") List<AgentRecentVisit> recentVisits
+    ) {
+        public record AgentRecentVisit(
+            @com.fasterxml.jackson.annotation.JsonProperty("visit_id")          String visitId,
+            @com.fasterxml.jackson.annotation.JsonProperty("visited_at")        String visitedAt,
+            @com.fasterxml.jackson.annotation.JsonProperty("primary_diagnosis") String primaryDiagnosis,
+            @com.fasterxml.jackson.annotation.JsonProperty("chief_complaint")   String chiefComplaint
+        ) {}
+    }
+
     public ChatTurnsDto getReportChat(UUID visitId) {
         log.info("[AGENT] GET /agents/report/chat visitId={}", visitId);
         try {
