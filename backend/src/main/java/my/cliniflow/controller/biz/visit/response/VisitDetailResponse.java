@@ -2,10 +2,10 @@ package my.cliniflow.controller.biz.visit.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import my.cliniflow.domain.biz.visit.dto.MedicalReportDto;
+import my.cliniflow.domain.biz.visit.dto.PreVisitStructuredDto;
 import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 
 import java.time.OffsetDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -14,7 +14,7 @@ public record VisitDetailResponse(
     UUID patientId,
     String patientName,
     VisitStatus status,
-    Map<String, Object> preVisitStructured,
+    PreVisitStructuredDto preVisitStructured,
     Soap soap,
     OffsetDateTime createdAt,
     OffsetDateTime finalizedAt,
