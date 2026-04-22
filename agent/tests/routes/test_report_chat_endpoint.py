@@ -2,82 +2,10 @@ import uuid
 
 import httpx
 import pytest
-import pytest_asyncio
-from testcontainers.postgres import PostgresContainer
 
 from app.main import app
 from app.persistence import postgres
 from app.persistence.agent_turns import AgentTurnRepository, TurnRecord
-
-
-@pytest.fixture(scope="module")
-def pg():
-    with PostgresContainer("postgres:16-alpine") as pgc:
-        yield pgc
-
-
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def wired_pool(pg):
-    """Spin up a testcontainer Postgres, open a real pool, and create the
-    schema.  Patch out the lifespan open/close noops so that TestClient does
-    not double-open or attempt to connect to a non-existent host, and patch
-    out the Neo4j schema apply and the OpenAI key guard so the lifespan does
-    not bail before the route is reachable.
-
-    Module-scoped so that all three tests in this file share one event loop
-    and one asyncpg pool — required because function-scoped loops would close
-    the pool between tests on Windows/Python 3.10.
-    """
-    mp = pytest.MonkeyPatch()
-    mp.setattr(
-        "app.config.settings.postgres_dsn",
-        pg.get_connection_url().replace("+psycopg2", ""),
-    )
-    pool = await postgres.open_pool()
-    async with pool.acquire() as c:
-        await c.execute("""
-        CREATE TABLE IF NOT EXISTS visits (id UUID PRIMARY KEY);
-        CREATE TABLE IF NOT EXISTS agent_turns (
-            id BIGSERIAL PRIMARY KEY,
-            visit_id UUID NOT NULL,
-            agent_type VARCHAR(32) NOT NULL,
-            turn_index INTEGER NOT NULL,
-            role VARCHAR(16) NOT NULL,
-            content TEXT NOT NULL,
-            reasoning TEXT,
-            tool_call_name VARCHAR(64),
-            tool_call_args JSONB,
-            tool_result JSONB,
-            created_at TIMESTAMPTZ DEFAULT now(),
-            UNIQUE (visit_id, agent_type, turn_index)
-        );
-        """)
-
-    # Prevent the lifespan from opening/closing the pool a second time.
-    async def _noop_open():
-        return None
-
-    async def _noop_close():
-        return None
-
-    mp.setattr("app.persistence.postgres.open_pool", _noop_open)
-    mp.setattr("app.persistence.postgres.close_pool", _noop_close)
-
-    # Patch out the non-fatal Neo4j apply so no network call is made.
-    async def _noop_apply():
-        return None
-
-    mp.setattr("app.graph.schema.apply_schema", _noop_apply)
-
-    # Patch the OpenAI key so _assert_no_placeholder_secrets() does not fatal.
-    mp.setattr("app.config.settings.openai_api_key", "sk-test")
-
-    yield
-
-    # Restore the real close_pool reference before tearing down.
-    mp.setattr("app.persistence.postgres.close_pool", postgres.close_pool)
-    await postgres.close_pool()
-    mp.undo()
 
 
 @pytest.mark.asyncio(loop_scope="module")

@@ -227,7 +227,7 @@ async def finalize(req: FinalizeRequest) -> JSONResponse:
         req.visit_id,
     )
     if row is None or row["report_draft"] is None:
-        log.warning("[AGENT] /finalize no draft visit=%s", req.visit_id)
+        log.warning("[AGENT] /agents/report/finalize no draft visit=%s", req.visit_id)
         raise HTTPException(status_code=404, detail="no draft to finalize")
 
     draft = json.loads(row["report_draft"])
@@ -237,14 +237,14 @@ async def finalize(req: FinalizeRequest) -> JSONResponse:
     merged = MedicalReport(**draft, confidence_flags=promoted)
     missing = required_field_is_missing(merged)
     if missing:
-        log.info("[AGENT] /finalize missing_required visit=%s field=%s", req.visit_id, missing)
+        log.info("[AGENT] /agents/report/finalize missing_required visit=%s field=%s", req.visit_id, missing)
         raise HTTPException(status_code=409, detail=f"required field missing: {missing}")
 
     summary = await _h_generate_patient_summary(
         GeneratePatientSummaryInput(report=merged, language="en")
     )
 
-    log.info("[AGENT] /finalize OK visit=%s summary_en_len=%d summary_ms_len=%d",
+    log.info("[AGENT] /agents/report/finalize OK visit=%s summary_en_len=%d summary_ms_len=%d",
              req.visit_id, len(summary.summary_en), len(summary.summary_ms))
     return JSONResponse({
         "ok": True,
