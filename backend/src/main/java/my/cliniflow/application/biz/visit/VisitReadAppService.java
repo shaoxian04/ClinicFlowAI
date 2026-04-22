@@ -36,6 +36,14 @@ public class VisitReadAppService {
             .toList();
     }
 
+    public record DoctorAndPatient(UUID doctorId, UUID patientId) {}
+
+    public DoctorAndPatient findDoctorAndPatient(UUID visitId) {
+        VisitModel v = visits.findById(visitId).orElseThrow(
+            () -> new IllegalArgumentException("visit not found: " + visitId));
+        return new DoctorAndPatient(v.getDoctorId(), v.getPatientId());
+    }
+
     public VisitDetailResponse detail(UUID visitId) {
         VisitModel v = visits.findById(visitId).orElseThrow(
             () -> new IllegalArgumentException("visit not found: " + visitId));

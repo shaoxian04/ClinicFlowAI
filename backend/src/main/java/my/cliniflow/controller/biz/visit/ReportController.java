@@ -1,6 +1,7 @@
 package my.cliniflow.controller.biz.visit;
 
 import jakarta.validation.Valid;
+import my.cliniflow.application.biz.visit.VisitReadAppService;
 import my.cliniflow.controller.biz.visit.request.ReportClarifyRequest;
 import my.cliniflow.controller.biz.visit.request.ReportEditRequest;
 import my.cliniflow.controller.biz.visit.request.ReportFinalizeRequest;
@@ -28,22 +29,26 @@ public class ReportController {
 
     private final WebClient agentClient;
     private final String serviceToken;
+    private final VisitReadAppService visitReads;
 
     public ReportController(
         WebClient.Builder builder,
         @Value("${cliniflow.agent.base-url}") String agentBaseUrl,
-        @Value("${cliniflow.agent.service-token}") String serviceToken
+        @Value("${cliniflow.agent.service-token}") String serviceToken,
+        VisitReadAppService visitReads
     ) {
         this.agentClient = builder.baseUrl(agentBaseUrl).build();
         this.serviceToken = serviceToken;
+        this.visitReads = visitReads;
     }
 
     private record AgentCtx(UUID doctorId, UUID patientId) {}
 
     private AgentCtx resolveCtx(UUID visitId, Authentication auth) {
-        UUID doctorId = ((JwtService.Claims) auth.getPrincipal()).userId();
-        UUID patientId = visitId;
-        return new AgentCtx(doctorId, patientId);
+        UUID callerId = ((JwtService.Claims) auth.getPrincipal()).userId();
+        VisitReadAppService.DoctorAndPatient dp = visitReads.findDoctorAndPatient(visitId);
+        UUID doctorId = dp.doctorId() != null ? dp.doctorId() : callerId;
+        return new AgentCtx(doctorId, dp.patientId());
     }
 
     @PostMapping(value = "/generate", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
