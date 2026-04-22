@@ -10,6 +10,7 @@ from app.deps import require_service_token
 from app.graph.driver import close_driver
 from app.graph.schema import apply_schema
 from app.persistence import postgres
+from app.routes import patient_context as patient_context_routes
 from app.routes import pre_visit, report, rules
 
 log = structlog.get_logger(__name__)
@@ -63,6 +64,11 @@ async def lifespan(app: FastAPI):
     #    from serving pre-visit / report turns that don't touch the graph.
     try:
         await apply_schema()
+        ok = await patient_context_routes._probe_neo4j()
+        if ok:
+            log.info("neo4j.probe_ok")
+        else:
+            log.error("neo4j.probe_failed — patient-context features will degrade")
     except Exception:
         log.exception("neo4j.schema_apply_failed")
 
@@ -122,3 +128,4 @@ app.include_router(
     tags=["rules"],
     dependencies=[Depends(require_service_token)],
 )
+app.include_router(patient_context_routes.router)
