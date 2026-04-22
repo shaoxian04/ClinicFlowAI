@@ -10,7 +10,7 @@ import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
  * clinical signals (redFlags, followUp) that the doctor may want to confirm
  * before publishing.
  */
-export type PostVisitPreviewData = {
+export type ReportPreviewData = {
   summaryEn: string;
   summaryMs: string;
   medications: { name: string; dosage: string; frequency: string }[];
@@ -18,9 +18,9 @@ export type PostVisitPreviewData = {
   followUp?: { when: string; instruction: string } | null;
 };
 
-export type PostVisitPreviewProps = {
+export type ReportPreviewProps = {
   /** Preview payload, or null when none has been generated yet. */
-  data: PostVisitPreviewData | null;
+  data: ReportPreviewData | null;
   /** Doctor has acknowledged the preview ("Looks right"). Gates finalize. */
   acknowledged: boolean;
   /** Record the acknowledgement (no-op if already acknowledged). */
@@ -58,7 +58,7 @@ const COPY: Record<Lang, {
   },
 };
 
-export function PostVisitPreview(props: PostVisitPreviewProps): JSX.Element {
+export function ReportPreview(props: ReportPreviewProps): JSX.Element {
   const { data, acknowledged, onAcknowledge, onRegenerate, busy, locked, unavailable } = props;
   const [lang, setLang] = useState<Lang>("en");
   const copy = COPY[lang];
