@@ -216,12 +216,18 @@ class FinalizeRequest(BaseModel):
 
 @router.post("/finalize")
 async def finalize(req: FinalizeRequest) -> JSONResponse:
+    """Validate draft + generate bilingual summary. Does NOT write visits.status.
+
+    Per spec §5.5, the backend owns all finalize-time writes to visits and
+    medical_reports (atomic with audit_log). Agent just validates and summarizes.
+    """
     pool = get_pool()
     row = await pool.fetchrow(
         "SELECT report_draft, report_confidence_flags FROM visits WHERE id=$1",
         req.visit_id,
     )
     if row is None or row["report_draft"] is None:
+        log.warning("[AGENT] /finalize no draft visit=%s", req.visit_id)
         raise HTTPException(status_code=404, detail="no draft to finalize")
 
     draft = json.loads(row["report_draft"])
@@ -231,28 +237,18 @@ async def finalize(req: FinalizeRequest) -> JSONResponse:
     merged = MedicalReport(**draft, confidence_flags=promoted)
     missing = required_field_is_missing(merged)
     if missing:
+        log.info("[AGENT] /finalize missing_required visit=%s field=%s", req.visit_id, missing)
         raise HTTPException(status_code=409, detail=f"required field missing: {missing}")
 
     summary = await _h_generate_patient_summary(
         GeneratePatientSummaryInput(report=merged, language="en")
     )
 
-    await pool.execute(
-        """
-        UPDATE visits
-        SET report_confidence_flags = $1::jsonb,
-            report_draft = $2::jsonb,
-            finalized_at = now(),
-            status = 'FINALIZED'
-        WHERE id = $3
-        """,
-        json.dumps(promoted),
-        json.dumps(merged.model_dump(exclude={"confidence_flags"}), ensure_ascii=False),
-        req.visit_id,
-    )
-
+    log.info("[AGENT] /finalize OK visit=%s summary_en_len=%d summary_ms_len=%d",
+             req.visit_id, len(summary.summary_en), len(summary.summary_ms))
     return JSONResponse({
         "ok": True,
+        "report": merged.model_dump(mode="json"),
         "summary_en": summary.summary_en,
         "summary_ms": summary.summary_ms,
     })
