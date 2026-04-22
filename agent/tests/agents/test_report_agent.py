@@ -119,8 +119,8 @@ async def test_report_agent_happy_path_persists_draft(wired, monkeypatch):
     assert stored["assessment"]["primary_diagnosis"] == "Viral URTI"
 
 
-import pytest as _pytest
-from app.agents.base import ClarificationRequested
+import pytest as _pytest  # noqa: E402
+from app.agents.base import ClarificationRequested  # noqa: E402
 
 
 @pytest.mark.asyncio

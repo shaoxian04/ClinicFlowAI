@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.graph.queries.patient_context import PatientContext, get_patient_context
-from app.graph.queries.visit_history import VisitHistoryEntry, get_visit_history
+from app.graph.queries.visit_history import get_visit_history
 from app.graph.queries.drug_interaction import DrugInteraction, check_drug_interactions
 from app.graph.queries.inferred_edge import record_inferred_edge
 

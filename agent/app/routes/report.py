@@ -9,8 +9,6 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from starlette.responses import JSONResponse, StreamingResponse
 
-log = logging.getLogger(__name__)
-
 from app.agents.base import AgentContext, ClarificationRequested
 from app.agents.report_agent import ReportAgent
 from app.llm.openai_client import OpenAIClient
@@ -23,6 +21,8 @@ from app.tools.report_tools import (
     GeneratePatientSummaryInput,
     _h_generate_patient_summary,
 )
+
+log = logging.getLogger(__name__)
 
 router = APIRouter()
 

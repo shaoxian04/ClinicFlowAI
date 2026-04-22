@@ -10,7 +10,7 @@ from uuid import UUID
 import structlog
 
 from app.config import settings
-from app.llm.client import ChatResponse, LLMClient, ToolCall
+from app.llm.client import LLMClient, ToolCall
 from app.llm.streaming import (
     SseEvent,
     agent_error,
@@ -23,7 +23,7 @@ from app.llm.streaming import (
 )
 from app.llm.structured import tool_spec_to_openai_schema, validate_tool_arguments
 from app.persistence.agent_turns import AgentTurnRepository, TurnRecord
-from app.tools.spec import ToolNotFoundError, ToolRegistry, ToolSpec
+from app.tools.spec import ToolNotFoundError, ToolRegistry
 
 log = structlog.get_logger(__name__)
 

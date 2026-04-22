@@ -118,9 +118,9 @@ class OpenAIClient:
 
 
 # Compat shim — remove once legacy graphs/{pre_visit,soap,post_visit}.py are deleted (Tasks 18, 29).
-from functools import lru_cache
+from functools import lru_cache  # noqa: E402
 
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI  # noqa: E402
 
 
 @lru_cache(maxsize=1)
