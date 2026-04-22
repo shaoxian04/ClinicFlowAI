@@ -198,10 +198,12 @@ async def edit(req: EditRequest) -> StreamingResponse:
         doctor_id=req.doctor_id, specialty=None,
         llm=llm, registry=registry, turns=AgentTurnRepository(),
     )
-    ctx = AgentContext(visit_id=req.visit_id, patient_id=req.patient_id, doctor_id=req.doctor_id)
-    # D1a bootstrap — prepend current_draft as system-context so LLM sees any
-    # silent form-row edits the backend wrote directly to visits.report_draft.
-    setattr(ctx, "current_draft", req.current_draft)
+    ctx = AgentContext(
+        visit_id=req.visit_id,
+        patient_id=req.patient_id,
+        doctor_id=req.doctor_id,
+        current_draft=req.current_draft,
+    )
     user_input = f"Doctor edit request:\n{req.edit}"
     log.info("[AGENT] /agents/report/edit visit=%s has_current_draft=%s edit_len=%d",
              req.visit_id, req.current_draft is not None, len(req.edit))

@@ -48,6 +48,7 @@ class AgentContext:
     patient_id: UUID | None
     doctor_id: UUID | None
     language: str = "en"
+    current_draft: dict | None = None
 
 
 class BaseAgent(ABC):

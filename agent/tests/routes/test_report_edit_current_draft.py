@@ -8,7 +8,6 @@ from app.main import app
 from app.agents.report_agent import ReportAgent
 
 
-@pytest.mark.asyncio
 async def test_edit_with_current_draft_is_injected_into_prompt(monkeypatch):
     captured = {}
 
@@ -54,3 +53,30 @@ async def test_edit_with_current_draft_is_injected_into_prompt(monkeypatch):
     )
     assert resp.status_code == 200
     assert captured["current_draft"] == draft
+
+
+async def test_system_prompt_includes_current_draft_when_present():
+    from app.agents.report_agent import ReportAgent
+    from app.agents.base import AgentContext
+    from app.persistence.agent_turns import AgentTurnRepository
+    from app.tools.spec import ToolRegistry
+    import uuid
+
+    class DummyLLM:
+        async def chat(self, **kw): raise NotImplementedError
+
+    agent = ReportAgent(llm=DummyLLM(), registry=ToolRegistry([]), turns=AgentTurnRepository())
+    ctx_with = AgentContext(
+        visit_id=uuid.uuid4(), patient_id=uuid.uuid4(), doctor_id=uuid.uuid4(),
+        current_draft={"subjective": {"chief_complaint": "dry cough"}},
+    )
+    ctx_without = AgentContext(
+        visit_id=uuid.uuid4(), patient_id=uuid.uuid4(), doctor_id=uuid.uuid4(),
+    )
+
+    with_prompt = agent.system_prompt(ctx_with)
+    without_prompt = agent.system_prompt(ctx_without)
+
+    assert "CURRENT DRAFT STATE" in with_prompt, "draft should be injected when present"
+    assert "dry cough" in with_prompt, "draft contents should appear in prompt"
+    assert "CURRENT DRAFT STATE" not in without_prompt, "draft block should not appear when None"
