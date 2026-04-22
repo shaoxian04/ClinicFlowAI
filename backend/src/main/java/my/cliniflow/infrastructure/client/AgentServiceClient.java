@@ -6,7 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -375,20 +379,22 @@ public class AgentServiceClient {
     ) {}
 
     public SttResult callStt(byte[] audioBytes, String contentType, String filename) {
-        org.springframework.http.client.MultipartBodyBuilder builder =
-            new org.springframework.http.client.MultipartBodyBuilder();
-        builder.part("audio", new org.springframework.core.io.ByteArrayResource(audioBytes) {
+        if (audioBytes == null || audioBytes.length == 0) {
+            throw new IllegalArgumentException("audioBytes must not be null or empty");
+        }
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("audio", new ByteArrayResource(audioBytes) {
             @Override public String getFilename() { return filename; }
-        }).contentType(org.springframework.http.MediaType.parseMediaType(contentType));
+        }).contentType(MediaType.parseMediaType(contentType));
 
-        String cid = MDC.get("correlationId");
         log.info("[AGENT] POST /agents/stt/transcribe size={} contentType={}", audioBytes.length, contentType);
         try {
-            SttResponse resp = client.post()
-                .uri("/agents/stt/transcribe")
-                .contentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA)
-                .headers(h -> { if (cid != null) h.add("X-Correlation-ID", cid); })
-                .body(org.springframework.web.reactive.function.BodyInserters.fromMultipartData(builder.build()))
+            SttResponse resp = withCorrelation(
+                    (WebClient.RequestBodySpec) client.post()
+                        .uri("/agents/stt/transcribe")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                )
+                .body(BodyInserters.fromMultipartData(builder.build()))
                 .retrieve()
                 .bodyToMono(SttResponse.class)
                 .block();
@@ -407,6 +413,8 @@ public class AgentServiceClient {
         }
     }
 
-    public record SttResponse(String text) {}
+    public record SttResponse(
+        @com.fasterxml.jackson.annotation.JsonProperty("text") String text
+    ) {}
     public record SttResult(String text) {}
 }
