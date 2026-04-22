@@ -61,18 +61,31 @@ async def test_append_and_load(repo):
 
 
 @pytest.mark.asyncio
-async def test_duplicate_turn_index_rejected(repo):
+async def test_duplicate_turn_index_retries_to_next_available(repo):
+    """Append is idempotent+monotonic: a collision at turn_index N silently
+    recovers by writing at the real next index instead of raising. See
+    app/persistence/agent_turns.py for the ON CONFLICT DO NOTHING + retry
+    mechanism (post-mortem §pgbouncer + partial-prior-run recovery).
+    """
     vid = uuid.uuid4()
     async with postgres.get_pool().acquire() as c:
         await c.execute("INSERT INTO visits(id) VALUES ($1)", vid)
-    await repo.append(TurnRecord(
+    idx_first = await repo.append(TurnRecord(
         visit_id=vid, agent_type="pre_visit", turn_index=0,
         role="system", content="a", reasoning=None,
         tool_call_name=None, tool_call_args=None, tool_result=None,
     ))
-    with pytest.raises(Exception):  # asyncpg.UniqueViolationError
-        await repo.append(TurnRecord(
-            visit_id=vid, agent_type="pre_visit", turn_index=0,
-            role="system", content="b", reasoning=None,
-            tool_call_name=None, tool_call_args=None, tool_result=None,
-        ))
+    assert idx_first == 0
+
+    # Attempt to re-write at index 0 — should NOT raise; the repo retries at
+    # the real next index (1) and writes there.
+    idx_retry = await repo.append(TurnRecord(
+        visit_id=vid, agent_type="pre_visit", turn_index=0,
+        role="system", content="b", reasoning=None,
+        tool_call_name=None, tool_call_args=None, tool_result=None,
+    ))
+    assert idx_retry == 1
+
+    turns = await repo.load(vid, "pre_visit")
+    contents = [t.content for t in turns]
+    assert contents == ["a", "b"], "both rows should persist, neither overwritten"
