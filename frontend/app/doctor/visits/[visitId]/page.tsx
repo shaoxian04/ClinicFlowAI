@@ -9,7 +9,9 @@ import { PhaseTabs, PhaseKey } from "@/app/doctor/components/PhaseTabs";
 import { PatientContextPanel } from "@/app/doctor/components/PatientContextPanel";
 import { SplitReview } from "./components/review/SplitReview";
 import { ReportPreview } from "./components/ReportPreview";
+import { PreVisitSummary } from "./components/PreVisitSummary";
 import type { MedicalReport } from "@/lib/types/report";
+import type { PreVisitFields } from "@/lib/types/preVisit";
 
 type Soap = {
   subjective: string;
@@ -28,7 +30,11 @@ type VisitDetail = {
   patientId: string;
   patientName: string;
   status: string;
-  preVisitStructured: Record<string, unknown>;
+  preVisitStructured: {
+    fields?: PreVisitFields;
+    history?: Array<{ role: string; content: string }>;
+    done?: boolean;
+  };
   soap: Soap;
   createdAt: string;
   finalizedAt: string | null;
@@ -74,56 +80,16 @@ export default function VisitDetailPage() {
     );
   }
 
-  const fields = (detail.preVisitStructured?.fields ?? {}) as Record<string, unknown>;
-  const history = Array.isArray(detail.preVisitStructured?.history)
-    ? (detail.preVisitStructured?.history as Array<{ role?: string; content?: string }>)
-    : [];
-  const hasFields = Object.keys(fields).length > 0;
-  const hasHistory = history.length > 0;
   const locked = detail.soap.finalized;
 
   const chip = visitStateChip(detail);
 
   const preVisitPanel = (
-    <section className="card" data-delay="1" id="section-intake">
-      <div className="card-head">
-        <h2>Pre-visit intake</h2>
-        <span className="card-idx">01 / INTAKE</span>
-      </div>
-      {hasFields && (
-        <ul>
-          {Object.entries(fields).map(([k, v]) => (
-            <li key={k}><strong>{k}:</strong> {String(v)}</li>
-          ))}
-        </ul>
-      )}
-      {hasHistory && (
-        <div className="previsit-transcript" style={{ marginTop: hasFields ? "1rem" : 0 }}>
-          {!hasFields && (
-            <p className="muted" style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}>
-              Structured fields not yet captured — showing the patient&apos;s intake conversation below.
-            </p>
-          )}
-          <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
-            {history.map((m, i) => {
-              const role = (m.role ?? "").toLowerCase();
-              const label = role === "user" ? "Patient" : role === "assistant" ? "Assistant" : role || "—";
-              return (
-                <li key={i} style={{ borderLeft: "2px solid #cfd7cc", paddingLeft: "0.75rem" }}>
-                  <div style={{ fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#6a7468" }}>
-                    {label}
-                  </div>
-                  <div style={{ whiteSpace: "pre-wrap" }}>{m.content ?? ""}</div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
-      {!hasFields && !hasHistory && (
-        <p className="empty">No pre-visit data captured.</p>
-      )}
-    </section>
+    <PreVisitSummary
+      fields={detail.preVisitStructured?.fields}
+      done={!!detail.preVisitStructured?.done}
+      capturedAt={detail.createdAt}
+    />
   );
 
   const consultationPanel = (
@@ -138,11 +104,16 @@ export default function VisitDetailPage() {
     />
   );
 
+  const currentUser = getUser();
+  const doctorName = currentUser?.fullName ?? "Attending";
+
   const reportPreviewPanel = (
     <ReportPreview
       visitId={visitId}
-      summaryEn={detail.soap?.summaryEn}
-      summaryMs={detail.soap?.summaryMs}
+      patientName={detail.patientName}
+      doctorName={doctorName}
+      createdAt={detail.createdAt}
+      report={detail.reportDraft ?? null}
       finalized={detail.soap?.finalized ?? false}
       approved={detail.soap?.previewApprovedAt != null}
       finalizedAt={detail.finalizedAt}
