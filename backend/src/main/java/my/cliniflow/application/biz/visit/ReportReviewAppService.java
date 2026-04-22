@@ -76,7 +76,7 @@ public class ReportReviewAppService {
         log.info("[REVIEW] generate visit={} doctor={} patient={} transcriptLen={}",
             visitId, v.getDoctorId(), v.getPatientId(), transcript == null ? 0 : transcript.length());
         var stream = agent.reportGenerateStream(visitId, v.getPatientId(), v.getDoctorId(), specialty, transcript);
-        return toResult(aggregator.aggregate(stream).block());
+        return toResult(aggregator.aggregateSse(stream).block());
     }
 
     // ───── /clarify-sync ──────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ public class ReportReviewAppService {
         VisitModel v = requireVisit(visitId);
         log.info("[REVIEW] clarify visit={} answerLen={}", visitId, answer == null ? 0 : answer.length());
         var stream = agent.reportClarifyStream(visitId, v.getPatientId(), v.getDoctorId(), answer);
-        return toResult(aggregator.aggregate(stream).block());
+        return toResult(aggregator.aggregateSse(stream).block());
     }
 
     // ───── /edit-sync ─────────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ public class ReportReviewAppService {
         log.info("[REVIEW] edit visit={} instructionLen={} hasDraft={}",
             visitId, instruction == null ? 0 : instruction.length(), currentDraft != null);
         var stream = agent.reportEditStream(visitId, v.getPatientId(), v.getDoctorId(), instruction, currentDraft);
-        ReportAggregatorService.AggregateResult agg = aggregator.aggregate(stream).block();
+        ReportAggregatorService.AggregateResult agg = aggregator.aggregateSse(stream).block();
 
         // Fallback: if the agent didn't emit update_soap_draft (e.g. trivial
         // no-op edit), return the pre-edit draft so the UI never goes blank.
@@ -135,9 +135,31 @@ public class ReportReviewAppService {
     // ───── POST /report/approve ───────────────────────────────────────────────
     @Transactional
     public ApproveResponse approve(UUID visitId) {
-        MedicalReportModel r = reports.findByVisitId(visitId).orElseThrow(
-            () -> new ResourceNotFoundException("medical report for visit", visitId));
+        // Require that the agent has actually written a draft. medical_reports
+        // may or may not have a row yet — we create it here if missing, using
+        // the flat-text flattening of the jsonb draft. Without a jsonb draft,
+        // there's nothing to approve (genuine precondition violation).
+        Map<String, Object> draft = readCurrentDraft(visitId);
+        if (draft == null) {
+            log.info("[REVIEW] approve rejected — no report_draft visit={}", visitId);
+            throw new ConflictException("no report draft to approve — generate the report first");
+        }
+        MedicalReportDto dto = mapper.convertValue(draft, MedicalReportDto.class);
+
+        MedicalReportModel r = reports.findByVisitId(visitId).orElseGet(() -> {
+            MedicalReportModel m = new MedicalReportModel();
+            m.setVisitId(visitId);
+            return m;
+        });
         if (r.isFinalized()) throw new ConflictException("report already finalized");
+
+        // Flatten the current draft into the text columns so the row is
+        // useful even before finalize (portal reads fall back gracefully).
+        r.setSubjective(flattenSubjective(dto));
+        r.setObjective(flattenObjective(dto));
+        r.setAssessment(flattenAssessment(dto));
+        r.setPlan(flattenPlan(dto));
+
         OffsetDateTime now = OffsetDateTime.now();
         r.setPreviewApprovedAt(now);
         reports.save(r);

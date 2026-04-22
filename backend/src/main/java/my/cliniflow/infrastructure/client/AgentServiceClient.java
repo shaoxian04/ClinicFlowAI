@@ -177,9 +177,18 @@ public class AgentServiceClient {
 
     public record PostVisitResult(String summaryEn, String summaryMs) {}
 
-    // ── Report agent: streaming calls (returned as Flux<String> of SSE lines) ──
+    // ── Report agent: streaming calls ──
+    // Return Flux<ServerSentEvent<String>> so the aggregator gets BOTH event()
+    // and data(). bodyToFlux(String.class) with TEXT_EVENT_STREAM silently
+    // drops the "event:" prefix — every frame looked like "unknown" to the
+    // aggregator and update_soap_draft captures were missed. Lesson logged
+    // in the post-mortem — use typed SSE when event name matters.
 
-    public reactor.core.publisher.Flux<String> reportGenerateStream(
+    private static final org.springframework.core.ParameterizedTypeReference<
+        org.springframework.http.codec.ServerSentEvent<String>> SSE_TYPE =
+        new org.springframework.core.ParameterizedTypeReference<>() {};
+
+    public reactor.core.publisher.Flux<org.springframework.http.codec.ServerSentEvent<String>> reportGenerateStream(
         UUID visitId, UUID patientId, UUID doctorId, String specialty, String transcript
     ) {
         Map<String, Object> body = new HashMap<>();
@@ -194,11 +203,11 @@ public class AgentServiceClient {
             .bodyValue(body)
             .accept(org.springframework.http.MediaType.TEXT_EVENT_STREAM)
             .retrieve()
-            .bodyToFlux(String.class)
+            .bodyToFlux(SSE_TYPE)
             .doOnError(e -> log.error("[AGENT] /generate stream error visit={} err={}", visitId, e.toString()));
     }
 
-    public reactor.core.publisher.Flux<String> reportClarifyStream(
+    public reactor.core.publisher.Flux<org.springframework.http.codec.ServerSentEvent<String>> reportClarifyStream(
         UUID visitId, UUID patientId, UUID doctorId, String answer
     ) {
         log.info("[AGENT] POST /agents/report/clarify visitId={} answerLen={}",
@@ -212,11 +221,11 @@ public class AgentServiceClient {
             ))
             .accept(org.springframework.http.MediaType.TEXT_EVENT_STREAM)
             .retrieve()
-            .bodyToFlux(String.class)
+            .bodyToFlux(SSE_TYPE)
             .doOnError(e -> log.error("[AGENT] /clarify stream error visit={} err={}", visitId, e.toString()));
     }
 
-    public reactor.core.publisher.Flux<String> reportEditStream(
+    public reactor.core.publisher.Flux<org.springframework.http.codec.ServerSentEvent<String>> reportEditStream(
         UUID visitId, UUID patientId, UUID doctorId, String edit, Object currentDraft
     ) {
         Map<String, Object> body = new HashMap<>();
@@ -231,7 +240,7 @@ public class AgentServiceClient {
             .bodyValue(body)
             .accept(org.springframework.http.MediaType.TEXT_EVENT_STREAM)
             .retrieve()
-            .bodyToFlux(String.class)
+            .bodyToFlux(SSE_TYPE)
             .doOnError(e -> log.error("[AGENT] /edit stream error visit={} err={}", visitId, e.toString()));
     }
 

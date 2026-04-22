@@ -1,17 +1,27 @@
 package my.cliniflow.domain.biz.visit.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Mirror of agent/app/schemas/report.py::MedicalReport. Every snake_case field
- * declared via @JsonProperty so agent JSON round-trips cleanly. Do not add
- * fields here without also adding them to the Pydantic model (source of truth).
+ * Mirror of agent/app/schemas/report.py::MedicalReport.
  *
- * See spec §4.7 and contract-verification checklist §4.8.
+ * Serialization strategy (see spec §4.1 + post-mortem §Meta):
+ *  - AGENT → BACKEND (read):  agent sends snake_case JSON. @JsonAlias on every
+ *    multi-word field accepts the snake_case incoming names.
+ *  - BACKEND → FRONTEND (write): frontend TypeScript types are camelCase.
+ *    Jackson default serialization uses the Java field name (camelCase),
+ *    which matches the frontend type exactly.
+ *
+ * Do NOT use @JsonProperty here — it would force snake_case on BOTH read and
+ * write, leaking agent-side naming to the frontend. (That's the exact bug this
+ * commit fixed.) Alias is read-only; the record field name controls write.
+ *
+ * Do not add fields here without also adding them to the Pydantic model
+ * (source of truth) AND the TypeScript types in frontend/lib/types/report.ts.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MedicalReportDto(
@@ -19,37 +29,37 @@ public record MedicalReportDto(
     Objective objective,
     Assessment assessment,
     Plan plan,
-    @JsonProperty("confidence_flags") Map<String, String> confidenceFlags
+    @JsonAlias("confidence_flags") Map<String, String> confidenceFlags
 ) {
     public record Subjective(
-        @JsonProperty("chief_complaint") String chiefComplaint,
-        @JsonProperty("history_of_present_illness") String historyOfPresentIllness,
-        @JsonProperty("symptom_duration") String symptomDuration,
-        @JsonProperty("associated_symptoms") List<String> associatedSymptoms,
-        @JsonProperty("relevant_history") List<String> relevantHistory
+        @JsonAlias("chief_complaint") String chiefComplaint,
+        @JsonAlias("history_of_present_illness") String historyOfPresentIllness,
+        @JsonAlias("symptom_duration") String symptomDuration,
+        @JsonAlias("associated_symptoms") List<String> associatedSymptoms,
+        @JsonAlias("relevant_history") List<String> relevantHistory
     ) {}
 
     public record Objective(
-        @JsonProperty("vital_signs") Map<String, String> vitalSigns,
-        @JsonProperty("physical_exam") String physicalExam
+        @JsonAlias("vital_signs") Map<String, String> vitalSigns,
+        @JsonAlias("physical_exam") String physicalExam
     ) {}
 
     public record Assessment(
-        @JsonProperty("primary_diagnosis") String primaryDiagnosis,
-        @JsonProperty("differential_diagnoses") List<String> differentialDiagnoses,
-        @JsonProperty("icd10_codes") List<String> icd10Codes
+        @JsonAlias("primary_diagnosis") String primaryDiagnosis,
+        @JsonAlias("differential_diagnoses") List<String> differentialDiagnoses,
+        @JsonAlias("icd10_codes") List<String> icd10Codes
     ) {}
 
     public record Plan(
         List<MedicationOrder> medications,
         List<String> investigations,
-        @JsonProperty("lifestyle_advice") List<String> lifestyleAdvice,
-        @JsonProperty("follow_up") FollowUp followUp,
-        @JsonProperty("red_flags") List<String> redFlags
+        @JsonAlias("lifestyle_advice") List<String> lifestyleAdvice,
+        @JsonAlias("follow_up") FollowUp followUp,
+        @JsonAlias("red_flags") List<String> redFlags
     ) {}
 
     public record MedicationOrder(
-        @JsonProperty("drug_name") String drugName,
+        @JsonAlias("drug_name") String drugName,
         String dose,
         String frequency,
         String duration,

@@ -6,6 +6,7 @@ import my.cliniflow.controller.base.UpstreamException;
 import my.cliniflow.domain.biz.visit.dto.MedicalReportDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -48,6 +49,21 @@ public class ReportAggregatorService {
      * Tolerate both raw ("event: X\ndata: Y") frames and already-extracted
      * data payloads.
      */
+    /**
+     * Aggregate from a typed ServerSentEvent flux (the real Spring WebClient
+     * path). This is what production calls — Spring strips SSE framing when
+     * you bodyToFlux(String.class), losing the event name. Use this overload
+     * so we get both event() and data().
+     */
+    public Mono<AggregateResult> aggregateSse(Flux<ServerSentEvent<String>> stream) {
+        Flux<String> frames = stream.map(sse -> {
+            String event = sse.event() == null ? "unknown" : sse.event();
+            String data = sse.data() == null ? "" : sse.data();
+            return "event: " + event + "\ndata: " + data + "\n\n";
+        });
+        return aggregate(frames);
+    }
+
     public Mono<AggregateResult> aggregate(Flux<String> stream) {
         AtomicReference<MedicalReportDto> latestReport = new AtomicReference<>();
         AtomicReference<Clarification> pending = new AtomicReference<>();
