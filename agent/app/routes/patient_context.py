@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import structlog
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
+from uuid import UUID
 
 from app.graph.driver import get_driver
+from app.graph.queries.patient_context import get_patient_context
+from app.graph.queries.visit_history import get_visit_history
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/agents/patient-context", tags=["patient-context"])
@@ -27,3 +31,26 @@ async def _probe_neo4j() -> bool:
 async def healthz() -> JSONResponse:
     ok = await _probe_neo4j()
     return JSONResponse({"neo4j": "ok" if ok else "unavailable"}, status_code=200 if ok else 503)
+
+
+@router.get("/{patient_id}")
+async def patient_context(patient_id: UUID) -> JSONResponse:
+    ctx, visits = await asyncio.gather(
+        get_patient_context(patient_id),
+        get_visit_history(patient_id, limit=5),
+    )
+    return JSONResponse({
+        "patient_id": str(patient_id),
+        "allergies":   list(ctx.allergies),
+        "conditions":  list(ctx.conditions),
+        "medications": list(ctx.medications),
+        "recent_visits": [
+            {
+                "visit_id":          v.visit_id,
+                "visited_at":        v.visited_at,
+                "primary_diagnosis": v.primary_diagnosis,
+                "chief_complaint":   v.chief_complaint,
+            }
+            for v in visits
+        ],
+    })
