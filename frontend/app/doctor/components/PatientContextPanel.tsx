@@ -5,24 +5,13 @@ import { apiGet, apiPostVoid } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { SkeletonLine } from "@/app/components/Skeleton";
 
-type Allergy = { id: string; label: string };
-type ChronicCondition = { id: string; label: string };
-type ActiveMedication = { id: string; name: string; dose: string };
 type RecentVisit = { visitId: string; date: string; diagnosis: string };
-type PastRecord = {
-  visitId: string;
-  date: string;
-  diagnosis: string;
-  medications: string[];
-  doctor: string;
-};
 
 export type PatientContext = {
-  allergies: Allergy[];
-  chronicConditions: ChronicCondition[];
-  activeMedications: ActiveMedication[];
+  allergies: { id: string; label: string }[];
+  chronicConditions: { id: string; label: string }[];
+  activeMedications: { id: string; name: string; dose: string }[];
   recentVisits: RecentVisit[];
-  pastMedicalRecords?: PastRecord[];
 };
 
 type PatientContextPanelProps = {
@@ -99,7 +88,6 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
       >
         <div className="pcx-panel">
           <header className="pcx-panel-head">
-            <span className="eyebrow">Graph-KB</span>
             <h2 className="pcx-panel-title">Patient context</h2>
           </header>
           {body}
@@ -138,7 +126,6 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
         >
           <header className="pcx-drawer-head">
             <div>
-              <span className="eyebrow">Graph-KB</span>
               <h2 className="pcx-panel-title">Patient context</h2>
             </div>
             <button
@@ -185,74 +172,11 @@ function PanelBody({ state }: { state: FetchState }) {
     );
   }
 
-  const { allergies, chronicConditions, activeMedications, recentVisits, pastMedicalRecords } = state.data;
-  const recent = recentVisits.slice(0, 3);
-  const records = (pastMedicalRecords ?? []).slice(0, 5);
+  const { recentVisits } = state.data;
+  const recent = recentVisits.slice(0, 5);
 
   return (
     <div className="pcx-blocks">
-      <details className="pcx-block" open>
-        <summary className="pcx-block-head">
-          <span className="pcx-block-title">Allergies</span>
-          <span className="pcx-block-count">{allergies.length}</span>
-        </summary>
-        <div className="pcx-block-body">
-          {allergies.length === 0 ? (
-            <p className="pcx-empty">No known allergies on file.</p>
-          ) : (
-            <ul className="pcx-list pcx-list-allergies">
-              {allergies.map((a) => (
-                <li key={a.id} className="pcx-item">
-                  <span className="pcx-dot" aria-hidden="true" />
-                  <span className="pcx-item-label">{a.label}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </details>
-
-      <details className="pcx-block" open>
-        <summary className="pcx-block-head">
-          <span className="pcx-block-title">Chronic conditions</span>
-          <span className="pcx-block-count">{chronicConditions.length}</span>
-        </summary>
-        <div className="pcx-block-body">
-          {chronicConditions.length === 0 ? (
-            <p className="pcx-empty">No chronic conditions recorded.</p>
-          ) : (
-            <ul className="pcx-list">
-              {chronicConditions.map((c) => (
-                <li key={c.id} className="pcx-item">
-                  <span className="pcx-item-label">{c.label}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </details>
-
-      <details className="pcx-block" open>
-        <summary className="pcx-block-head">
-          <span className="pcx-block-title">Active medications</span>
-          <span className="pcx-block-count">{activeMedications.length}</span>
-        </summary>
-        <div className="pcx-block-body">
-          {activeMedications.length === 0 ? (
-            <p className="pcx-empty">No active medications.</p>
-          ) : (
-            <ul className="pcx-list">
-              {activeMedications.map((m) => (
-                <li key={m.id} className="pcx-item pcx-item-med">
-                  <span className="pcx-item-label">{m.name}</span>
-                  <span className="pcx-item-meta">{m.dose}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </details>
-
       <details className="pcx-block" open>
         <summary className="pcx-block-head">
           <span className="pcx-block-title">Recent visits</span>
@@ -274,45 +198,7 @@ function PanelBody({ state }: { state: FetchState }) {
         </div>
       </details>
 
-      {pastMedicalRecords !== undefined && (
-        <details className="pcx-block" open>
-          <summary className="pcx-block-head">
-            <span className="pcx-block-title">Past medical records</span>
-            <span className="pcx-block-count">{records.length}</span>
-          </summary>
-          <div className="pcx-block-body">
-            {records.length === 0 ? (
-              <p className="pcx-empty">No finalized records on file.</p>
-            ) : (
-              <ul className="pcx-list">
-                {records.map((r) => (
-                  <li key={r.visitId} className="pcx-item pcx-item-record">
-                    <div className="pcx-record-top">
-                      <span className="pcx-item-label">{r.diagnosis}</span>
-                      <span className="pcx-item-meta">{formatDate(r.date)}</span>
-                    </div>
-                    {r.medications.length > 0 && (
-                      <div className="pcx-record-meds">
-                        {r.medications.join(" · ")}
-                      </div>
-                    )}
-                    <div className="pcx-record-doctor">{r.doctor}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </details>
-      )}
-
-      <SeedDemoButton
-        allEmpty={
-          allergies.length === 0 &&
-          chronicConditions.length === 0 &&
-          activeMedications.length === 0 &&
-          recentVisits.length === 0
-        }
-      />
+      <SeedDemoButton allEmpty={recentVisits.length === 0} />
     </div>
   );
 }
