@@ -1,6 +1,10 @@
 spring:
   application:
     name: cliniflow-backend
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 26MB
   datasource:
     url: ${SUPABASE_DB_URL:jdbc:postgresql://localhost:5432/cliniflow}
     username: ${SUPABASE_DB_USER:postgres}
@@ -17,10 +21,6 @@ spring:
     properties:
       hibernate:
         jdbc.time_zone: UTC
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
 server:
   port: 8080
   forward-headers-strategy: framework
@@ -50,7 +50,6 @@ cliniflow:
   dev:
     seeded-doctor-id: 00000000-0000-0000-0000-000000000001
     seeded-patient-id: 00000000-0000-0000-0000-000000000010
-    seed-demo-enabled: false
 
 resilience4j:
   circuitbreaker:
@@ -66,9 +65,9 @@ resilience4j:
   timelimiter:
     instances:
       llm:
-        timeoutDuration: 8s
+        timeoutDuration: 300s
       stt:
-        timeoutDuration: 15s
+        timeoutDuration: 30s
 
 logging:
   pattern:
