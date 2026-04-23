@@ -7,6 +7,7 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+  preload: false,
   axes: ["opsz", "SOFT"],
 });
 
@@ -14,6 +15,7 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

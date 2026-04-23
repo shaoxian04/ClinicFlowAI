@@ -99,6 +99,9 @@ export default function VisitDetailPage() {
       initialApproved={detail.soap.previewApprovedAt != null}
       locked={locked}
       onNavigateToPreview={() => {
+        // Refetch so previewApprovedAt is populated before ReportPreview renders,
+        // otherwise the "Publish to patient" button never appears.
+        refetch();
         window.location.hash = "#preview";
       }}
     />

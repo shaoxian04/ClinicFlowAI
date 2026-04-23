@@ -13,14 +13,14 @@ export interface ReportChatPanelProps {
 
 function prettify(turn: ChatTurn): ChatTurn {
   if (turn.role !== "user") return turn;
-  // Strip the agent-internal prefix that ReportAgent.build_user_message prepends.
-  // Shape: "Visit {uuid} — transcript / edit input:\n\n<actual content>"
-  const m = turn.content.match(/^Visit [0-9a-f-]+ — transcript \/ edit input:\n\n([\s\S]*)$/);
-  if (m) return { ...turn, content: m[1] };
-  // Edit flow: "Doctor edit request:\n<actual>" (from /edit route handler)
-  const m2 = turn.content.match(/^Doctor edit request:\n([\s\S]*)$/);
-  if (m2) return { ...turn, content: m2[1] };
-  return turn;
+  let content = turn.content;
+  // Strip outer agent prefix: "Visit {uuid} — transcript / edit input:\n\n..."
+  const m = content.match(/^Visit [0-9a-f-]+ — transcript \/ edit input:\n\n([\s\S]*)$/);
+  if (m) content = m[1];
+  // Strip edit prefix: "Doctor edit request:\n..."
+  const m2 = content.match(/^Doctor edit request:\n([\s\S]*)$/);
+  if (m2) content = m2[1];
+  return { ...turn, content };
 }
 
 export function ReportChatPanel({ turns, clarification, editing, onSubmit, locked }: ReportChatPanelProps) {
@@ -58,6 +58,13 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
             <div className="chat-content">{t.content}</div>
           </li>
         ))}
+        {/* Show clarification question as a visible bubble, not just placeholder */}
+        {clarification && !editing && (
+          <li data-role="assistant">
+            <div className="chat-role">Assistant</div>
+            <div className="chat-content">{clarification.prompt}</div>
+          </li>
+        )}
         {editing && (
           <li data-role="assistant" aria-live="polite">
             <div className="chat-role">Assistant</div>
@@ -70,7 +77,7 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKey}
-          placeholder={placeholder}
+          placeholder={clarification ? "Type your answer…" : "Ask the agent to edit something…"}
           disabled={editing || locked}
           rows={2}
         />

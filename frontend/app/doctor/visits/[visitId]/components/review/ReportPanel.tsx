@@ -225,7 +225,8 @@ interface MedListProps {
   onPatch: (path: string, value: unknown) => void | Promise<void>;
   patching: Set<string>;
 }
-function MedList({ meds, onPatch, patching }: MedListProps) {
+function MedList({ meds: rawMeds, onPatch, patching }: MedListProps) {
+  const meds = rawMeds ?? [];
   function addMed() {
     const next = [
       ...meds,
@@ -310,7 +311,8 @@ interface ChipListEditorProps {
   patching: Set<string>;
   placeholder: string;
 }
-function ChipListEditor({ path, items, onPatch, patching, placeholder }: ChipListEditorProps) {
+function ChipListEditor({ path, items: rawItems, onPatch, patching, placeholder }: ChipListEditorProps) {
+  const items = rawItems ?? [];
   const saving = patching.has(path);
   function add(raw: string) {
     const v = raw.trim();

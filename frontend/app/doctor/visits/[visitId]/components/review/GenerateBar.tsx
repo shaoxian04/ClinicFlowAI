@@ -14,15 +14,28 @@ export interface GenerateBarProps {
   initialTranscript?: string;
 }
 
+const ACCEPTED_AUDIO = ".mp3,.mp4,.mpeg,.mpga,.m4a,.wav,.webm,.ogg,.flac";
+
 export function GenerateBar({ visitId, onGenerate, generating, hasReport, initialTranscript }: GenerateBarProps) {
   const [transcript, setTranscript] = useState(initialTranscript ?? "");
   const [expanded, setExpanded] = useState(!hasReport);
   const [mode, setMode] = useState<Mode>("text");
-  const [recording, setRecording] = useState(false);
+
+  // Voice (file upload) state
+  const [dragOver, setDragOver] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [transcribing, setTranscribing] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Live (microphone) state
+  const [recording, setRecording] = useState(false);
+  const [liveTranscribing, setLiveTranscribing] = useState(false);
+  const [liveError, setLiveError] = useState<string | null>(null);
+  const [recSeconds, setRecSeconds] = useState(0);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -30,7 +43,7 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
     return () => {
       mountedRef.current = false;
       mediaRef.current?.stop();
-      mediaRef.current = null;
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
@@ -40,8 +53,45 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
     setExpanded(false);
   }
 
-  async function startRecording() {
+  // ── Voice tab: upload file ────────────────────────────────────────────────
+
+  async function transcribeFile(file: File) {
     setAudioError(null);
+    setSelectedFile(file);
+    setTranscribing(true);
+    try {
+      const fd = new FormData();
+      fd.append("audio", file, file.name);
+      const resp = await apiPostMultipart<{ transcript: string }>(`/visits/${visitId}/audio`, fd);
+      if (mountedRef.current) {
+        setTranscript(resp.transcript);
+        setMode("text");
+      }
+    } catch (e) {
+      if (mountedRef.current) setAudioError((e as Error).message);
+    } finally {
+      if (mountedRef.current) setTranscribing(false);
+    }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) transcribeFile(file);
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) transcribeFile(file);
+  }
+
+  // ── Live tab: microphone recording ────────────────────────────────────────
+
+  async function startRecording() {
+    setLiveError(null);
+    setRecSeconds(0);
     let stream: MediaStream | null = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -50,11 +100,12 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = async () => {
         stream!.getTracks().forEach((t) => t.stop());
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || "audio/webm" });
         const fd = new FormData();
-        fd.append("audio", blob, "recording.webm");
+        fd.append("audio", blob, "live-recording.webm");
         if (!mountedRef.current) return;
-        setTranscribing(true);
+        setLiveTranscribing(true);
         try {
           const resp = await apiPostMultipart<{ transcript: string }>(`/visits/${visitId}/audio`, fd);
           if (mountedRef.current) {
@@ -62,17 +113,20 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
             setMode("text");
           }
         } catch (e) {
-          if (mountedRef.current) setAudioError((e as Error).message);
+          if (mountedRef.current) setLiveError((e as Error).message);
         } finally {
-          if (mountedRef.current) setTranscribing(false);
+          if (mountedRef.current) setLiveTranscribing(false);
         }
       };
       mr.start();
       mediaRef.current = mr;
       setRecording(true);
+      timerRef.current = setInterval(() => {
+        if (mountedRef.current) setRecSeconds((s) => s + 1);
+      }, 1000);
     } catch {
       stream?.getTracks().forEach((t) => t.stop());
-      setAudioError("Microphone access denied or unavailable.");
+      setLiveError("Microphone access denied or unavailable.");
     }
   }
 
@@ -81,6 +135,14 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
     mediaRef.current = null;
     setRecording(false);
   }
+
+  function formatTime(s: number) {
+    const m = Math.floor(s / 60).toString().padStart(2, "0");
+    const sec = (s % 60).toString().padStart(2, "0");
+    return `${m}:${sec}`;
+  }
+
+  // ── Collapsed state ───────────────────────────────────────────────────────
 
   if (hasReport && !expanded) {
     return (
@@ -107,6 +169,7 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
                 if (recording) stopRecording();
                 setMode(m);
                 setAudioError(null);
+                setLiveError(null);
               }}
               disabled={generating}
               aria-selected={mode === m}
@@ -117,10 +180,12 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
         </div>
       </div>
 
+      {/* ── Text mode ──────────────────────────────────────────── */}
       {mode === "text" && (
         <>
           <textarea
             id="transcript-ta"
+            aria-label="Consultation transcript"
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
             rows={6}
@@ -141,35 +206,74 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
         </>
       )}
 
+      {/* ── Voice mode: file upload ─────────────────────────────── */}
       {mode === "voice" && (
-        <div className="voice-zone">
+        <div
+          className={`voice-zone upload-zone${dragOver ? " drag-over" : ""}`}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => !transcribing && fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+          aria-label="Upload audio file"
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_AUDIO}
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+
           {transcribing ? (
-            <PhasedSpinner />
+            <>
+              <PhasedSpinner />
+              <span className="voice-hint">Transcribing {selectedFile?.name}…</span>
+            </>
           ) : (
-            <button
-              type="button"
-              className={`record-btn${recording ? " recording" : ""}`}
-              onClick={recording ? stopRecording : startRecording}
-              aria-label={recording ? "Stop recording" : "Start recording"}
-            >
-              {recording ? "■" : "●"}
-            </button>
+            <>
+              <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              <span className="voice-hint">
+                {dragOver ? "Drop audio file here" : "Click or drag an audio file to upload"}
+              </span>
+              <span className="upload-formats">MP3 · WAV · M4A · WebM · FLAC · OGG</span>
+            </>
           )}
-          <span className="voice-hint">
-            {transcribing
-              ? "Transcribing audio…"
-              : recording
-              ? "Recording… click to stop"
-              : "Click to record your consultation"}
-          </span>
-          {audioError && <span className="voice-error">{audioError}</span>}
+          {audioError && <span className="voice-error" onClick={(e) => e.stopPropagation()}>{audioError}</span>}
         </div>
       )}
 
+      {/* ── Live mode: microphone recording ────────────────────── */}
       {mode === "live" && (
         <div className="live-zone">
-          <button type="button" className="live-btn" disabled>Start live recording</button>
-          <span className="coming-soon">Live consultation recording — coming soon</span>
+          {liveTranscribing ? (
+            <>
+              <PhasedSpinner />
+              <span className="voice-hint">Transcribing recording…</span>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={`record-btn${recording ? " recording" : ""}`}
+                onClick={recording ? stopRecording : startRecording}
+                aria-label={recording ? "Stop recording" : "Start live recording"}
+              >
+                {recording ? "■" : "●"}
+              </button>
+              {recording && (
+                <span className="live-timer" aria-live="polite">{formatTime(recSeconds)}</span>
+              )}
+              <span className="voice-hint">
+                {recording ? "Recording… click to stop" : "Click to start live recording"}
+              </span>
+            </>
+          )}
+          {liveError && <span className="voice-error">{liveError}</span>}
         </div>
       )}
     </section>
