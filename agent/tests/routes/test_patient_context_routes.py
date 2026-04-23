@@ -43,10 +43,13 @@ def neo4j():
 @pytest.fixture
 def neo4j_app(neo4j, monkeypatch):
     import asyncio
+    from app.config import settings
     from app.graph.driver import close_driver
-    monkeypatch.setenv("NEO4J_URI", neo4j.get_connection_url())
-    monkeypatch.setenv("NEO4J_USER", "neo4j")
-    monkeypatch.setenv("NEO4J_PASSWORD", neo4j.password)
+    # Patch the already-instantiated settings singleton so get_driver() picks up
+    # the container's mapped port instead of the default localhost:7687.
+    monkeypatch.setattr(settings, "neo4j_uri", neo4j.get_connection_url())
+    monkeypatch.setattr(settings, "neo4j_user", "neo4j")
+    monkeypatch.setattr(settings, "neo4j_password", neo4j.password)
     asyncio.run(close_driver())
     yield
     asyncio.run(close_driver())
@@ -55,7 +58,7 @@ def neo4j_app(neo4j, monkeypatch):
 def test_get_patient_context_returns_empty_for_unknown_patient(neo4j_app):
     client = TestClient(app)
     pid = uuid.uuid4()
-    r = client.get(f"/agents/patient-context/{pid}")
+    r = client.get(f"/agents/patient-context/{pid}", headers={"X-Service-Token": "change-me"})
     assert r.status_code == 200
     body = r.json()
     assert body["patient_id"] == str(pid)
@@ -85,7 +88,7 @@ def test_get_patient_context_returns_seeded_data(neo4j_app):
             """, pid=pid, vid=vid)
     asyncio.run(seed())
     client = TestClient(app)
-    r = client.get(f"/agents/patient-context/{pid}")
+    r = client.get(f"/agents/patient-context/{pid}", headers={"X-Service-Token": "change-me"})
     assert r.status_code == 200
     body = r.json()
     assert "Penicillin" in body["allergies"]
