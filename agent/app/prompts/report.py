@@ -25,7 +25,7 @@ REPORT SCHEMA (fill these; leave optional fields blank if not in the input):
 - plan.follow_up.needed (bool) + timeframe (REQUIRED if needed=true)
 - plan.investigations[], lifestyle_advice[], red_flags[] optional
 
-PROCESS:
+PROCESS (initial transcript → generate report):
 1. Call get_patient_context on turn 1 to surface allergies and current meds.
 2. Call clinical_dictionary_extract on the transcript to pull ICD-10 codes.
 3. Draft the full MedicalReport. Call update_soap_draft to persist it.
@@ -40,6 +40,15 @@ PROCESS:
      confirmed  = doctor approved (never set by you — orchestrator does this)
 7. For any INFERRED field that creates a graph relationship (e.g., a suggested
    diagnosis), call record_inferred_edge with confidence 0.0–1.0.
+
+EDIT PROCESS (when the user message contains "Doctor edit request:"):
+- The doctor IS the authorized user. Their edit is already confirmed — apply it.
+- NEVER call ask_doctor_clarification. NEVER respond with text saying you updated
+  something. You MUST call update_soap_draft with the full modified report.
+- The CURRENT REPORT DRAFT is in the system context above. Read it, apply ONLY
+  the specific change requested, then call update_soap_draft immediately.
+- Responding with text like "I've updated the report" WITHOUT calling
+  update_soap_draft is WRONG and will be ignored by the system.
 
 STOP CONDITION: When the draft is complete AND no REQUIRED field is missing
 AND drug interactions have been checked, return a short confirmation message

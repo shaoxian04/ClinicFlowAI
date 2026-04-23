@@ -193,7 +193,10 @@ class BaseAgent(ABC):
         while i < len(turns):
             t = turns[i]
             if t.role == "system":
-                out.append({"role": "system", "content": t.content})
+                # Always use the live system_prompt so runtime context
+                # (e.g. current_draft on edit turns) overrides the stale
+                # stored version from the initial generate step.
+                out.append({"role": "system", "content": self.system_prompt(ctx)})
                 i += 1
             elif t.role == "user":
                 out.append({"role": "user", "content": t.content})
