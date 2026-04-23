@@ -46,7 +46,7 @@ def neo4j_app(neo4j, monkeypatch):
     from app.graph.driver import close_driver
     monkeypatch.setenv("NEO4J_URI", neo4j.get_connection_url())
     monkeypatch.setenv("NEO4J_USER", "neo4j")
-    monkeypatch.setenv("NEO4J_PASSWORD", neo4j.NEO4J_ADMIN_PASSWORD)
+    monkeypatch.setenv("NEO4J_PASSWORD", neo4j.password)
     asyncio.run(close_driver())
     yield
     asyncio.run(close_driver())
