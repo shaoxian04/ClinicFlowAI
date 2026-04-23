@@ -1,7 +1,11 @@
 import json
+import uuid
+
 import pytest
+from fastapi.testclient import TestClient
 
 from app.agents.pre_visit_agent import PreVisitIntakeAgent
+from app.main import app
 from app.llm.client import ChatResponse
 from app.persistence.agent_turns import AgentTurnRepository
 from app.schemas.pre_visit import PreVisitSlots
@@ -88,13 +92,6 @@ async def test_extract_slots_handles_inline_single_line_fence():
     agent = PreVisitIntakeAgent(llm=llm, registry=ToolRegistry([]), turns=AgentTurnRepository())
     slots = await agent.extract_slots([{"role": "user", "content": "hi"}])
     assert slots.chief_complaint == "fever"
-
-
-import uuid
-
-from fastapi.testclient import TestClient
-
-from app.main import app
 
 
 def test_turn_sync_returns_extracted_fields(monkeypatch):
