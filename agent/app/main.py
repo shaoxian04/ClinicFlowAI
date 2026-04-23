@@ -29,8 +29,10 @@ def _assert_no_placeholder_secrets() -> None:
     at boot, not three hops away at request time.
     """
     fatal: list[str] = []
+    if settings.glm_api_key in _PLACEHOLDER_VALUES:
+        fatal.append("GLM_API_KEY (would 401 on first LLM call)")
     if settings.openai_api_key in _PLACEHOLDER_VALUES:
-        fatal.append("OPENAI_API_KEY (would 401 on first LLM call)")
+        fatal.append("OPENAI_API_KEY (would 401 on first STT call)")
     # POSTGRES_DSN with the hardcoded localhost default never resolves inside
     # a container and produces the exact silent boot we just debugged.
     if "localhost" in settings.postgres_dsn and settings.postgres_dsn.endswith("/cliniflow"):
