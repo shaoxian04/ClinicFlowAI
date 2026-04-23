@@ -9,12 +9,20 @@ type Allergy = { id: string; label: string };
 type ChronicCondition = { id: string; label: string };
 type ActiveMedication = { id: string; name: string; dose: string };
 type RecentVisit = { visitId: string; date: string; diagnosis: string };
+type PastRecord = {
+  visitId: string;
+  date: string;
+  diagnosis: string;
+  medications: string[];
+  doctor: string;
+};
 
 export type PatientContext = {
   allergies: Allergy[];
   chronicConditions: ChronicCondition[];
   activeMedications: ActiveMedication[];
   recentVisits: RecentVisit[];
+  pastMedicalRecords?: PastRecord[];
 };
 
 type PatientContextPanelProps = {
@@ -177,8 +185,9 @@ function PanelBody({ state }: { state: FetchState }) {
     );
   }
 
-  const { allergies, chronicConditions, activeMedications, recentVisits } = state.data;
+  const { allergies, chronicConditions, activeMedications, recentVisits, pastMedicalRecords } = state.data;
   const recent = recentVisits.slice(0, 3);
+  const records = (pastMedicalRecords ?? []).slice(0, 5);
 
   return (
     <div className="pcx-blocks">
@@ -264,6 +273,37 @@ function PanelBody({ state }: { state: FetchState }) {
           )}
         </div>
       </details>
+
+      {pastMedicalRecords !== undefined && (
+        <details className="pcx-block" open>
+          <summary className="pcx-block-head">
+            <span className="pcx-block-title">Past medical records</span>
+            <span className="pcx-block-count">{records.length}</span>
+          </summary>
+          <div className="pcx-block-body">
+            {records.length === 0 ? (
+              <p className="pcx-empty">No finalized records on file.</p>
+            ) : (
+              <ul className="pcx-list">
+                {records.map((r) => (
+                  <li key={r.visitId} className="pcx-item pcx-item-record">
+                    <div className="pcx-record-top">
+                      <span className="pcx-item-label">{r.diagnosis}</span>
+                      <span className="pcx-item-meta">{formatDate(r.date)}</span>
+                    </div>
+                    {r.medications.length > 0 && (
+                      <div className="pcx-record-meds">
+                        {r.medications.join(" · ")}
+                      </div>
+                    )}
+                    <div className="pcx-record-doctor">{r.doctor}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </details>
+      )}
 
       <SeedDemoButton
         allEmpty={

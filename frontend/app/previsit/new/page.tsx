@@ -56,6 +56,7 @@ export default function PreVisitNewPage() {
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
   const paneRef = useRef<HTMLDivElement>(null);
+  const chatCardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!getToken()) {
@@ -81,6 +82,7 @@ export default function PreVisitNewPage() {
   useEffect(() => {
     const el = paneRef.current;
     if (el) el.scrollTop = el.scrollHeight;
+    chatCardRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, busy]);
 
   async function send(e: React.FormEvent) {
@@ -126,9 +128,9 @@ export default function PreVisitNewPage() {
       );
 
   return (
-    <main className="shell shell-narrow">
+    <main className="shell previsit-shell">
       <Link href="/portal" className="back-link">← Back to portal</Link>
-      <div style={{ marginTop: 18 }}>
+      <div style={{ marginTop: 18, textAlign: "center" }}>
         <PageHeader
           eyebrow="Pre-visit intake"
           title={<>Tell us how you&apos;re <em>feeling</em></>}
@@ -160,7 +162,7 @@ export default function PreVisitNewPage() {
         })}
       </div>
 
-      <section className="card chat-card" data-delay="1">
+      <section className="card chat-card" data-delay="1" ref={chatCardRef}>
         <div className="chat-head">
           <span className="chat-head-title">
             Intake <em>assistant</em>

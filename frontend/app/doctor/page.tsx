@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
@@ -89,6 +89,7 @@ export default function DoctorDashboard() {
   const [visits, setVisits] = useState<VisitSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
 
   useEffect(() => {
     const user = getUser();
@@ -102,6 +103,14 @@ export default function DoctorDashboard() {
 
   const groups = useMemo(() => groupVisits(visits), [visits]);
 
+  const effectiveGroup = useMemo(() => {
+    if (groups.length === 0) return null;
+    const found = activeGroup ? groups.find((g) => g.heading === activeGroup) : null;
+    return found ?? groups[0];
+  }, [groups, activeGroup]);
+
+  const selectGroup = useCallback((heading: string) => setActiveGroup(heading), []);
+
   return (
     <>
       <DoctorNav active="today" />
@@ -109,7 +118,7 @@ export default function DoctorDashboard() {
         <PageHeader
           eyebrow="Clinician workspace"
           title={<>Today&apos;s <em>visits</em></>}
-          sub="AI drafts sit at the top — review, edit, and sign. Finalized visits show a doctor's seal and drop to the bottom."
+          sub="Select a group below to review. AI drafts appear first — edit and sign before finalizing."
         />
 
         {loading && <SkeletonGrid count={4} />}
@@ -122,42 +131,41 @@ export default function DoctorDashboard() {
           />
         )}
 
-        {!loading && groups.map((group) => {
-          const rows = group.visits.map((v) => (
-            <VisitRow
-              key={v.visitId}
-              visitId={v.visitId}
-              patientName={v.patientName}
-              date={v.createdAt}
-              preVisitDone={v.preVisitDone}
-              visitDone={v.status === "IN_PROGRESS" || v.status === "FINALIZED"}
-              postVisitDone={v.soapFinalized}
-              awaitingReview={v.preVisitDone && !v.soapFinalized}
-            />
-          ));
+        {!loading && groups.length > 0 && (
+          <>
+            <div className="visit-filter-tabs" role="tablist">
+              {groups.map((g) => (
+                <button
+                  key={g.heading}
+                  role="tab"
+                  aria-selected={effectiveGroup?.heading === g.heading}
+                  className={`visit-filter-tab${effectiveGroup?.heading === g.heading ? " active" : ""}`}
+                  onClick={() => selectGroup(g.heading)}
+                >
+                  {g.heading}
+                  <span className="visit-filter-count">{g.visits.length}</span>
+                </button>
+              ))}
+            </div>
 
-          if (group.collapsible) {
-            return (
-              <details key={group.heading} className="visit-group-details">
-                <summary className="visit-group-heading">
-                  {group.heading}
-                  <span className="section-heading-count">{group.visits.length}</span>
-                </summary>
-                <div className="visit-group-rows">{rows}</div>
-              </details>
-            );
-          }
-
-          return (
-            <section key={group.heading} className="visit-group">
-              <h2 className="visit-group-heading">
-                {group.heading}
-                <span className="section-heading-count">{group.visits.length}</span>
-              </h2>
-              <div className="visit-group-rows">{rows}</div>
-            </section>
-          );
-        })}
+            {effectiveGroup && (
+              <div className="visit-group-rows">
+                {effectiveGroup.visits.map((v) => (
+                  <VisitRow
+                    key={v.visitId}
+                    visitId={v.visitId}
+                    patientName={v.patientName}
+                    date={v.createdAt}
+                    preVisitDone={v.preVisitDone}
+                    visitDone={v.status === "IN_PROGRESS" || v.status === "FINALIZED"}
+                    postVisitDone={v.soapFinalized}
+                    awaitingReview={v.preVisitDone && !v.soapFinalized}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
         {error && <div className="banner banner-error">{error}</div>}
       </main>
