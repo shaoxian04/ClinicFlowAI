@@ -397,7 +397,7 @@ export function ReportPreview({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => console.info("[REPORT] Save clicked (no-op)")}
+          onClick={() => {}}
         >
           Save
         </Button>
@@ -405,7 +405,7 @@ export function ReportPreview({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => console.info("[REPORT] Download clicked (no-op)")}
+          onClick={() => {}}
         >
           Download
         </Button>

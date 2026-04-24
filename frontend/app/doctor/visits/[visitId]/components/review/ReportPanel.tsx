@@ -62,7 +62,7 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
           type="button"
           variant="primary"
           size="sm"
-          onClick={() => { console.info("[REVIEW] approve click"); onApprove(); }}
+          onClick={onApprove}
           disabled={approveDisabled}
         >
           {approved ? "Approved ✓" : "Approve & continue"}

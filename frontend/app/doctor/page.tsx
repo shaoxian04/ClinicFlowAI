@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Separator } from "@/components/ui/Separator";
+import { StatTile } from "@/components/ui/StatTile";
 import DoctorNav from "./components/DoctorNav";
 import VisitRow from "./components/VisitRow";
 
@@ -82,15 +83,6 @@ function groupVisits(visits: VisitSummary[]): VisitGroup[] {
   return groups;
 }
 
-function KpiCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card variant="bone" className="flex flex-col gap-1 p-4">
-      <span className="font-display text-2xl text-ink">{value}</span>
-      <span className="font-mono text-[10px] text-ink-soft uppercase tracking-widest">{label}</span>
-    </Card>
-  );
-}
-
 export default function DoctorDashboard() {
   const router = useRouter();
   const [visits, setVisits] = useState<VisitSummary[]>([]);
@@ -158,9 +150,9 @@ export default function DoctorDashboard() {
           {/* KPI strip */}
           {!loading && (
             <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3 mb-8 max-w-sm">
-              <KpiCard label="Awaiting review" value={awaitingCount} />
-              <KpiCard label="Today" value={todayCount} />
-              <KpiCard label="Finalized" value={finalizedCount} />
+              <StatTile label="Awaiting review" value={awaitingCount} />
+              <StatTile label="Today" value={todayCount} />
+              <StatTile label="Finalized" value={finalizedCount} />
             </motion.div>
           )}
 
