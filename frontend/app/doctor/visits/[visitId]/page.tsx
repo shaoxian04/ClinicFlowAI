@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import { PageHeader } from "@/app/components/PageHeader";
+import { fadeUp, staggerChildren } from "@/design/motion";
+import { Badge } from "@/components/ui/Badge";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { PhaseTabs, PhaseKey } from "@/app/doctor/components/PhaseTabs";
 import { PatientContextPanel } from "@/app/doctor/components/PatientContextPanel";
 import { SplitReview } from "./components/review/SplitReview";
 import { ReportPreview } from "./components/ReportPreview";
 import { PreVisitSummary } from "./components/PreVisitSummary";
+import DoctorNav from "@/app/doctor/components/DoctorNav";
 import type { MedicalReport } from "@/lib/types/report";
 import type { PreVisitFields } from "@/lib/types/preVisit";
 
@@ -74,14 +78,21 @@ export default function VisitDetailPage() {
 
   if (!detail) {
     return (
-      <main className="shell visit-shell">
-        <p className="empty">Loading visit…</p>
-      </main>
+      <>
+        <DoctorNav active="today" />
+        <main className="max-w-screen-xl mx-auto px-6 py-8">
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-96 w-full mt-4" />
+          </div>
+        </main>
+      </>
     );
   }
 
   const locked = detail.soap.finalized;
-
   const chip = visitStateChip(detail);
 
   const preVisitPanel = (
@@ -99,8 +110,6 @@ export default function VisitDetailPage() {
       initialApproved={detail.soap.previewApprovedAt != null}
       locked={locked}
       onNavigateToPreview={() => {
-        // Refetch so previewApprovedAt is populated before ReportPreview renders,
-        // otherwise the "Publish to patient" button never appears.
         refetch();
         window.location.hash = "#preview";
       }}
@@ -125,48 +134,69 @@ export default function VisitDetailPage() {
   );
 
   return (
-    <main className="shell visit-shell">
-      <PageHeader
-        eyebrow="Clinician review"
-        title={<>Visit with <em>{detail.patientName}</em></>}
-        sub="Review the pre-visit intake, capture your consultation, and publish a bilingual summary to the patient."
-      />
+    <>
+      <DoctorNav active="today" />
+      <main className="max-w-screen-xl mx-auto px-6 py-8">
+        <motion.div
+          variants={staggerChildren}
+          initial="initial"
+          animate="animate"
+          className="flex flex-col"
+        >
+          {/* Page header */}
+          <motion.div variants={fadeUp} className="mb-4">
+            <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-2">
+              Clinician review
+            </p>
+            <h1 className="font-display text-3xl text-ink leading-tight">
+              Visit with{" "}
+              <em className="not-italic text-oxblood">{detail.patientName}</em>
+            </h1>
+            <p className="font-sans text-sm text-ink-soft mt-2">
+              Review the pre-visit intake, capture your consultation, and publish a bilingual summary to the patient.
+            </p>
+          </motion.div>
 
-      <div className="status-row">
-        <span className={`visit-chip chip-${chip.tone}`}>{chip.label}</span>
-        <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
-      </div>
+          {/* Status row */}
+          <motion.div variants={fadeUp} className="flex items-center gap-3 mb-6">
+            <Badge variant={chip.tone}>{chip.label}</Badge>
+            <span className="font-mono text-xs text-ink-soft/50">
+              {detail.visitId.slice(0, 8)}…
+            </span>
+          </motion.div>
 
-      {error && <div className="banner banner-error">{error}</div>}
+          {error && (
+            <motion.div variants={fadeUp}>
+              <div className="banner banner-error mb-4">{error}</div>
+            </motion.div>
+          )}
 
-      {/* Tab list — always rendered; panels below are context-dependent */}
-      <PhaseTabs
-        consultationNeedsReview={false}
-        reportPreviewNeedsReview={locked && activePhase !== "preview"}
-        onActiveChange={onPhaseChange}
-        panelFocusable={{ pre: true, preview: true }}
-      >
-        {{
-          pre: (
-            /* Pre-Visit: two-column layout with patient context sidebar */
-            <div className="visit-rail-grid visit-rail-grid-tri">
-              {/* Empty slot to hold the ProgressRail column position */}
-              <div aria-hidden="true" />
-              <div className="visit-rail-main">{preVisitPanel}</div>
-              <PatientContextPanel patientId={detail.patientId} />
-            </div>
-          ),
-          visit: (
-            /* Consultation: full-width review layout, no rail grid */
-            <div className="review-tabpanel">{consultationPanel}</div>
-          ),
-          preview: (
-            /* Report Preview: full-width layout */
-            <div className="review-tabpanel">{reportPreviewPanel}</div>
-          ),
-        }}
-      </PhaseTabs>
-
-    </main>
+          {/* Tabs */}
+          <motion.div variants={fadeUp}>
+            <PhaseTabs
+              consultationNeedsReview={false}
+              reportPreviewNeedsReview={locked && activePhase !== "preview"}
+              onActiveChange={onPhaseChange}
+              panelFocusable={{ pre: true, preview: true }}
+            >
+              {{
+                pre: (
+                  <div className="flex gap-6 items-start">
+                    <div className="flex-1 min-w-0">{preVisitPanel}</div>
+                    <PatientContextPanel patientId={detail.patientId} />
+                  </div>
+                ),
+                visit: (
+                  <div>{consultationPanel}</div>
+                ),
+                preview: (
+                  <div>{reportPreviewPanel}</div>
+                ),
+              }}
+            </PhaseTabs>
+          </motion.div>
+        </motion.div>
+      </main>
+    </>
   );
 }

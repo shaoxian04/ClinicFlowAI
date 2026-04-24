@@ -2,6 +2,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { apiPostMultipart } from "@/lib/api";
+import { cn } from "@/design/cn";
+import { Button } from "@/components/ui/Button";
 import { PhasedSpinner } from "./PhasedSpinner";
 
 type Mode = "text" | "voice" | "live";
@@ -146,25 +148,41 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
 
   if (hasReport && !expanded) {
     return (
-      <section className="generate-bar collapsed">
-        <span>Transcript: {transcript.trim().split(/\s+/).length} words</span>
-        <button type="button" onClick={() => setExpanded(true)}>Edit transcript</button>
-        <button type="button" onClick={handleGenerate} disabled={generating}>Regenerate</button>
+      <section className="flex items-center gap-3 px-4 py-3 bg-bone/50 border border-hairline rounded-xs mb-4">
+        <span className="font-mono text-xs text-ink-soft flex-1">
+          Transcript: {transcript.trim().split(/\s+/).length} words
+        </span>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setExpanded(true)}>
+          Edit transcript
+        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={handleGenerate} disabled={generating}>
+          Regenerate
+        </Button>
       </section>
     );
   }
 
   return (
-    <section className="generate-bar">
-      <div className="generate-bar-header">
-        <label htmlFor="transcript-ta">Consultation transcript</label>
-        <div className="mode-tabs" role="tablist">
+    <section className="mb-4 border border-hairline rounded-xs bg-paper">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-hairline">
+        <label htmlFor="transcript-ta" className="font-mono text-xs text-ink-soft uppercase tracking-widest">
+          Consultation transcript
+        </label>
+        {/* Mode tabs */}
+        <div className="flex gap-0" role="tablist">
           {(["text", "voice", "live"] as const).map((m) => (
             <button
               key={m}
               role="tab"
               type="button"
-              className={`mode-tab${mode === m ? " active" : ""}`}
+              aria-selected={mode === m}
+              className={cn(
+                "px-3 py-1 text-xs font-sans transition-colors duration-150 border-b-2 -mb-px",
+                mode === m
+                  ? "text-oxblood border-oxblood"
+                  : "text-ink-soft border-transparent hover:text-ink"
+              )}
               onClick={() => {
                 if (recording) stopRecording();
                 setMode(m);
@@ -172,7 +190,6 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
                 setLiveError(null);
               }}
               disabled={generating}
-              aria-selected={mode === m}
             >
               {m === "text" ? "Text" : m === "voice" ? "Voice" : "Live"}
             </button>
@@ -180,102 +197,129 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
         </div>
       </div>
 
-      {/* ── Text mode ──────────────────────────────────────────── */}
-      {mode === "text" && (
-        <>
-          <textarea
-            id="transcript-ta"
-            aria-label="Consultation transcript"
-            value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
-            rows={6}
-            placeholder="Paste or type the consultation transcript…"
-          />
-          <div className="generate-bar-actions">
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleGenerate}
-              disabled={generating || !transcript.trim()}
-              aria-busy={generating}
-            >
-              {generating ? "Generating…" : "Generate report"}
-            </button>
-            {generating && <PhasedSpinner />}
-          </div>
-        </>
-      )}
-
-      {/* ── Voice mode: file upload ─────────────────────────────── */}
-      {mode === "voice" && (
-        <div
-          className={`voice-zone upload-zone${dragOver ? " drag-over" : ""}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => !transcribing && fileInputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-          aria-label="Upload audio file"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPTED_AUDIO}
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
-
-          {transcribing ? (
-            <>
-              <PhasedSpinner />
-              <span className="voice-hint">Transcribing {selectedFile?.name}…</span>
-            </>
-          ) : (
-            <>
-              <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-              </svg>
-              <span className="voice-hint">
-                {dragOver ? "Drop audio file here" : "Click or drag an audio file to upload"}
-              </span>
-              <span className="upload-formats">MP3 · WAV · M4A · WebM · FLAC · OGG</span>
-            </>
-          )}
-          {audioError && <span className="voice-error" onClick={(e) => e.stopPropagation()}>{audioError}</span>}
-        </div>
-      )}
-
-      {/* ── Live mode: microphone recording ────────────────────── */}
-      {mode === "live" && (
-        <div className="live-zone">
-          {liveTranscribing ? (
-            <>
-              <PhasedSpinner />
-              <span className="voice-hint">Transcribing recording…</span>
-            </>
-          ) : (
-            <>
-              <button
+      <div className="p-4">
+        {/* ── Text mode ──────────────────────────────────────────── */}
+        {mode === "text" && (
+          <>
+            <textarea
+              id="transcript-ta"
+              aria-label="Consultation transcript"
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              rows={6}
+              placeholder="Paste or type the consultation transcript…"
+              className="w-full rounded-xs border border-hairline bg-paper px-3 py-2 text-sm font-sans text-ink placeholder:text-ink-soft/50 focus:outline-none focus:ring-1 focus:ring-oxblood/40 resize-y"
+            />
+            <div className="flex items-center gap-3 mt-3">
+              <Button
                 type="button"
-                className={`record-btn${recording ? " recording" : ""}`}
-                onClick={recording ? stopRecording : startRecording}
-                aria-label={recording ? "Stop recording" : "Start live recording"}
+                variant="primary"
+                onClick={handleGenerate}
+                disabled={generating || !transcript.trim()}
+                aria-busy={generating}
               >
-                {recording ? "■" : "●"}
-              </button>
-              {recording && (
-                <span className="live-timer" aria-live="polite">{formatTime(recSeconds)}</span>
-              )}
-              <span className="voice-hint">
-                {recording ? "Recording… click to stop" : "Click to start live recording"}
+                {generating ? "Generating…" : "Generate report"}
+              </Button>
+              {generating && <PhasedSpinner />}
+            </div>
+          </>
+        )}
+
+        {/* ── Voice mode: file upload ─────────────────────────────── */}
+        {mode === "voice" && (
+          <div
+            className={cn(
+              "border-2 border-dashed border-hairline rounded-xs p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors duration-150",
+              dragOver && "border-oxblood bg-oxblood/5",
+              transcribing && "cursor-default"
+            )}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => !transcribing && fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+            aria-label="Upload audio file"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_AUDIO}
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+            />
+
+            {transcribing ? (
+              <>
+                <PhasedSpinner />
+                <span className="font-sans text-sm text-ink-soft">
+                  Transcribing {selectedFile?.name}…
+                </span>
+              </>
+            ) : (
+              <>
+                <svg className="w-8 h-8 text-ink-soft/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                <span className="font-sans text-sm text-ink-soft">
+                  {dragOver ? "Drop audio file here" : "Click or drag an audio file to upload"}
+                </span>
+                <span className="font-mono text-xs text-ink-soft/50">
+                  MP3 · WAV · M4A · WebM · FLAC · OGG
+                </span>
+              </>
+            )}
+            {audioError && (
+              <span
+                className="font-sans text-xs text-crimson"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {audioError}
               </span>
-            </>
-          )}
-          {liveError && <span className="voice-error">{liveError}</span>}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+
+        {/* ── Live mode: microphone recording ────────────────────── */}
+        {mode === "live" && (
+          <div className="flex flex-col items-center gap-4 py-6">
+            {liveTranscribing ? (
+              <>
+                <PhasedSpinner />
+                <span className="font-sans text-sm text-ink-soft">Transcribing recording…</span>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={cn(
+                    "w-14 h-14 rounded-full flex items-center justify-center text-xl font-sans transition-colors duration-150 border-2",
+                    recording
+                      ? "bg-crimson border-crimson text-paper hover:bg-crimson/90"
+                      : "bg-oxblood border-oxblood text-paper hover:bg-oxblood/90"
+                  )}
+                  onClick={recording ? stopRecording : startRecording}
+                  aria-label={recording ? "Stop recording" : "Start live recording"}
+                >
+                  {recording ? "■" : "●"}
+                </button>
+                {recording && (
+                  <span className="font-mono text-sm text-ink" aria-live="polite">
+                    {formatTime(recSeconds)}
+                  </span>
+                )}
+                <span className="font-sans text-sm text-ink-soft">
+                  {recording ? "Recording… click to stop" : "Click to start live recording"}
+                </span>
+              </>
+            )}
+            {liveError && (
+              <span className="font-sans text-xs text-crimson">{liveError}</span>
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

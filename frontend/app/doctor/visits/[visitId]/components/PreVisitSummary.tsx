@@ -1,14 +1,15 @@
-// frontend/app/doctor/visits/[visitId]/components/PreVisitSummary.tsx
 "use client";
 
 import type { PreVisitFields } from "@/lib/types/preVisit";
 import { isPreVisitFieldsEmpty } from "@/lib/types/preVisit";
-import styles from "./PreVisitSummary.module.css";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Separator } from "@/components/ui/Separator";
 
 export interface PreVisitSummaryProps {
   fields: PreVisitFields | null | undefined;
   done: boolean;
-  capturedAt?: string | null;  // ISO timestamp of the last intake turn
+  capturedAt?: string | null;
 }
 
 export function PreVisitSummary({ fields, done, capturedAt }: PreVisitSummaryProps) {
@@ -16,58 +17,50 @@ export function PreVisitSummary({ fields, done, capturedAt }: PreVisitSummaryPro
 
   if (empty && !done) {
     return (
-      <section className={styles.card}>
-        <header className={styles.head}>
-          <h2>Pre-visit intake</h2>
-          <span className={styles.idx}>01 / INTAKE</span>
-        </header>
-        <p className={styles.muted}>
+      <Card variant="paper" className="p-5">
+        <SectionHeader number="01" title="Pre-visit intake" className="mb-4" />
+        <p className="font-sans text-sm text-ink-soft">
           Pre-visit intake in progress. Summary will appear when captured.
         </p>
-      </section>
+      </Card>
     );
   }
 
   if (empty && done) {
     return (
-      <section className={styles.card}>
-        <header className={styles.head}>
-          <h2>Pre-visit intake</h2>
-          <span className={styles.idx}>01 / INTAKE</span>
-        </header>
-        <p className={styles.muted}>No pre-visit intake completed.</p>
-      </section>
+      <Card variant="paper" className="p-5">
+        <SectionHeader number="01" title="Pre-visit intake" className="mb-4" />
+        <p className="font-sans text-sm text-ink-soft">No pre-visit intake completed.</p>
+      </Card>
     );
   }
 
-  // Non-null assertion safe: isPreVisitFieldsEmpty returned false.
   const f = fields!;
   return (
-    <section className={styles.card}>
-      <header className={styles.head}>
-        <h2>Pre-visit intake</h2>
-        <span className={styles.idx}>01 / INTAKE</span>
-      </header>
+    <Card variant="paper" className="p-5">
+      <SectionHeader number="01" title="Pre-visit intake" className="mb-4" />
 
       {f.chiefComplaint && (
-        <div className={styles.section}>
-          <div className={styles.label}>Chief complaint</div>
-          <div className={styles.value}>{f.chiefComplaint}</div>
+        <div className="mb-3">
+          <div className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1">
+            Chief complaint
+          </div>
+          <div className="font-sans text-sm text-ink">{f.chiefComplaint}</div>
         </div>
       )}
 
       {(f.symptomDuration || f.painSeverity != null) && (
-        <div className={styles.grid2}>
+        <div className="grid grid-cols-2 gap-3 mb-3">
           {f.symptomDuration && (
             <div>
-              <div className={styles.label}>Duration</div>
-              <div className={styles.value}>{f.symptomDuration}</div>
+              <div className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1">Duration</div>
+              <div className="font-sans text-sm text-ink">{f.symptomDuration}</div>
             </div>
           )}
           {f.painSeverity != null && (
             <div>
-              <div className={styles.label}>Pain severity</div>
-              <div className={styles.value}>{f.painSeverity} / 10</div>
+              <div className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1">Pain severity</div>
+              <div className="font-sans text-sm text-ink font-mono">{f.painSeverity} / 10</div>
             </div>
           )}
         </div>
@@ -76,7 +69,9 @@ export function PreVisitSummary({ fields, done, capturedAt }: PreVisitSummaryPro
       {((f.knownAllergies?.length ?? 0) > 0 ||
         (f.currentMedications?.length ?? 0) > 0 ||
         (f.relevantHistory?.length ?? 0) > 0) && (
-        <div className={styles.divider}>Confirmed with patient</div>
+        <div className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest my-3 border-t border-hairline pt-3">
+          Confirmed with patient
+        </div>
       )}
 
       {(f.knownAllergies?.length ?? 0) > 0 && (
@@ -90,21 +85,30 @@ export function PreVisitSummary({ fields, done, capturedAt }: PreVisitSummaryPro
       )}
 
       {capturedAt && (
-        <footer className={styles.foot}>
-          Intake captured {new Date(capturedAt).toLocaleString()}
-        </footer>
+        <div className="mt-4 pt-3 border-t border-hairline">
+          <span className="font-mono text-xs text-ink-soft/50">
+            Intake captured {new Date(capturedAt).toLocaleString()}
+          </span>
+        </div>
       )}
-    </section>
+    </Card>
   );
 }
 
 function ChipSection({ label, items }: { label: string; items: string[] }) {
   return (
-    <div className={styles.section}>
-      <div className={styles.label}>{label}</div>
-      <div className={styles.chips}>
+    <div className="mb-3">
+      <div className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1.5">
+        {label}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
         {items.map((x, i) => (
-          <span key={i} className={styles.chip}>{x}</span>
+          <span
+            key={i}
+            className="inline-flex items-center rounded-xs bg-bone border border-hairline px-2 py-0.5 font-sans text-xs text-ink"
+          >
+            {x}
+          </span>
         ))}
       </div>
     </div>

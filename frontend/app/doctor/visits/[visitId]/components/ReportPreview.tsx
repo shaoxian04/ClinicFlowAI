@@ -2,6 +2,12 @@
 import { useState } from "react";
 import { apiPost } from "@/lib/api";
 import type { MedicalReport } from "@/lib/types/report";
+import { cn } from "@/design/cn";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Separator } from "@/components/ui/Separator";
 
 export interface ReportPreviewProps {
   visitId: string;
@@ -15,8 +21,6 @@ export interface ReportPreviewProps {
   onPublished: () => void;
 }
 
-// Demo-only static data. Replace with real clinic/patient/provider records
-// when those bounded contexts are implemented (see PRD §3.2, §3.4).
 const CLINIC = {
   name: "CliniFlow AI Clinic",
   address: "No. 12, Jalan Bukit Bintang, 55100 Kuala Lumpur, Malaysia",
@@ -25,13 +29,10 @@ const CLINIC = {
   registration: "KKM-KL-2024-0451",
 };
 
-// Deterministic fake patient demographics seeded from the visitId so the same
-// visit always renders the same header across reloads. Real patient records
-// (DOB, IC, gender, phone) will come from the backend once that slice ships.
 function demoPatientProfile(visitId: string, patientName: string) {
   const seed = visitId.charCodeAt(0) + visitId.charCodeAt(1);
   const sexes = ["Male", "Female"] as const;
-  const year = 1978 + (seed % 40);        // age ~8–48
+  const year = 1978 + (seed % 40);
   const month = ((seed * 3) % 12) + 1;
   const day = ((seed * 7) % 27) + 1;
   const icSuffix = (seed * 1237).toString().padStart(7, "0").slice(0, 7);
@@ -46,8 +47,6 @@ function demoPatientProfile(visitId: string, patientName: string) {
   };
 }
 
-// Demo doctor credentials. Real data will come from the doctor's user profile
-// once specialty + MMC# fields are wired through auth.
 function demoDoctorProfile(name: string) {
   return {
     name: formatDoctorName(name),
@@ -70,6 +69,24 @@ function calcAge(dob: string): number {
   if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
   return age;
 }
+
+function humanizeVital(key: string): string {
+  const map: Record<string, string> = {
+    blood_pressure: "BP",
+    heart_rate: "HR",
+    temperature: "Temp",
+    respiratory_rate: "RR",
+    spo2: "SpO₂",
+    weight: "Weight",
+    height: "Height",
+    bmi: "BMI",
+  };
+  return map[key] ?? key.replace(/_/g, " ");
+}
+
+const dtCls = "font-mono text-xs text-ink-soft/60 mt-2";
+const ddCls = "font-sans text-sm text-ink mt-0.5";
+const monoCls = "font-mono text-sm";
 
 export function ReportPreview({
   visitId, patientName, doctorName, createdAt, report,
@@ -98,263 +115,301 @@ export function ReportPreview({
   const doctor = demoDoctorProfile(doctorName);
 
   return (
-    <>
-    <section className="report-preview">
-      {/* ============================ HEADER ============================ */}
-      <header className="report-doc-head">
-        <div className="clinic-block">
-          <h1>{CLINIC.name}</h1>
-          <p className="muted">{CLINIC.address}</p>
-          <p className="clinic-contact">
-            <span>Tel: {CLINIC.phone}</span>
-            <span>·</span>
-            <span>{CLINIC.email}</span>
-            <span>·</span>
-            <span>Reg. {CLINIC.registration}</span>
+    <div className="flex flex-col gap-6 max-w-3xl">
+      {/* Document card */}
+      <Card variant="paper" className="p-6">
+        {/* ============================ HEADER ============================ */}
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-6">
+          <div>
+            <p className="font-display text-lg text-ink">{CLINIC.name}</p>
+            <p className="font-sans text-xs text-ink-soft mt-0.5">{CLINIC.address}</p>
+            <p className="font-mono text-xs text-ink-soft/60 mt-1 flex flex-wrap gap-2">
+              <span>Tel: {CLINIC.phone}</span>
+              <span>·</span>
+              <span>{CLINIC.email}</span>
+              <span>·</span>
+              <span>Reg. {CLINIC.registration}</span>
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 sm:items-end flex-shrink-0">
+            <div className="flex gap-2 items-baseline">
+              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Visit ID</span>
+              <code className="font-mono text-xs text-ink">{visitId.slice(0, 8)}…</code>
+            </div>
+            <div className="flex gap-2 items-baseline">
+              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Date</span>
+              <span className="font-mono text-xs text-ink">{visitDate.toLocaleDateString()}</span>
+            </div>
+            <div className="flex gap-2 items-baseline">
+              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Time</span>
+              <span className="font-mono text-xs text-ink">{visitDate.toLocaleTimeString()}</span>
+            </div>
+            <div className="flex gap-2 items-baseline">
+              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Encounter</span>
+              <span className="font-sans text-xs text-ink">Outpatient</span>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* ============================ PARTIES ============================ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+          <div>
+            <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-2">Patient</p>
+            <p className="font-display text-base text-ink">{patient.name}</p>
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+              <dt className={dtCls}>MRN</dt><dd className={cn(ddCls, monoCls)}>{patient.mrn}</dd>
+              <dt className={dtCls}>IC No.</dt><dd className={cn(ddCls, monoCls)}>{patient.ic}</dd>
+              <dt className={dtCls}>DOB</dt><dd className={ddCls}>{patient.dob} ({calcAge(patient.dob)} y)</dd>
+              <dt className={dtCls}>Sex</dt><dd className={ddCls}>{patient.sex}</dd>
+              <dt className={dtCls}>Phone</dt><dd className={ddCls}>{patient.phone}</dd>
+            </dl>
+          </div>
+          <div>
+            <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-2">Attending Doctor</p>
+            <p className="font-display text-base text-ink">{doctor.name}</p>
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+              <dt className={dtCls}>Qualification</dt><dd className={ddCls}>{doctor.qualification}</dd>
+              <dt className={dtCls}>Specialty</dt><dd className={ddCls}>{doctor.specialty}</dd>
+              <dt className={dtCls}>MMC No.</dt><dd className={cn(ddCls, monoCls)}>{doctor.mmcNumber}</dd>
+            </dl>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* ============================ CLINICAL REPORT ============================ */}
+        {!hasReport && (
+          <p className="font-sans text-sm text-ink-soft mt-6">
+            No report draft available. Generate a report in the Consultation tab first.
           </p>
-        </div>
-        <div className="visit-meta">
-          <div><span>Visit ID</span><code>{visitId.slice(0, 8)}…</code></div>
-          <div><span>Date</span>{visitDate.toLocaleDateString()}</div>
-          <div><span>Time</span>{visitDate.toLocaleTimeString()}</div>
-          <div><span>Encounter</span>Outpatient</div>
-        </div>
-      </header>
+        )}
 
-      <div className="parties">
-        <div className="party-card">
-          <h3>Patient</h3>
-          <p className="party-name">{patient.name}</p>
-          <dl className="party-grid">
-            <dt>MRN</dt><dd className="mono">{patient.mrn}</dd>
-            <dt>IC No.</dt><dd className="mono">{patient.ic}</dd>
-            <dt>DOB</dt><dd>{patient.dob} ({calcAge(patient.dob)} y)</dd>
-            <dt>Sex</dt><dd>{patient.sex}</dd>
-            <dt>Phone</dt><dd>{patient.phone}</dd>
-          </dl>
-        </div>
-        <div className="party-card">
-          <h3>Attending Doctor</h3>
-          <p className="party-name">{doctor.name}</p>
-          <dl className="party-grid">
-            <dt>Qualification</dt><dd>{doctor.qualification}</dd>
-            <dt>Specialty</dt><dd>{doctor.specialty}</dd>
-            <dt>MMC No.</dt><dd className="mono">{doctor.mmcNumber}</dd>
-          </dl>
-        </div>
-      </div>
-
-      {/* ============================ CLINICAL REPORT ============================ */}
-      {!hasReport && (
-        <p className="muted">No report draft available. Generate a report in the Consultation tab first.</p>
-      )}
-
-      {hasReport && report && (
-        <article className="clinical-doc">
-          {/* Subjective */}
-          <section className="soap-section">
-            <h2>Subjective</h2>
-            <dl>
-              <dt>Chief complaint</dt>
-              <dd>{report.subjective.chiefComplaint || <span className="muted">—</span>}</dd>
-
-              <dt>History of present illness</dt>
-              <dd>{report.subjective.historyOfPresentIllness || <span className="muted">—</span>}</dd>
-
-              {report.subjective.symptomDuration && (
-                <>
-                  <dt>Symptom duration</dt>
-                  <dd>{report.subjective.symptomDuration}</dd>
-                </>
-              )}
-
-              {report.subjective.associatedSymptoms.length > 0 && (
-                <>
-                  <dt>Associated symptoms</dt>
-                  <dd>{report.subjective.associatedSymptoms.join(", ")}</dd>
-                </>
-              )}
-
-              {report.subjective.relevantHistory.length > 0 && (
-                <>
-                  <dt>Relevant history</dt>
-                  <dd>{report.subjective.relevantHistory.join(", ")}</dd>
-                </>
-              )}
-            </dl>
-          </section>
-
-          {/* Objective */}
-          <section className="soap-section">
-            <h2>Objective</h2>
-            {Object.keys(report.objective.vitalSigns ?? {}).length > 0 && (
-              <div className="vitals-readout">
-                {Object.entries(report.objective.vitalSigns).map(([k, v]) => (
-                  <div key={k}>
-                    <span>{humanizeVital(k)}</span>
-                    <strong>{v}</strong>
+        {hasReport && report && (
+          <article className="mt-6 flex flex-col gap-6">
+            {/* Subjective */}
+            <section>
+              <SectionHeader number="01" title="Subjective" className="mb-3" />
+              <dl className="grid grid-cols-1 gap-2">
+                <div>
+                  <dt className={dtCls}>Chief complaint</dt>
+                  <dd className={ddCls}>{report.subjective.chiefComplaint || <span className="text-ink-soft/50">—</span>}</dd>
+                </div>
+                <div>
+                  <dt className={dtCls}>History of present illness</dt>
+                  <dd className={ddCls}>{report.subjective.historyOfPresentIllness || <span className="text-ink-soft/50">—</span>}</dd>
+                </div>
+                {report.subjective.symptomDuration && (
+                  <div>
+                    <dt className={dtCls}>Symptom duration</dt>
+                    <dd className={ddCls}>{report.subjective.symptomDuration}</dd>
                   </div>
-                ))}
-              </div>
-            )}
-            {report.objective.physicalExam && (
-              <dl>
-                <dt>Physical exam</dt>
-                <dd>{report.objective.physicalExam}</dd>
+                )}
+                {(report.subjective.associatedSymptoms ?? []).length > 0 && (
+                  <div>
+                    <dt className={dtCls}>Associated symptoms</dt>
+                    <dd className={ddCls}>{(report.subjective.associatedSymptoms ?? []).join(", ")}</dd>
+                  </div>
+                )}
+                {(report.subjective.relevantHistory ?? []).length > 0 && (
+                  <div>
+                    <dt className={dtCls}>Relevant history</dt>
+                    <dd className={ddCls}>{(report.subjective.relevantHistory ?? []).join(", ")}</dd>
+                  </div>
+                )}
               </dl>
-            )}
-            {Object.keys(report.objective.vitalSigns ?? {}).length === 0 && !report.objective.physicalExam && (
-              <p className="muted">Vitals and exam not captured.</p>
-            )}
-          </section>
+            </section>
 
-          {/* Assessment */}
-          <section className="soap-section">
-            <h2>Assessment</h2>
-            <dl>
-              <dt>Primary diagnosis</dt>
-              <dd><strong>{report.assessment.primaryDiagnosis || <span className="muted">—</span>}</strong></dd>
+            {/* Objective */}
+            <section>
+              <SectionHeader number="02" title="Objective" className="mb-3" />
+              {Object.keys(report.objective.vitalSigns ?? {}).length > 0 && (
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {Object.entries(report.objective.vitalSigns ?? {}).map(([k, v]) => (
+                    <div key={k} className="flex flex-col gap-0.5">
+                      <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">{humanizeVital(k)}</span>
+                      <strong className="font-mono text-sm text-ink">{v}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {report.objective.physicalExam && (
+                <div>
+                  <dt className={dtCls}>Physical exam</dt>
+                  <dd className={ddCls}>{report.objective.physicalExam}</dd>
+                </div>
+              )}
+              {Object.keys(report.objective.vitalSigns ?? {}).length === 0 && !report.objective.physicalExam && (
+                <p className="font-sans text-sm text-ink-soft/50">Vitals and exam not captured.</p>
+              )}
+            </section>
 
-              {report.assessment.differentialDiagnoses.length > 0 && (
-                <>
-                  <dt>Differentials</dt>
-                  <dd>{report.assessment.differentialDiagnoses.join(" · ")}</dd>
-                </>
+            {/* Assessment */}
+            <section>
+              <SectionHeader number="03" title="Assessment" className="mb-3" />
+              <dl className="grid grid-cols-1 gap-2">
+                <div>
+                  <dt className={dtCls}>Primary diagnosis</dt>
+                  <dd className={ddCls}><strong>{report.assessment.primaryDiagnosis || <span className="text-ink-soft/50">—</span>}</strong></dd>
+                </div>
+                {(report.assessment.differentialDiagnoses ?? []).length > 0 && (
+                  <div>
+                    <dt className={dtCls}>Differentials</dt>
+                    <dd className={ddCls}>{(report.assessment.differentialDiagnoses ?? []).join(" · ")}</dd>
+                  </div>
+                )}
+                {(report.assessment.icd10Codes ?? []).length > 0 && (
+                  <div>
+                    <dt className={dtCls}>ICD-10</dt>
+                    <dd className={cn(ddCls, monoCls)}>{(report.assessment.icd10Codes ?? []).join(", ")}</dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+
+            {/* Plan */}
+            <section>
+              <SectionHeader number="04" title="Plan" className="mb-3" />
+
+              {(report.plan.medications ?? []).length > 0 && (
+                <div className="mb-4">
+                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-2">Medications</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-hairline">
+                          {["Drug", "Dose", "Route", "Frequency", "Duration"].map((h) => (
+                            <th key={h} className="text-left font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest pb-1.5 pr-4">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(report.plan.medications ?? []).map((m, i) => (
+                          <tr key={i} className="border-b border-hairline/50">
+                            <td className="font-sans text-sm text-ink py-1.5 pr-4"><strong>{m.drugName || "—"}</strong></td>
+                            <td className="font-mono text-sm text-ink py-1.5 pr-4">{m.dose || "—"}</td>
+                            <td className="font-mono text-sm text-ink py-1.5 pr-4">{m.route || "PO"}</td>
+                            <td className="font-mono text-sm text-ink py-1.5 pr-4">{m.frequency || "—"}</td>
+                            <td className="font-mono text-sm text-ink py-1.5">{m.duration || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
 
-              {report.assessment.icd10Codes.length > 0 && (
-                <>
-                  <dt>ICD-10</dt>
-                  <dd className="mono">{report.assessment.icd10Codes.join(", ")}</dd>
-                </>
-              )}
-            </dl>
-          </section>
-
-          {/* Plan */}
-          <section className="soap-section">
-            <h2>Plan</h2>
-
-            {report.plan.medications.length > 0 && (
-              <>
-                <h4>Medications</h4>
-                <table className="med-table">
-                  <thead>
-                    <tr>
-                      <th>Drug</th><th>Dose</th><th>Route</th><th>Frequency</th><th>Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.plan.medications.map((m, i) => (
-                      <tr key={i}>
-                        <td><strong>{m.drugName || "—"}</strong></td>
-                        <td>{m.dose || "—"}</td>
-                        <td>{m.route || "PO"}</td>
-                        <td>{m.frequency || "—"}</td>
-                        <td>{m.duration || "—"}</td>
-                      </tr>
+              {(report.plan.investigations ?? []).length > 0 && (
+                <div className="mb-3">
+                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1.5">Investigations</p>
+                  <ul className="flex flex-col gap-0.5">
+                    {(report.plan.investigations ?? []).map((x, i) => (
+                      <li key={i} className="font-sans text-sm text-ink flex gap-2">
+                        <span className="text-oxblood/40 font-mono text-xs">—</span>
+                        {x}
+                      </li>
                     ))}
-                  </tbody>
-                </table>
-              </>
-            )}
+                  </ul>
+                </div>
+              )}
 
-            {report.plan.investigations.length > 0 && (
-              <>
-                <h4>Investigations</h4>
-                <ul>{report.plan.investigations.map((x, i) => <li key={i}>{x}</li>)}</ul>
-              </>
-            )}
+              {(report.plan.lifestyleAdvice ?? []).length > 0 && (
+                <div className="mb-3">
+                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1.5">Lifestyle advice</p>
+                  <ul className="flex flex-col gap-0.5">
+                    {(report.plan.lifestyleAdvice ?? []).map((x, i) => (
+                      <li key={i} className="font-sans text-sm text-ink flex gap-2">
+                        <span className="text-oxblood/40 font-mono text-xs">—</span>
+                        {x}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-            {report.plan.lifestyleAdvice.length > 0 && (
-              <>
-                <h4>Lifestyle advice</h4>
-                <ul>{report.plan.lifestyleAdvice.map((x, i) => <li key={i}>{x}</li>)}</ul>
-              </>
-            )}
+              {report.plan.followUp.needed && (
+                <div className="mb-3">
+                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1">Follow-up</p>
+                  <p className="font-sans text-sm text-ink">
+                    {report.plan.followUp.timeframe ?? "As advised"}
+                    {report.plan.followUp.reason ? ` — ${report.plan.followUp.reason}` : ""}
+                  </p>
+                </div>
+              )}
 
-            {report.plan.followUp.needed && (
-              <>
-                <h4>Follow-up</h4>
-                <p>
-                  {report.plan.followUp.timeframe ?? "As advised"}
-                  {report.plan.followUp.reason ? ` — ${report.plan.followUp.reason}` : ""}
-                </p>
-              </>
-            )}
+              {(report.plan.redFlags ?? []).length > 0 && (
+                <div className="border-l-2 border-l-crimson pl-4 bg-crimson/5 py-2 rounded-xs">
+                  <p className="font-mono text-[10px] text-crimson uppercase tracking-widest mb-1.5">Seek urgent care if:</p>
+                  <ul className="flex flex-col gap-0.5">
+                    {(report.plan.redFlags ?? []).map((x, i) => (
+                      <li key={i} className="font-sans text-sm text-crimson/80">{x}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          </article>
+        )}
 
-            {report.plan.redFlags.length > 0 && (
-              <>
-                <h4 className="red-flag-head">⚠ Seek urgent care if:</h4>
-                <ul className="red-flag-list">
-                  {report.plan.redFlags.map((x, i) => <li key={i}>{x}</li>)}
-                </ul>
-              </>
-            )}
-          </section>
-        </article>
-      )}
-
-      {/* ============================ SIGNATURE ============================ */}
-      <footer className="signature-block">
-        <div className="sig-line">
-          <span className="sig-label">Attending Doctor</span>
-          <div className="sig-value">{doctor.name}</div>
-          <div className="sig-meta">{doctor.qualification} · {doctor.mmcNumber}</div>
+        {/* ============================ SIGNATURE ============================ */}
+        <Separator className="mt-6 mb-4" />
+        <div className="flex flex-col gap-0.5">
+          <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Attending Doctor</span>
+          <p className="font-display text-base text-ink">{doctor.name}</p>
+          <p className="font-mono text-xs text-ink-soft/60">{doctor.qualification} · {doctor.mmcNumber}</p>
           {finalizedAt && (
-            <div className="sig-date">Signed: {new Date(finalizedAt).toLocaleString()}</div>
+            <p className="font-mono text-xs text-ink-soft/50">
+              Signed: {new Date(finalizedAt).toLocaleString()}
+            </p>
           )}
         </div>
-      </footer>
+      </Card>
 
-      {/* ============================ ACTIONS ============================ */}
+      {/* ============================ PUBLISHED SEAL ============================ */}
       {finalized && finalizedAt && (
-        <div className="published-seal">
-          <span className="seal-dot" /> Published on {new Date(finalizedAt).toLocaleString()}
+        <div className="flex items-center gap-2 px-4 py-3 bg-sage/10 border border-sage/30 rounded-xs">
+          <span className="w-2 h-2 rounded-full bg-sage flex-shrink-0" />
+          <span className="font-sans text-sm text-sage">
+            Published on {new Date(finalizedAt).toLocaleString()}
+          </span>
         </div>
       )}
 
+      {/* ============================ PUBLISH ACTION ============================ */}
       {!finalized && approved && (
-        <div className="publish-bar">
-          <button type="button" className="btn-primary" onClick={publish} disabled={busy}>
-            {busy ? "Publishing…" : "Publish to patient →"}
-          </button>
-          {err && <span className="publish-error">{err}</span>}
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="primary"
+            onClick={publish}
+            disabled={busy}
+          >
+            {busy ? "Publishing…" : "Publish to patient"}
+          </Button>
+          {err && <span className="font-sans text-sm text-crimson">{err}</span>}
         </div>
       )}
-      </section>
 
-      {/* Report actions live OUTSIDE the report card, under the document. */}
-      <div className="report-actions">
-        <button
+      {/* ============================ REPORT ACTIONS ============================ */}
+      <div className="flex items-center gap-2">
+        <Button
           type="button"
-          className="btn-secondary"
+          variant="secondary"
+          size="sm"
           onClick={() => console.info("[REPORT] Save clicked (no-op)")}
         >
           Save
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn-secondary"
+          variant="secondary"
+          size="sm"
           onClick={() => console.info("[REPORT] Download clicked (no-op)")}
         >
           Download
-        </button>
+        </Button>
       </div>
-    </>
+    </div>
   );
-}
-
-function humanizeVital(key: string): string {
-  const map: Record<string, string> = {
-    blood_pressure: "BP",
-    heart_rate: "HR",
-    temperature: "Temp",
-    respiratory_rate: "RR",
-    spo2: "SpO₂",
-    weight: "Weight",
-    height: "Height",
-    bmi: "BMI",
-  };
-  return map[key] ?? key.replace(/_/g, " ");
 }

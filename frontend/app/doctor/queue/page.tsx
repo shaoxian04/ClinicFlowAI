@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { getUser } from "@/lib/auth";
-import { PageHeader } from "@/app/components/PageHeader";
-import { EmptyState } from "@/app/components/EmptyState";
-import { Stethoscope } from "@/app/components/Illustration";
+import { fadeUp, staggerChildren } from "@/design/motion";
+import { EmptyState } from "@/components/ui/EmptyState";
 import DoctorNav from "../components/DoctorNav";
 
 export default function DoctorQueuePage() {
@@ -17,16 +17,32 @@ export default function DoctorQueuePage() {
   }, [router]);
 
   return (
-    <main className="shell">
+    <>
       <DoctorNav active="queue" />
-      <div style={{ marginTop: 24 }}>
-        <PageHeader eyebrow="Clinician workspace" title="Queue" />
-      </div>
-      <EmptyState
-        glyph={<Stethoscope size={56} />}
-        title="No queued visits"
-        body="Incoming visit requests will appear here. Coming soon."
-      />
-    </main>
+      <main className="max-w-screen-xl mx-auto px-6 py-8">
+        <motion.div
+          variants={staggerChildren}
+          initial="initial"
+          animate="animate"
+          className="flex flex-col"
+        >
+          <motion.div variants={fadeUp} className="mb-8">
+            <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-2">
+              Clinician workspace
+            </p>
+            <h1 className="font-display text-3xl text-ink leading-tight">
+              Visit <em className="not-italic text-oxblood">queue</em>
+            </h1>
+          </motion.div>
+
+          <motion.div variants={fadeUp}>
+            <EmptyState
+              title="No queued visits"
+              description="Incoming visit requests will appear here. Coming soon."
+            />
+          </motion.div>
+        </motion.div>
+      </main>
+    </>
   );
 }

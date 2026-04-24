@@ -2,6 +2,9 @@
 "use client";
 import { useState } from "react";
 import type { ChatTurn, Clarification } from "@/lib/types/report";
+import { cn } from "@/design/cn";
+import { Button } from "@/components/ui/Button";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 export interface ReportChatPanelProps {
   turns: ChatTurn[];
@@ -49,39 +52,82 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
     .map(prettify);
 
   return (
-    <section className="chat-panel">
-      <div className="card-head"><h2>Assistant</h2></div>
-      <ol className="chat-thread">
+    <section className="bg-paper rounded-sm border border-hairline flex flex-col h-full min-h-[400px]">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-hairline flex-shrink-0">
+        <SectionHeader title="Assistant" className="text-ink/70" />
+      </div>
+
+      {/* Chat thread */}
+      <ol className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0">
         {visibleTurns.map((t) => (
-          <li key={t.turnIndex} data-role={t.role}>
-            <div className="chat-role">{t.role === "user" ? "You" : "Assistant"}</div>
-            <div className="chat-content">{t.content}</div>
+          <li
+            key={t.turnIndex}
+            className={cn(
+              "flex flex-col gap-0.5",
+              t.role === "user" ? "items-end" : "items-start"
+            )}
+          >
+            <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
+              {t.role === "user" ? "You" : "Assistant"}
+            </span>
+            <div
+              className={cn(
+                "rounded-md px-3 py-2 text-sm font-sans leading-relaxed max-w-[88%]",
+                t.role === "user"
+                  ? "bg-bone text-ink"
+                  : "bg-paper border border-hairline border-l-2 border-l-oxblood text-ink"
+              )}
+            >
+              {t.content}
+            </div>
           </li>
         ))}
-        {/* Show clarification question as a visible bubble, not just placeholder */}
+
+        {/* Show clarification question as a visible assistant bubble */}
         {clarification && !editing && (
-          <li data-role="assistant">
-            <div className="chat-role">Assistant</div>
-            <div className="chat-content">{clarification.prompt}</div>
+          <li className="flex flex-col gap-0.5 items-start">
+            <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
+              Assistant
+            </span>
+            <div className="rounded-md px-3 py-2 text-sm font-sans leading-relaxed max-w-[88%] bg-ochre/5 border border-ochre/20 text-ink">
+              {clarification.prompt}
+            </div>
           </li>
         )}
+
         {editing && (
-          <li data-role="assistant" aria-live="polite">
-            <div className="chat-role">Assistant</div>
-            <div className="chat-content muted">Thinking…</div>
+          <li className="flex flex-col gap-0.5 items-start" aria-live="polite">
+            <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
+              Assistant
+            </span>
+            <div className="rounded-md px-3 py-2 text-sm font-sans text-ink-soft italic bg-paper border border-hairline">
+              Thinking…
+            </div>
           </li>
         )}
       </ol>
-      <div className="chat-input">
+
+      {/* Chat input */}
+      <div className="flex-shrink-0 border-t border-hairline p-3 flex gap-2">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKey}
-          placeholder={clarification ? "Type your answer…" : "Ask the agent to edit something…"}
+          placeholder={placeholder}
           disabled={editing || locked}
           rows={2}
+          className="flex-1 rounded-xs border border-hairline bg-paper px-3 py-2 text-sm font-sans text-ink placeholder:text-ink-soft/50 focus:outline-none focus:ring-1 focus:ring-oxblood/40 resize-none disabled:opacity-50"
         />
-        <button type="button" onClick={handle} disabled={editing || locked || !draft.trim()}>Send</button>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={handle}
+          disabled={editing || locked || !draft.trim()}
+        >
+          Send
+        </Button>
       </div>
     </section>
   );

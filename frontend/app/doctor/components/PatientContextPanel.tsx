@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { apiGet, apiPostVoid } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import { SkeletonLine } from "@/app/components/Skeleton";
+import { cn } from "@/design/cn";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Separator } from "@/components/ui/Separator";
+import { Button } from "@/components/ui/Button";
 
 type RecentVisit = { visitId: string; date: string; diagnosis: string };
 
@@ -21,22 +25,9 @@ type PatientContextPanelProps = {
 type FetchState =
   | { kind: "loading" }
   | { kind: "ready"; data: PatientContext }
-  | { kind: "unavailable" } // HTTP 404 — known precondition
+  | { kind: "unavailable" }
   | { kind: "error"; message: string };
 
-/**
- * Patient context sidebar surfacing multi-hop graph-KB results per SAD §2.4.1.
- *
- * Read-only clinical-context hints (allergies, chronic conditions, active
- * medications, recent visits). Fetched from the backend graph-KB endpoint;
- * each block has its own empty-state so the panel never bleeds. A 404 is
- * expected while the endpoint is unimplemented — we show a ghost banner
- * inside the panel and keep the rest of the page functional.
- *
- * At >=1200px the panel renders inline as a sticky right rail. Below 1200px
- * the inline form stays hidden and an overlay drawer opens via a floating
- * "Patient context" toggle button in the normal page flow.
- */
 export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
   const [state, setState] = useState<FetchState>({ kind: "loading" });
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -59,12 +50,9 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
         }
         setState({ kind: "error", message: msg });
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [patientId]);
 
-  // Close drawer on Escape.
   useEffect(() => {
     if (!drawerOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -81,63 +69,74 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
 
   return (
     <>
-      {/* Inline sticky rail (>=1200px). Hidden below that via CSS. */}
+      {/* Inline sticky rail (>=1200px) */}
       <aside
-        className="pcx-rail"
+        className="hidden xl:block w-64 flex-shrink-0"
         aria-label="Patient context"
       >
-        <div className="pcx-panel">
-          <header className="pcx-panel-head">
-            <h2 className="pcx-panel-title">Patient context</h2>
-          </header>
+        <div className="bg-slate rounded-sm border border-slate/80 p-4 sticky top-20">
+          <SectionHeader
+            number="01"
+            title="Patient context"
+            className="text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60 mb-4"
+          />
           {body}
         </div>
       </aside>
 
-      {/* Mobile/tablet toggle button (<1200px). Hidden above that via CSS. */}
-      <div className="pcx-mobile-trigger">
-        <button
+      {/* Mobile/tablet toggle (<1200px) */}
+      <div className="xl:hidden">
+        <Button
           type="button"
-          className="btn btn-ghost pcx-trigger-btn"
+          variant="secondary"
+          size="sm"
           aria-expanded={drawerOpen}
           aria-controls={drawerId}
           onClick={toggleDrawer}
         >
           Patient context
-        </button>
+        </Button>
       </div>
 
-      {/* Overlay drawer (<1200px only). */}
+      {/* Overlay drawer */}
       <div
-        className={`pcx-drawer-root${drawerOpen ? " is-open" : ""}`}
+        className={cn(
+          "xl:hidden fixed inset-0 z-50 transition-opacity duration-200",
+          drawerOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        )}
         aria-hidden={!drawerOpen}
       >
         <div
-          className="pcx-drawer-backdrop"
+          className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
           onClick={closeDrawer}
           aria-hidden="true"
         />
         <aside
           id={drawerId}
-          className="pcx-drawer"
+          className={cn(
+            "absolute right-0 top-0 bottom-0 w-72 bg-slate p-5 overflow-y-auto transition-transform duration-200",
+            drawerOpen ? "translate-x-0" : "translate-x-full"
+          )}
           role="dialog"
           aria-modal="true"
           aria-label="Patient context"
         >
-          <header className="pcx-drawer-head">
-            <div>
-              <h2 className="pcx-panel-title">Patient context</h2>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <SectionHeader
+              number="01"
+              title="Patient context"
+              className="text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60"
+            />
             <button
               type="button"
-              className="btn btn-ghost pcx-drawer-close"
+              className="text-paper/50 hover:text-paper transition-colors duration-150 font-sans text-sm"
               onClick={closeDrawer}
               aria-label="Close patient context"
             >
               Close
             </button>
-          </header>
-          <div className="pcx-drawer-body">{body}</div>
+          </div>
+          <div>{body}</div>
         </aside>
       </div>
     </>
@@ -147,28 +146,22 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
 function PanelBody({ state }: { state: FetchState }) {
   if (state.kind === "loading") {
     return (
-      <div className="pcx-loading" role="status" aria-label="Loading patient context">
-        <SkeletonLine width="80%" />
-        <SkeletonLine width="65%" />
-        <SkeletonLine width="72%" />
-        <SkeletonLine width="58%" />
+      <div className="flex flex-col gap-2" role="status" aria-label="Loading patient context">
+        <Skeleton className="h-3 bg-paper/10" style={{ width: "80%" }} />
+        <Skeleton className="h-3 bg-paper/10" style={{ width: "65%" }} />
+        <Skeleton className="h-3 bg-paper/10" style={{ width: "72%" }} />
+        <Skeleton className="h-3 bg-paper/10" style={{ width: "58%" }} />
       </div>
     );
   }
 
-  if (state.kind === "unavailable") {
+  if (state.kind === "unavailable" || state.kind === "error") {
     return (
-      <div className="banner banner-ghost">
-        Context unavailable — patient record not yet integrated with graph-KB.
-      </div>
-    );
-  }
-
-  if (state.kind === "error") {
-    return (
-      <div className="banner banner-ghost">
-        Context unavailable — {state.message}.
-      </div>
+      <p className="font-sans text-xs text-paper/40 leading-relaxed">
+        {state.kind === "unavailable"
+          ? "Context unavailable — patient record not yet integrated with graph-KB."
+          : `Context unavailable — ${state.message}.`}
+      </p>
     );
   }
 
@@ -176,27 +169,27 @@ function PanelBody({ state }: { state: FetchState }) {
   const recent = recentVisits.slice(0, 5);
 
   return (
-    <div className="pcx-blocks">
-      <details className="pcx-block" open>
-        <summary className="pcx-block-head">
-          <span className="pcx-block-title">Recent visits</span>
-          <span className="pcx-block-count">{recent.length}</span>
-        </summary>
-        <div className="pcx-block-body">
-          {recent.length === 0 ? (
-            <p className="pcx-empty">No prior visits.</p>
-          ) : (
-            <ul className="pcx-list">
-              {recent.map((v) => (
-                <li key={v.visitId} className="pcx-item pcx-item-visit">
-                  <span className="pcx-item-label">{v.diagnosis}</span>
-                  <span className="pcx-item-meta">{formatDate(v.date)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+    <div className="flex flex-col gap-4">
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-mono text-[10px] text-paper/40 uppercase tracking-widest">
+            Recent visits
+          </span>
+          <span className="font-mono text-[10px] text-paper/30">{recent.length}</span>
         </div>
-      </details>
+        {recent.length === 0 ? (
+          <p className="font-sans text-xs text-paper/40">No prior visits.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {recent.map((v) => (
+              <li key={v.visitId} className="flex flex-col gap-0.5">
+                <span className="font-sans text-xs text-paper/70 leading-snug">{v.diagnosis}</span>
+                <span className="font-mono text-[10px] text-paper/40">{formatDate(v.date)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <SeedDemoButton allEmpty={recentVisits.length === 0} />
     </div>
@@ -218,7 +211,7 @@ function SeedDemoButton({ allEmpty }: { allEmpty: boolean }) {
     try {
       await apiPostVoid("/patients/context/seed-demo-all", {});
       window.location.reload();
-      return; // prevent finally from updating state after reload
+      return;
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -227,17 +220,21 @@ function SeedDemoButton({ allEmpty }: { allEmpty: boolean }) {
   }
 
   return (
-    <div className="pcx-seed-bar">
-      <button type="button" className="btn btn-ghost" onClick={click} disabled={busy}>
+    <div className="flex flex-col gap-1.5">
+      <button
+        type="button"
+        className="font-sans text-xs text-paper/50 hover:text-paper/80 transition-colors duration-150 text-left"
+        onClick={click}
+        disabled={busy}
+      >
         {busy ? "Seeding…" : "Seed demo graph (all patients)"}
       </button>
-      {err && <p className="pcx-seed-error">{err}</p>}
+      {err && <p className="font-mono text-[10px] text-crimson/70">{err}</p>}
     </div>
   );
 }
 
 function formatDate(iso: string): string {
-  // Defensive: ISO 8601 or date-only, fall back to raw string if unparseable.
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const y = d.getFullYear();

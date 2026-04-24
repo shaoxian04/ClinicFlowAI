@@ -4,10 +4,11 @@ import { useEffect, useReducer, useCallback } from "react";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
 import { initialReviewState, reviewReducer } from "@/lib/reviewReducer";
 import type { ChatTurn, ReportReviewResult, MedicalReport } from "@/lib/types/report";
+import { cn } from "@/design/cn";
+import { Button } from "@/components/ui/Button";
 import { GenerateBar } from "./GenerateBar";
 import { ReportPanel } from "./ReportPanel";
 import { ReportChatPanel } from "./ReportChatPanel";
-import "./review.css";
 
 export interface SplitReviewProps {
   visitId: string;
@@ -86,19 +87,32 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
   }
 
   return (
-    <div className="split-review">
+    <div className="flex flex-col gap-4">
       {state.error && (
-        <div className="banner error" role="alert">
-          {state.error} <button onClick={() => dispatch({ type: "CLEAR_ERROR" })}>Dismiss</button>
+        <div
+          className="flex items-center justify-between gap-3 px-4 py-3 bg-crimson/10 border border-crimson/30 rounded-xs"
+          role="alert"
+        >
+          <span className="font-sans text-sm text-crimson">{state.error}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => dispatch({ type: "CLEAR_ERROR" })}
+          >
+            Dismiss
+          </Button>
         </div>
       )}
+
       <GenerateBar
         visitId={visitId}
         onGenerate={handleGenerate}
         generating={state.generating}
         hasReport={state.report != null}
       />
-      <div className="split-review-panes">
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4">
         <ReportPanel
           report={state.report}
           approved={state.approved}

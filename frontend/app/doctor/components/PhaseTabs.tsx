@@ -1,25 +1,15 @@
 "use client";
 
 import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/design/cn";
 
 export type PhaseKey = "pre" | "visit" | "preview";
 
 type PhaseTabsProps = {
   children: { pre: ReactNode; visit: ReactNode; preview: ReactNode };
-  /** Show a red "needs your review" dot on the consultation tab. */
   consultationNeedsReview?: boolean;
-  /** Show a red "needs your review" dot on the report preview tab. */
   reportPreviewNeedsReview?: boolean;
-  /** Called after the active tab changes (user click, hash change, or initial hash read). */
   onActiveChange?: (key: PhaseKey) => void;
-  /**
-   * Per-panel opt-in for `tabIndex={0}` on the tabpanel wrapper.
-   *
-   * WAI-ARIA says a tabpanel should only be in the tab order when it has NO
-   * focusable descendants (so keyboard users can still reach its content).
-   * Defaults to `false` for every panel — opt in only for panels whose
-   * contents are purely static (plain text, no inputs/buttons/links).
-   */
   panelFocusable?: { pre?: boolean; visit?: boolean; preview?: boolean };
 };
 
@@ -47,21 +37,6 @@ function readHashKey(): PhaseKey {
   return HASH_TO_KEY[h] ?? "pre";
 }
 
-/**
- * 3-phase tab UI for the doctor visit detail page.
- *
- * Pre-Visit Report / Consultation / Post-Visit Preview.
- *
- * - Active tab is persisted to the URL hash (#pre / #visit / #post) via
- *   history.replaceState so reload restores position without polluting
- *   the back/forward stack.
- * - Listens to the `hashchange` event so browser navigation updates the
- *   active tab.
- * - Keyboard: ArrowLeft/ArrowRight move focus between tabs and activate
- *   them. Home/End jump to first/last. Space/Enter also activate.
- * - Red dots (role="status", aria-labeled) indicate tabs that need
- *   clinician attention.
- */
 export function PhaseTabs({
   children,
   consultationNeedsReview = false,
@@ -81,7 +56,6 @@ export function PhaseTabs({
     onActiveChangeRef.current = onActiveChange;
   }, [onActiveChange]);
 
-  // Initial read + hashchange listener.
   useEffect(() => {
     const initial = readHashKey();
     setActive(initial);
@@ -151,8 +125,13 @@ export function PhaseTabs({
   };
 
   return (
-    <div className="phase-tabs">
-      <div role="tablist" aria-label="Visit phases" className="phase-tablist">
+    <div>
+      {/* Tab list */}
+      <div
+        role="tablist"
+        aria-label="Visit phases"
+        className="flex gap-0 border-b border-hairline"
+      >
         {TABS.map((t, idx) => {
           const isActive = t.key === active;
           const panelId = `phase-panel-${t.key}`;
@@ -162,22 +141,28 @@ export function PhaseTabs({
             <button
               key={t.key}
               id={tabId}
-              ref={(el) => {
-                tabRefs.current[t.key] = el;
-              }}
+              ref={(el) => { tabRefs.current[t.key] = el; }}
               role="tab"
               type="button"
               aria-selected={isActive}
               aria-controls={panelId}
               tabIndex={isActive ? 0 : -1}
-              className={`phase-tab${isActive ? " is-active" : ""}`}
+              className={cn(
+                "px-4 py-2.5 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px focus:outline-none focus-visible:ring-1 focus-visible:ring-oxblood/40 flex items-center gap-1.5",
+                isActive
+                  ? "text-oxblood border-oxblood"
+                  : "text-ink-soft border-transparent hover:text-ink"
+              )}
               onClick={() => selectTab(t.key, false)}
               onKeyDown={(e) => onKeyDown(e, idx)}
             >
-              <span className="phase-tab-label">{t.label}</span>
+              <span>{t.label}</span>
               {showDot ? (
-                <span className="phase-tab-dot" aria-hidden="true">
-                  <span className="visually-hidden"> needs review</span>
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-crimson flex-shrink-0"
+                  aria-hidden="true"
+                >
+                  <span className="sr-only"> needs review</span>
                 </span>
               ) : null}
             </button>
@@ -185,6 +170,7 @@ export function PhaseTabs({
         })}
       </div>
 
+      {/* Tab panels */}
       {TABS.map((t) => {
         const isActive = t.key === active;
         const panelId = `phase-panel-${t.key}`;
@@ -197,7 +183,7 @@ export function PhaseTabs({
             role="tabpanel"
             aria-labelledby={tabId}
             hidden={!isActive}
-            className="phase-panel"
+            className="pt-4"
             {...(focusable ? { tabIndex: 0 } : {})}
           >
             {isActive ? children[t.key] : null}

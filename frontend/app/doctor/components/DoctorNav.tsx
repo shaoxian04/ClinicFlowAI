@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/design/cn";
 
 export type DoctorNavTab = "today" | "queue" | "finalized" | "patients";
 
@@ -23,21 +24,21 @@ export default function DoctorNav({ active }: Props) {
 
   function isActive(tab: Tab): boolean {
     if (tab.key === "today") {
-      return (
-        pathname === "/doctor" || pathname.startsWith("/doctor/visits/")
-      );
+      return pathname === "/doctor" || pathname.startsWith("/doctor/visits/");
     }
     return active === tab.key;
   }
 
   return (
-    <nav className="staff-nav doctor-nav">
-      <div className="staff-nav-inner">
-        <div className="staff-nav-brand">
-          <StethoscopeGlyph size={14} />
-          <span>Clinician workspace</span>
+    <nav className="bg-slate border-b border-slate/80">
+      <div className="max-w-screen-xl mx-auto px-6 flex items-center gap-6 h-11">
+        <div className="flex items-center gap-2 mr-4 flex-shrink-0">
+          <StethoscopeGlyph size={13} />
+          <span className="font-mono text-xs text-paper/60 uppercase tracking-widest">
+            Clinician workspace
+          </span>
         </div>
-        <div className="staff-nav-tabs" role="tablist">
+        <div className="flex items-center gap-0" role="tablist">
           {TABS.map((tab) => {
             if (tab.disabled) {
               return (
@@ -46,24 +47,25 @@ export default function DoctorNav({ active }: Props) {
                   role="tab"
                   aria-selected={false}
                   aria-disabled="true"
-                  className="staff-nav-tab doctor-nav-tab-disabled"
+                  className="px-4 py-2 text-sm font-sans text-paper/30 cursor-not-allowed"
                 >
                   {tab.label}
                 </span>
               );
             }
-            const active = isActive(tab);
+            const tabActive = isActive(tab);
             return (
               <Link
                 key={tab.key}
                 href={tab.href}
                 role="tab"
-                aria-selected={active}
-                className={
-                  active
-                    ? "staff-nav-tab staff-nav-tab-active"
-                    : "staff-nav-tab"
-                }
+                aria-selected={tabActive}
+                className={cn(
+                  "px-4 py-2 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px",
+                  tabActive
+                    ? "text-paper border-paper/70"
+                    : "text-paper/60 border-transparent hover:text-paper/90"
+                )}
               >
                 {tab.label}
               </Link>
@@ -87,7 +89,7 @@ function StethoscopeGlyph({ size = 14 }: { size?: number }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      style={{ color: "var(--primary, #1d4d42)" }}
+      className="text-paper/50"
     >
       <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
       <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
