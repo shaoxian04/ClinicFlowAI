@@ -60,7 +60,9 @@ export default function DoctorFinalizedPage() {
 
           {error && (
             <motion.div variants={fadeUp}>
-              <div className="banner banner-error">{error}</div>
+              <div className="flex items-start gap-2 px-4 py-3 bg-crimson/10 border border-crimson/30 rounded-xs text-sm text-crimson font-sans" role="alert">
+                {error}
+              </div>
             </motion.div>
           )}
 
