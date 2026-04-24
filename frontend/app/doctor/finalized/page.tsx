@@ -50,11 +50,11 @@ export default function DoctorFinalizedPage() {
           className="flex flex-col"
         >
           <motion.div variants={fadeUp} className="mb-8">
-            <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-2">
+            <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-2">
               Clinician workspace
             </p>
-            <h1 className="font-display text-3xl text-ink leading-tight">
-              Finalized <em className="not-italic text-oxblood">visits</em>
+            <h1 className="font-display text-3xl text-fog leading-tight">
+              Finalized <em className="not-italic text-cyan">visits</em>
             </h1>
           </motion.div>
 

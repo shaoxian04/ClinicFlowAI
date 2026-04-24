@@ -70,12 +70,12 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
     <div className="flex flex-col gap-4">
       {/* Header row: title + lang toggle */}
       <div className="flex items-center justify-between gap-4">
-        <h3 className="font-sans text-sm font-semibold text-ink uppercase tracking-wider m-0">
+        <h3 className="font-sans text-sm font-semibold text-fog uppercase tracking-wider m-0">
           Patient preview
         </h3>
         <div
           role="tablist"
-          className="inline-flex border border-hairline rounded-xs overflow-hidden"
+          className="inline-flex border border-ink-rim rounded-xs overflow-hidden"
           aria-label="Language"
         >
           {(["en", "ms"] as const).map((l) => (
@@ -87,10 +87,10 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
               onClick={() => setLang(l)}
               disabled={toggleDisabled}
               className={cn(
-                "px-3 py-1 text-xs font-sans transition-colors duration-150 border-r border-hairline last:border-r-0",
+                "px-3 py-1 text-xs font-sans transition-colors duration-150 border-r border-ink-rim last:border-r-0",
                 lang === l
-                  ? "bg-oxblood text-paper font-medium"
-                  : "bg-paper text-ink-soft hover:bg-bone disabled:opacity-50 disabled:cursor-not-allowed"
+                  ? "bg-cyan text-obsidian font-medium"
+                  : "bg-ink-well text-fog-dim hover:bg-mica disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
               {l === "en" ? "English" : "Bahasa Melayu"}
@@ -103,7 +103,7 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
       {unavailable && !data && (
         <>
           <div
-            className="px-4 py-3 bg-bone border border-hairline rounded-xs text-sm text-ink-soft font-sans"
+            className="px-4 py-3 bg-mica border border-ink-rim rounded-xs text-sm text-fog-dim font-sans"
             role="status"
           >
             Preview unavailable — backend pending. You may proceed to finalize without preview.
@@ -112,7 +112,7 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
             <div className="flex gap-3 mt-2">
               <button
                 type="button"
-                className="inline-flex items-center h-9 px-4 text-sm font-sans font-medium bg-oxblood text-paper rounded-xs hover:bg-oxblood/90 transition-colors duration-150 disabled:opacity-50"
+                className="inline-flex items-center h-9 px-4 text-sm font-sans font-medium bg-cyan text-obsidian rounded-xs hover:bg-cyan/90 transition-colors duration-150 disabled:opacity-50"
                 onClick={onAcknowledge}
               >
                 Acknowledge anyway
@@ -121,7 +121,7 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
           )}
           {acknowledged && (
             <div
-              className="px-4 py-3 bg-sage/10 border border-sage/30 rounded-xs text-sm text-sage font-sans"
+              className="px-4 py-3 bg-lime/10 border border-lime/30 rounded-xs text-sm text-lime font-sans"
               role="status"
             >
               Preview approved — finalize unlocked.
@@ -132,8 +132,8 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
 
       {/* Empty state: nothing generated yet and no unavailable signal. */}
       {!unavailable && !data && (
-        <p className="text-center text-sm text-ink-soft font-sans mt-4">
-          No preview generated yet. Click <strong className="text-ink">Generate patient preview</strong> in the Consultation tab.
+        <p className="text-center text-sm text-fog-dim font-sans mt-4">
+          No preview generated yet. Click <strong className="text-fog">Generate patient preview</strong> in the Consultation tab.
         </p>
       )}
 
@@ -141,29 +141,29 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
       {data && (
         <>
           {/* Summary pull-quote */}
-          <blockquote className="font-display text-lg leading-relaxed text-ink border-l-2 border-oxblood pl-5 my-2">
+          <blockquote className="font-display text-lg leading-relaxed text-fog border-l-2 border-coral pl-5 my-2">
             {(lang === "en" ? data.summaryEn : data.summaryMs) ||
               (lang === "en" ? "Summary is still being prepared…" : "Ringkasan sedang disediakan…")}
           </blockquote>
 
           {/* Medications */}
-          <div className="bg-bone border border-hairline rounded-xs p-4">
+          <div className="bg-mica border border-ink-rim rounded-xs p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-sans text-xs font-semibold text-ink-soft uppercase tracking-wider m-0">
+              <h2 className="font-sans text-xs font-semibold text-fog-dim uppercase tracking-wider m-0">
                 {copy.medsHeading}
               </h2>
-              <span className="font-mono text-xs text-ink-soft/60">
+              <span className="font-mono text-xs text-fog-dim/60">
                 {copy.itemsSuffix(data.medications.length)}
               </span>
             </div>
             {data.medications.length === 0 ? (
-              <p className="text-sm text-ink-soft font-sans">{copy.noMeds}</p>
+              <p className="text-sm text-fog-dim font-sans">{copy.noMeds}</p>
             ) : (
               <ul className="flex flex-col gap-2 list-none m-0 p-0">
                 {data.medications.map((m, i) => (
                   <li key={i} className="flex flex-col gap-0.5">
-                    <span className="font-sans text-sm font-medium text-ink">{m.name}</span>
-                    <span className="font-mono text-xs text-ink-soft">
+                    <span className="font-sans text-sm font-medium text-fog">{m.name}</span>
+                    <span className="font-mono text-xs text-fog-dim">
                       {m.dosage} · {m.frequency}
                     </span>
                   </li>
@@ -179,7 +179,7 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
           <div className="flex items-center gap-3 pt-2 flex-wrap">
             <button
               type="button"
-              className="inline-flex items-center h-9 px-4 text-sm font-sans border border-hairline bg-paper text-ink rounded-xs hover:bg-bone transition-colors duration-150 disabled:opacity-50"
+              className="inline-flex items-center h-9 px-4 text-sm font-sans border border-ink-rim bg-ink-well text-fog rounded-xs hover:bg-mica transition-colors duration-150 disabled:opacity-50"
               onClick={() => onRegenerate()}
               disabled={busy || locked}
             >
@@ -188,7 +188,7 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
             {!acknowledged ? (
               <button
                 type="button"
-                className="inline-flex items-center h-9 px-4 text-sm font-sans font-medium bg-oxblood text-paper rounded-xs hover:bg-oxblood/90 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center h-9 px-4 text-sm font-sans font-medium bg-cyan text-obsidian rounded-xs hover:bg-cyan/90 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={onAcknowledge}
                 disabled={!data || acknowledged || locked}
               >
@@ -196,7 +196,7 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
               </button>
             ) : (
               <span
-                className="inline-flex items-center gap-2 px-3 py-2 bg-sage/10 border border-sage/30 rounded-xs text-sm text-sage font-sans"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-lime/10 border border-lime/30 rounded-xs text-sm text-lime font-sans"
                 role="status"
               >
                 Preview approved — finalize unlocked.

@@ -130,7 +130,7 @@ export function PhaseTabs({
       <div
         role="tablist"
         aria-label="Visit phases"
-        className="flex gap-0 border-b border-hairline"
+        className="flex gap-0 border-b border-ink-rim"
       >
         {TABS.map((t, idx) => {
           const isActive = t.key === active;
@@ -148,10 +148,10 @@ export function PhaseTabs({
               aria-controls={panelId}
               tabIndex={isActive ? 0 : -1}
               className={cn(
-                "px-4 py-2.5 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px focus:outline-none focus-visible:ring-1 focus-visible:ring-oxblood/40 flex items-center gap-1.5",
+                "px-4 py-2.5 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan/40 flex items-center gap-1.5",
                 isActive
-                  ? "text-oxblood border-oxblood"
-                  : "text-ink-soft border-transparent hover:text-ink"
+                  ? "text-cyan border-cyan"
+                  : "text-fog-dim border-transparent hover:text-fog"
               )}
               onClick={() => selectTab(t.key, false)}
               onKeyDown={(e) => onKeyDown(e, idx)}

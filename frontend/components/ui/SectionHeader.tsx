@@ -20,14 +20,14 @@ export function SectionHeader({
       {...props}
     >
       {number ? (
-        <span className="font-mono text-xs text-ink-soft/60 tracking-widest flex-shrink-0">
+        <span className="font-mono text-xs text-fog-dim/60 tracking-widest flex-shrink-0">
           {number}
         </span>
       ) : null}
       {number ? (
-        <span className="text-hairline select-none flex-shrink-0">---</span>
+        <span className="text-ink-rim select-none flex-shrink-0">---</span>
       ) : null}
-      <span className="text-sm font-medium uppercase tracking-wider text-ink flex-1">
+      <span className="text-sm font-medium uppercase tracking-wider text-fog flex-1">
         {title}
       </span>
       {action ? <div className="ml-auto flex-shrink-0">{action}</div> : null}

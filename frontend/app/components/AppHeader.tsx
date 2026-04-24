@@ -50,7 +50,7 @@ export function AppHeader() {
       <header
         className={cn(
           "fixed top-0 w-full z-50 h-14",
-          "bg-paper/95 backdrop-blur-sm border-b border-hairline",
+          "bg-ink-well/95 backdrop-blur-sm border-b border-ink-rim",
           "flex items-center"
         )}
       >
@@ -58,23 +58,23 @@ export function AppHeader() {
           {/* Wordmark */}
           <Link
             href={home}
-            className="font-display text-lg text-ink tracking-tight hover:text-oxblood transition-colors duration-150"
+            className="font-display text-lg text-fog tracking-tight hover:text-cyan transition-colors duration-150"
           >
             CliniFlow
           </Link>
 
           {/* Right nav */}
           <nav className="flex items-center gap-5">
-            <span className="font-mono text-xs text-ink-soft/60 tracking-widest uppercase">
+            <span className="font-mono text-xs text-fog-dim/60 tracking-widest uppercase">
               {roleLabel}
             </span>
-            <span className="text-hairline select-none" aria-hidden="true">|</span>
-            <span className="font-sans text-sm text-ink-soft truncate max-w-[180px]">
+            <span className="text-ink-rim select-none" aria-hidden="true">|</span>
+            <span className="font-sans text-sm text-fog-dim truncate max-w-[180px]">
               {user.email}
             </span>
             <button
               onClick={onSignOut}
-              className="font-sans text-sm text-ink-soft hover:text-oxblood transition-colors duration-150 cursor-pointer"
+              className="font-sans text-sm text-fog-dim hover:text-cyan transition-colors duration-150 cursor-pointer"
             >
               Sign out
             </button>

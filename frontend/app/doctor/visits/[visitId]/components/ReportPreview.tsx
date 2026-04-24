@@ -84,8 +84,8 @@ function humanizeVital(key: string): string {
   return map[key] ?? key.replace(/_/g, " ");
 }
 
-const dtCls = "font-mono text-xs text-ink-soft/60 mt-2";
-const ddCls = "font-sans text-sm text-ink mt-0.5";
+const dtCls = "font-mono text-xs text-fog-dim/60 mt-2";
+const ddCls = "font-sans text-sm text-fog mt-0.5";
 const monoCls = "font-mono text-sm";
 
 export function ReportPreview({
@@ -121,9 +121,9 @@ export function ReportPreview({
         {/* ============================ HEADER ============================ */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-6">
           <div>
-            <p className="font-display text-lg text-ink">{CLINIC.name}</p>
-            <p className="font-sans text-xs text-ink-soft mt-0.5">{CLINIC.address}</p>
-            <p className="font-mono text-xs text-ink-soft/60 mt-1 flex flex-wrap gap-2">
+            <p className="font-display text-lg text-fog">{CLINIC.name}</p>
+            <p className="font-sans text-xs text-fog-dim mt-0.5">{CLINIC.address}</p>
+            <p className="font-mono text-xs text-fog-dim/60 mt-1 flex flex-wrap gap-2">
               <span>Tel: {CLINIC.phone}</span>
               <span>·</span>
               <span>{CLINIC.email}</span>
@@ -133,20 +133,20 @@ export function ReportPreview({
           </div>
           <div className="flex flex-col gap-1 sm:items-end flex-shrink-0">
             <div className="flex gap-2 items-baseline">
-              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Visit ID</span>
-              <code className="font-mono text-xs text-ink">{visitId.slice(0, 8)}…</code>
+              <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Visit ID</span>
+              <code className="font-mono text-xs text-fog">{visitId.slice(0, 8)}…</code>
             </div>
             <div className="flex gap-2 items-baseline">
-              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Date</span>
-              <span className="font-mono text-xs text-ink">{visitDate.toLocaleDateString()}</span>
+              <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Date</span>
+              <span className="font-mono text-xs text-fog">{visitDate.toLocaleDateString()}</span>
             </div>
             <div className="flex gap-2 items-baseline">
-              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Time</span>
-              <span className="font-mono text-xs text-ink">{visitDate.toLocaleTimeString()}</span>
+              <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Time</span>
+              <span className="font-mono text-xs text-fog">{visitDate.toLocaleTimeString()}</span>
             </div>
             <div className="flex gap-2 items-baseline">
-              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Encounter</span>
-              <span className="font-sans text-xs text-ink">Outpatient</span>
+              <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Encounter</span>
+              <span className="font-sans text-xs text-fog">Outpatient</span>
             </div>
           </div>
         </div>
@@ -156,8 +156,8 @@ export function ReportPreview({
         {/* ============================ PARTIES ============================ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
           <div>
-            <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-2">Patient</p>
-            <p className="font-display text-base text-ink">{patient.name}</p>
+            <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-2">Patient</p>
+            <p className="font-display text-base text-fog">{patient.name}</p>
             <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
               <dt className={dtCls}>MRN</dt><dd className={cn(ddCls, monoCls)}>{patient.mrn}</dd>
               <dt className={dtCls}>IC No.</dt><dd className={cn(ddCls, monoCls)}>{patient.ic}</dd>
@@ -167,8 +167,8 @@ export function ReportPreview({
             </dl>
           </div>
           <div>
-            <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-2">Attending Doctor</p>
-            <p className="font-display text-base text-ink">{doctor.name}</p>
+            <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-2">Attending Doctor</p>
+            <p className="font-display text-base text-fog">{doctor.name}</p>
             <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
               <dt className={dtCls}>Qualification</dt><dd className={ddCls}>{doctor.qualification}</dd>
               <dt className={dtCls}>Specialty</dt><dd className={ddCls}>{doctor.specialty}</dd>
@@ -181,7 +181,7 @@ export function ReportPreview({
 
         {/* ============================ CLINICAL REPORT ============================ */}
         {!hasReport && (
-          <p className="font-sans text-sm text-ink-soft mt-6">
+          <p className="font-sans text-sm text-fog-dim mt-6">
             No report draft available. Generate a report in the Consultation tab first.
           </p>
         )}
@@ -194,11 +194,11 @@ export function ReportPreview({
               <dl className="grid grid-cols-1 gap-2">
                 <div>
                   <dt className={dtCls}>Chief complaint</dt>
-                  <dd className={ddCls}>{report.subjective.chiefComplaint || <span className="text-ink-soft/50">—</span>}</dd>
+                  <dd className={ddCls}>{report.subjective.chiefComplaint || <span className="text-fog-dim/50">—</span>}</dd>
                 </div>
                 <div>
                   <dt className={dtCls}>History of present illness</dt>
-                  <dd className={ddCls}>{report.subjective.historyOfPresentIllness || <span className="text-ink-soft/50">—</span>}</dd>
+                  <dd className={ddCls}>{report.subjective.historyOfPresentIllness || <span className="text-fog-dim/50">—</span>}</dd>
                 </div>
                 {report.subjective.symptomDuration && (
                   <div>
@@ -228,8 +228,8 @@ export function ReportPreview({
                 <div className="flex flex-wrap gap-3 mb-3">
                   {Object.entries(report.objective.vitalSigns ?? {}).map(([k, v]) => (
                     <div key={k} className="flex flex-col gap-0.5">
-                      <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">{humanizeVital(k)}</span>
-                      <strong className="font-mono text-sm text-ink">{v}</strong>
+                      <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">{humanizeVital(k)}</span>
+                      <strong className="font-mono text-sm text-fog">{v}</strong>
                     </div>
                   ))}
                 </div>
@@ -241,7 +241,7 @@ export function ReportPreview({
                 </div>
               )}
               {Object.keys(report.objective.vitalSigns ?? {}).length === 0 && !report.objective.physicalExam && (
-                <p className="font-sans text-sm text-ink-soft/50">Vitals and exam not captured.</p>
+                <p className="font-sans text-sm text-fog-dim/50">Vitals and exam not captured.</p>
               )}
             </section>
 
@@ -251,7 +251,7 @@ export function ReportPreview({
               <dl className="grid grid-cols-1 gap-2">
                 <div>
                   <dt className={dtCls}>Primary diagnosis</dt>
-                  <dd className={ddCls}><strong>{report.assessment.primaryDiagnosis || <span className="text-ink-soft/50">—</span>}</strong></dd>
+                  <dd className={ddCls}><strong>{report.assessment.primaryDiagnosis || <span className="text-fog-dim/50">—</span>}</strong></dd>
                 </div>
                 {(report.assessment.differentialDiagnoses ?? []).length > 0 && (
                   <div>
@@ -274,24 +274,24 @@ export function ReportPreview({
 
               {(report.plan.medications ?? []).length > 0 && (
                 <div className="mb-4">
-                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-2">Medications</p>
+                  <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-2">Medications</p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                       <thead>
-                        <tr className="border-b border-hairline">
+                        <tr className="border-b border-ink-rim">
                           {["Drug", "Dose", "Route", "Frequency", "Duration"].map((h) => (
-                            <th key={h} className="text-left font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest pb-1.5 pr-4">{h}</th>
+                            <th key={h} className="text-left font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest pb-1.5 pr-4">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {(report.plan.medications ?? []).map((m, i) => (
-                          <tr key={i} className="border-b border-hairline/50">
-                            <td className="font-sans text-sm text-ink py-1.5 pr-4"><strong>{m.drugName || "—"}</strong></td>
-                            <td className="font-mono text-sm text-ink py-1.5 pr-4">{m.dose || "—"}</td>
-                            <td className="font-mono text-sm text-ink py-1.5 pr-4">{m.route || "PO"}</td>
-                            <td className="font-mono text-sm text-ink py-1.5 pr-4">{m.frequency || "—"}</td>
-                            <td className="font-mono text-sm text-ink py-1.5">{m.duration || "—"}</td>
+                          <tr key={i} className="border-b border-ink-rim/50">
+                            <td className="font-sans text-sm text-fog py-1.5 pr-4"><strong>{m.drugName || "—"}</strong></td>
+                            <td className="font-mono text-sm text-fog py-1.5 pr-4">{m.dose || "—"}</td>
+                            <td className="font-mono text-sm text-fog py-1.5 pr-4">{m.route || "PO"}</td>
+                            <td className="font-mono text-sm text-fog py-1.5 pr-4">{m.frequency || "—"}</td>
+                            <td className="font-mono text-sm text-fog py-1.5">{m.duration || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -302,11 +302,11 @@ export function ReportPreview({
 
               {(report.plan.investigations ?? []).length > 0 && (
                 <div className="mb-3">
-                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1.5">Investigations</p>
+                  <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-1.5">Investigations</p>
                   <ul className="flex flex-col gap-0.5">
                     {(report.plan.investigations ?? []).map((x, i) => (
-                      <li key={i} className="font-sans text-sm text-ink flex gap-2">
-                        <span className="text-oxblood/40 font-mono text-xs">—</span>
+                      <li key={i} className="font-sans text-sm text-fog flex gap-2">
+                        <span className="text-cyan/40 font-mono text-xs">—</span>
                         {x}
                       </li>
                     ))}
@@ -316,11 +316,11 @@ export function ReportPreview({
 
               {(report.plan.lifestyleAdvice ?? []).length > 0 && (
                 <div className="mb-3">
-                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1.5">Lifestyle advice</p>
+                  <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-1.5">Lifestyle advice</p>
                   <ul className="flex flex-col gap-0.5">
                     {(report.plan.lifestyleAdvice ?? []).map((x, i) => (
-                      <li key={i} className="font-sans text-sm text-ink flex gap-2">
-                        <span className="text-oxblood/40 font-mono text-xs">—</span>
+                      <li key={i} className="font-sans text-sm text-fog flex gap-2">
+                        <span className="text-cyan/40 font-mono text-xs">—</span>
                         {x}
                       </li>
                     ))}
@@ -330,8 +330,8 @@ export function ReportPreview({
 
               {report.plan.followUp.needed && (
                 <div className="mb-3">
-                  <p className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest mb-1">Follow-up</p>
-                  <p className="font-sans text-sm text-ink">
+                  <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-1">Follow-up</p>
+                  <p className="font-sans text-sm text-fog">
                     {report.plan.followUp.timeframe ?? "As advised"}
                     {report.plan.followUp.reason ? ` — ${report.plan.followUp.reason}` : ""}
                   </p>
@@ -355,11 +355,11 @@ export function ReportPreview({
         {/* ============================ SIGNATURE ============================ */}
         <Separator className="mt-6 mb-4" />
         <div className="flex flex-col gap-0.5">
-          <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">Attending Doctor</span>
-          <p className="font-display text-base text-ink">{doctor.name}</p>
-          <p className="font-mono text-xs text-ink-soft/60">{doctor.qualification} · {doctor.mmcNumber}</p>
+          <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Attending Doctor</span>
+          <p className="font-display text-base text-fog">{doctor.name}</p>
+          <p className="font-mono text-xs text-fog-dim/60">{doctor.qualification} · {doctor.mmcNumber}</p>
           {finalizedAt && (
-            <p className="font-mono text-xs text-ink-soft/50">
+            <p className="font-mono text-xs text-fog-dim/50">
               Signed: {new Date(finalizedAt).toLocaleString()}
             </p>
           )}
@@ -368,9 +368,9 @@ export function ReportPreview({
 
       {/* ============================ PUBLISHED SEAL ============================ */}
       {finalized && finalizedAt && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-sage/10 border border-sage/30 rounded-xs">
-          <span className="w-2 h-2 rounded-full bg-sage flex-shrink-0" />
-          <span className="font-sans text-sm text-sage">
+        <div className="flex items-center gap-2 px-4 py-3 bg-lime/10 border border-lime/30 rounded-xs">
+          <span className="w-2 h-2 rounded-full bg-lime flex-shrink-0" />
+          <span className="font-sans text-sm text-lime">
             Published on {new Date(finalizedAt).toLocaleString()}
           </span>
         </div>

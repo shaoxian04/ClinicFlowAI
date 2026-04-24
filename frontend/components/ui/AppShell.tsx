@@ -18,7 +18,7 @@ export function AppShell({
     <div
       className={cn(
         "min-h-screen font-sans",
-        variant === "paper" ? "bg-paper text-ink" : "bg-slate text-paper",
+        variant === "paper" ? "bg-obsidian text-fog" : "bg-ink-well text-fog",
         className
       )}
       {...props}

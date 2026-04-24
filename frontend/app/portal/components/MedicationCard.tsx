@@ -61,7 +61,7 @@ export function MedicationCard({
   return (
     <Card variant="bone" className="space-y-3">
       {/* Drug name */}
-      <p className="font-sans font-medium text-sm text-ink">{name}</p>
+      <p className="font-sans font-medium text-sm text-fog">{name}</p>
 
       <Separator className="my-0" />
 
@@ -75,11 +75,11 @@ export function MedicationCard({
       </div>
 
       {instructions && instructions.trim() !== "" && (
-        <div className="pt-1 border-t border-hairline">
-          <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-1">
+        <div className="pt-1 border-t border-ink-rim">
+          <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-1">
             {copy.instructions}
           </p>
-          <p className="font-sans text-xs text-ink-soft leading-relaxed">
+          <p className="font-sans text-xs text-fog-dim leading-relaxed">
             {instructions}
           </p>
         </div>

@@ -74,11 +74,11 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
         className="hidden xl:block w-64 flex-shrink-0"
         aria-label="Patient context"
       >
-        <div className="bg-slate rounded-sm border border-slate/80 p-4 sticky top-20">
+        <div className="bg-obsidian rounded-sm border border-ink-rim p-4 sticky top-20">
           <SectionHeader
             number="01"
             title="Patient context"
-            className="text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60 mb-4"
+            className="text-fog/70 [&>span:first-child]:text-fog/30 [&>span:nth-child(2)]:text-fog/20 [&>span:last-child]:text-fog/60 mb-4"
           />
           {body}
         </div>
@@ -107,14 +107,14 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
         aria-hidden={!drawerOpen}
       >
         <div
-          className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
+          className="absolute inset-0 bg-obsidian/60 backdrop-blur-sm"
           onClick={closeDrawer}
           aria-hidden="true"
         />
         <aside
           id={drawerId}
           className={cn(
-            "absolute right-0 top-0 bottom-0 w-72 bg-slate p-5 overflow-y-auto transition-transform duration-200",
+            "absolute right-0 top-0 bottom-0 w-72 bg-obsidian border-l border-ink-rim p-5 overflow-y-auto transition-transform duration-200",
             drawerOpen ? "translate-x-0" : "translate-x-full"
           )}
           role="dialog"
@@ -125,11 +125,11 @@ export function PatientContextPanel({ patientId }: PatientContextPanelProps) {
             <SectionHeader
               number="01"
               title="Patient context"
-              className="text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60"
+              className="text-fog/70 [&>span:first-child]:text-fog/30 [&>span:nth-child(2)]:text-fog/20 [&>span:last-child]:text-fog/60"
             />
             <button
               type="button"
-              className="text-paper/50 hover:text-paper transition-colors duration-150 font-sans text-sm"
+              className="text-fog/50 hover:text-fog transition-colors duration-150 font-sans text-sm"
               onClick={closeDrawer}
               aria-label="Close patient context"
             >
@@ -147,17 +147,17 @@ function PanelBody({ state }: { state: FetchState }) {
   if (state.kind === "loading") {
     return (
       <div className="flex flex-col gap-2" role="status" aria-label="Loading patient context">
-        <Skeleton className="h-3 bg-paper/10" style={{ width: "80%" }} />
-        <Skeleton className="h-3 bg-paper/10" style={{ width: "65%" }} />
-        <Skeleton className="h-3 bg-paper/10" style={{ width: "72%" }} />
-        <Skeleton className="h-3 bg-paper/10" style={{ width: "58%" }} />
+        <Skeleton className="h-3 bg-fog/10" style={{ width: "80%" }} />
+        <Skeleton className="h-3 bg-fog/10" style={{ width: "65%" }} />
+        <Skeleton className="h-3 bg-fog/10" style={{ width: "72%" }} />
+        <Skeleton className="h-3 bg-fog/10" style={{ width: "58%" }} />
       </div>
     );
   }
 
   if (state.kind === "unavailable" || state.kind === "error") {
     return (
-      <p className="font-sans text-xs text-paper/40 leading-relaxed">
+      <p className="font-sans text-xs text-fog/40 leading-relaxed">
         {state.kind === "unavailable"
           ? "Context unavailable — patient record not yet integrated with graph-KB."
           : `Context unavailable — ${state.message}.`}
@@ -172,19 +172,19 @@ function PanelBody({ state }: { state: FetchState }) {
     <div className="flex flex-col gap-4">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="font-mono text-[10px] text-paper/40 uppercase tracking-widest">
+          <span className="font-mono text-[10px] text-fog/40 uppercase tracking-widest">
             Recent visits
           </span>
-          <span className="font-mono text-[10px] text-paper/30">{recent.length}</span>
+          <span className="font-mono text-[10px] text-fog/30">{recent.length}</span>
         </div>
         {recent.length === 0 ? (
-          <p className="font-sans text-xs text-paper/40">No prior visits.</p>
+          <p className="font-sans text-xs text-fog/40">No prior visits.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {recent.map((v) => (
               <li key={v.visitId} className="flex flex-col gap-0.5">
-                <span className="font-sans text-xs text-paper/70 leading-snug">{v.diagnosis}</span>
-                <span className="font-mono text-[10px] text-paper/40">{formatDate(v.date)}</span>
+                <span className="font-sans text-xs text-fog/70 leading-snug">{v.diagnosis}</span>
+                <span className="font-mono text-[10px] text-fog/40">{formatDate(v.date)}</span>
               </li>
             ))}
           </ul>
@@ -223,7 +223,7 @@ function SeedDemoButton({ allEmpty }: { allEmpty: boolean }) {
     <div className="flex flex-col gap-1.5">
       <button
         type="button"
-        className="font-sans text-xs text-paper/50 hover:text-paper/80 transition-colors duration-150 text-left"
+        className="font-sans text-xs text-fog/50 hover:text-fog/80 transition-colors duration-150 text-left"
         onClick={click}
         disabled={busy}
       >

@@ -15,7 +15,7 @@ function ScrollProgressBar() {
 
   return (
     <motion.div
-      className="fixed top-0 left-0 right-0 h-[2px] bg-oxblood origin-left z-[60]"
+      className="fixed top-0 left-0 right-0 h-[2px] bg-cyan origin-left z-[60]"
       style={{ scaleX }}
       aria-hidden="true"
     />
@@ -25,7 +25,7 @@ function ScrollProgressBar() {
 /* ─── section label ────────────────────────────────────────────────────── */
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+    <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
       {children}
     </p>
   );
@@ -109,7 +109,7 @@ export default function Home() {
   const mainRef = useRef<HTMLDivElement>(null);
 
   return (
-    <main ref={mainRef} className="bg-paper text-ink font-sans min-h-screen">
+    <main ref={mainRef} className="bg-obsidian text-fog font-sans min-h-screen">
       <ScrollProgressBar />
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
@@ -126,15 +126,15 @@ export default function Home() {
 
           <motion.h1
             variants={fadeUp}
-            className="font-display text-4xl md:text-5xl text-ink leading-[1.08] tracking-tight mt-2"
+            className="font-display text-4xl md:text-5xl text-fog leading-[1.08] tracking-tight mt-2"
           >
             More minutes with your doctor.{" "}
-            <em className="not-italic text-oxblood">Fewer on paperwork.</em>
+            <em className="not-italic text-cyan">Fewer on paperwork.</em>
           </motion.h1>
 
           <motion.p
             variants={fadeUp}
-            className="text-lg text-ink-soft font-sans leading-relaxed mt-6"
+            className="text-lg text-fog-dim font-sans leading-relaxed mt-6"
           >
             CliniFlow helps your clinic run a calmer visit — capturing the
             conversation so your doctor can focus on you, then sending you home
@@ -158,7 +158,7 @@ export default function Home() {
               (label) => (
                 <span
                   key={label}
-                  className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest border border-hairline px-2.5 py-1 rounded-xs"
+                  className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest border border-ink-rim px-2.5 py-1 rounded-xs"
                 >
                   {label}
                 </span>
@@ -169,7 +169,7 @@ export default function Home() {
       </section>
 
       {/* ── HOW A VISIT WORKS ─────────────────────────────────────────── */}
-      <section id="flow" className="border-t border-hairline">
+      <section id="flow" className="border-t border-ink-rim">
         <div className="max-w-2xl mx-auto px-6 py-20">
           <Eyebrow>How a visit works</Eyebrow>
           <motion.h2
@@ -177,7 +177,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35 }}
-            className="font-display text-3xl md:text-4xl text-ink leading-tight mb-12"
+            className="font-display text-3xl md:text-4xl text-fog leading-tight mb-12"
           >
             From the first symptom to a summary you can actually read.
           </motion.h2>
@@ -195,17 +195,17 @@ export default function Home() {
                 variants={fadeUp}
                 className={cn(
                   "py-8 flex gap-6",
-                  i < FEATURES.length - 1 && "border-b border-hairline"
+                  i < FEATURES.length - 1 && "border-b border-ink-rim"
                 )}
               >
-                <div className="flex-shrink-0 font-mono text-xs text-ink-soft/60 tracking-widest w-6 pt-0.5">
+                <div className="flex-shrink-0 font-mono text-xs text-fog-dim/60 tracking-widest w-6 pt-0.5">
                   {f.number}
                 </div>
                 <div>
-                  <h3 className="font-sans font-medium text-base text-ink mb-2">
+                  <h3 className="font-sans font-medium text-base text-fog mb-2">
                     {f.title}
                   </h3>
-                  <p className="font-sans text-sm text-ink-soft leading-relaxed">
+                  <p className="font-sans text-sm text-fog-dim leading-relaxed">
                     {f.desc}
                   </p>
                 </div>
@@ -216,7 +216,7 @@ export default function Home() {
       </section>
 
       {/* ── WHAT MAKES IT DIFFERENT ───────────────────────────────────── */}
-      <section className="bg-bone border-t border-b border-hairline">
+      <section className="bg-ink-well border-t border-b border-ink-rim">
         <div className="max-w-2xl mx-auto px-6 py-20">
           <Eyebrow>What makes it different</Eyebrow>
           <motion.h2
@@ -224,7 +224,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35 }}
-            className="font-display text-3xl text-ink leading-tight mb-12"
+            className="font-display text-3xl text-fog leading-tight mb-12"
           >
             Two ideas that change how your visit feels.
           </motion.h2>
@@ -238,13 +238,13 @@ export default function Home() {
           >
             {DIFFERENTIATORS.map((d) => (
               <motion.div key={d.label} variants={fadeUp}>
-                <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+                <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
                   {d.label}
                 </p>
-                <h3 className="font-display text-xl text-ink leading-snug mb-3">
+                <h3 className="font-display text-xl text-fog leading-snug mb-3">
                   {d.heading}
                 </h3>
-                <p className="font-sans text-sm text-ink-soft leading-relaxed">
+                <p className="font-sans text-sm text-fog-dim leading-relaxed">
                   {d.body}
                 </p>
               </motion.div>
@@ -254,7 +254,7 @@ export default function Home() {
       </section>
 
       {/* ── OUR PROMISES ─────────────────────────────────────────────── */}
-      <section className="border-t border-hairline">
+      <section className="border-t border-ink-rim">
         <div className="max-w-2xl mx-auto px-6 py-20">
           <Eyebrow>Our promises to you</Eyebrow>
           <motion.h2
@@ -262,9 +262,9 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35 }}
-            className="font-display text-3xl text-ink leading-tight mb-12"
+            className="font-display text-3xl text-fog leading-tight mb-12"
           >
-            Four lines we will <em className="not-italic text-oxblood">never</em> cross.
+            Four lines we will <em className="not-italic text-cyan">never</em> cross.
           </motion.h2>
 
           <motion.div
@@ -280,13 +280,13 @@ export default function Home() {
                 variants={fadeUp}
                 className={cn(
                   "flex gap-6 py-6",
-                  i < INVARIANTS.length - 1 && "border-b border-hairline"
+                  i < INVARIANTS.length - 1 && "border-b border-ink-rim"
                 )}
               >
-                <div className="flex-shrink-0 font-mono text-xs text-oxblood/60 tracking-widest w-6 pt-0.5">
+                <div className="flex-shrink-0 font-mono text-xs text-cyan/60 tracking-widest w-6 pt-0.5">
                   {inv.n}
                 </div>
-                <p className="font-sans text-sm text-ink-soft leading-relaxed">
+                <p className="font-sans text-sm text-fog-dim leading-relaxed">
                   {inv.text}
                 </p>
               </motion.div>
@@ -296,13 +296,13 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────────────── */}
-      <footer className="border-t border-hairline bg-bone">
+      <footer className="border-t border-ink-rim bg-ink-well">
         <div className="max-w-2xl mx-auto px-6 py-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
             {/* Brand */}
             <div className="md:col-span-1">
-              <p className="font-display text-xl text-ink mb-2">CliniFlow</p>
-              <p className="font-sans text-sm text-ink-soft leading-relaxed">
+              <p className="font-display text-xl text-fog mb-2">CliniFlow</p>
+              <p className="font-sans text-sm text-fog-dim leading-relaxed">
                 Clinical documentation without the clerical weight. Built for
                 primary-care clinics in Malaysia.
               </p>
@@ -310,7 +310,7 @@ export default function Home() {
 
             {/* Product */}
             <div>
-              <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-4">
+              <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-4">
                 Product
               </p>
               <ul className="flex flex-col gap-2">
@@ -324,7 +324,7 @@ export default function Home() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="font-sans text-sm text-ink-soft hover:text-oxblood transition-colors duration-150"
+                      className="font-sans text-sm text-fog-dim hover:text-cyan transition-colors duration-150"
                     >
                       {link.label}
                     </Link>
@@ -335,7 +335,7 @@ export default function Home() {
 
             {/* Built for */}
             <div>
-              <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-4">
+              <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-4">
                 Built for
               </p>
               <ul className="flex flex-col gap-2">
@@ -345,7 +345,7 @@ export default function Home() {
                   "English & Bahasa Melayu",
                   "Hackathon · 2026",
                 ].map((item) => (
-                  <li key={item} className="font-sans text-sm text-ink-soft">
+                  <li key={item} className="font-sans text-sm text-fog-dim">
                     {item}
                   </li>
                 ))}
@@ -356,12 +356,12 @@ export default function Home() {
           <Separator className="my-0" />
 
           <div className="flex items-center justify-between mt-6 gap-4 flex-wrap">
-            <span className="font-sans text-xs text-ink-soft/60">
+            <span className="font-sans text-xs text-fog-dim/60">
               CliniFlow AI · A hackathon submission · 2026
             </span>
             <Link
               href="/privacy"
-              className="font-sans text-xs text-ink-soft/60 hover:text-oxblood transition-colors duration-150"
+              className="font-sans text-xs text-fog-dim/60 hover:text-cyan transition-colors duration-150"
             >
               Privacy policy
             </Link>

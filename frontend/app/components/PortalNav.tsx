@@ -14,12 +14,12 @@ export function PortalNav({ active }: { active?: string } = {}) {
 
   return (
     <nav
-      className="sticky top-14 z-40 bg-bone/70 backdrop-blur-sm border-b border-hairline"
+      className="sticky top-14 z-40 bg-ink-well/70 backdrop-blur-sm border-b border-ink-rim"
       aria-label="Patient portal navigation"
     >
       <div className="max-w-2xl mx-auto px-6 flex items-center justify-between h-10">
         {/* Brand */}
-        <span className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest">
+        <span className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest">
           Your portal
         </span>
 
@@ -39,8 +39,8 @@ export function PortalNav({ active }: { active?: string } = {}) {
                   className={cn(
                     "inline-flex items-center h-10 px-4 font-sans text-xs transition-colors duration-150 border-b-2",
                     isActive
-                      ? "text-oxblood border-oxblood"
-                      : "text-ink-soft/70 border-transparent hover:text-ink hover:border-hairline"
+                      ? "text-cyan border-cyan"
+                      : "text-fog-dim/70 border-transparent hover:text-fog hover:border-ink-rim"
                   )}
                 >
                   {t.label}

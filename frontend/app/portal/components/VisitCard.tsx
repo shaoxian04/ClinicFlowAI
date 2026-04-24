@@ -62,14 +62,14 @@ export function VisitCard({
       <Card
         variant="paper"
         className={cn(
-          "transition-shadow duration-150 group-hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]",
+          "transition-shadow duration-150 group-hover:shadow-elevated",
           "relative"
         )}
       >
         {/* Doctor initials — top right */}
         {badge !== "—" && (
           <span
-            className="absolute top-5 right-5 w-7 h-7 rounded-sm bg-bone flex items-center justify-center font-mono text-xs text-ink-soft"
+            className="absolute top-5 right-5 w-7 h-7 rounded-sm bg-mica flex items-center justify-center font-mono text-xs text-fog-dim"
             title={doctorName ?? "Doctor not assigned"}
           >
             {badge}
@@ -79,24 +79,24 @@ export function VisitCard({
         <div className="space-y-2 pr-10">
           {/* Date + status row */}
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs text-ink-soft/60 tracking-wider">
+            <span className="font-mono text-xs text-fog-dim/60 tracking-wider">
               {displayDate}
             </span>
             <Badge variant={STATUS_BADGE[status]}>{status}</Badge>
           </div>
 
           {/* Tag */}
-          <p className="font-mono text-xs text-oxblood/70 uppercase tracking-widest">
+          <p className="font-mono text-xs text-cyan/70 uppercase tracking-widest">
             {tag}
           </p>
 
           {/* Preview */}
-          <p className="font-sans text-sm text-ink-soft leading-relaxed line-clamp-2">
+          <p className="font-sans text-sm text-fog-dim leading-relaxed line-clamp-2">
             {summaryPreview || "(summary being prepared…)"}
           </p>
 
           {/* Tap hint */}
-          <p className="font-sans text-xs text-ink-soft/40 mt-1 group-hover:text-oxblood/60 transition-colors duration-150">
+          <p className="font-sans text-xs text-fog-dim/40 mt-1 group-hover:text-cyan/60 transition-colors duration-150">
             Read full summary →
           </p>
         </div>

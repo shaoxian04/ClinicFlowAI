@@ -15,12 +15,12 @@ export const Checkbox = React.forwardRef<
   <RadixCheckbox.Root
     ref={ref}
     className={cn(
-      "h-4 w-4 rounded-xs border border-hairline bg-paper focus:outline-none focus:ring-1 focus:ring-oxblood/40 disabled:opacity-50 data-[state=checked]:bg-oxblood data-[state=checked]:border-oxblood",
+      "h-4 w-4 rounded-xs border border-ink-rim bg-ink-well focus:outline-none focus:ring-1 focus:ring-cyan/40 disabled:opacity-50 data-[state=checked]:bg-cyan data-[state=checked]:border-cyan",
       className
     )}
     {...props}
   >
-    <RadixCheckbox.Indicator className="flex items-center justify-center text-paper">
+    <RadixCheckbox.Indicator className="flex items-center justify-center text-obsidian">
       <Check className="h-3 w-3" strokeWidth={3} />
     </RadixCheckbox.Indicator>
   </RadixCheckbox.Root>

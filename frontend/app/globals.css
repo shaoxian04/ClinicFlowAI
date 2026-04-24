@@ -4,6 +4,20 @@
 
 @layer base {
   :root {
+    --obsidian: #0A0F1A;
+    --ink-well: #0E1424;
+    --ink-rim: #1A2133;
+    --fog: #E9EEF5;
+    --fog-dim: #93A0B5;
+    --cyan: #22E1D7;
+    --cyan-soft: rgba(34,225,215,0.15);
+    --coral: #FF7759;
+    --lime: #B8FF5C;
+    --amber: #F7B23B;
+    --crimson: #FF4D5E;
+    --mica: #2A3346;
+
+    /* Legacy vars — kept at their original light values so staff + admin CSS continues to work */
     --paper: #F6F1E6;
     --bone: #E8DFCE;
     --ink: #141414;
@@ -11,39 +25,38 @@
     --oxblood: #7A2E2E;
     --sage: #4F6B56;
     --ochre: #B87C2A;
-    --crimson: #8F1C1C;
     --slate: #1F2A2B;
     --hairline: #D9D1BE;
 
-    /* Compatibility aliases for legacy classes that reference old variable names */
-    --primary: var(--oxblood);
+    /* Compatibility aliases — hardcoded to legacy light values so staff/admin pages remain light */
+    --primary: #7A2E2E;
     --primary-hover: #6b2626;
-    --primary-ink: var(--paper);
+    --primary-ink: #F6F1E6;
     --primary-soft: rgba(122, 46, 46, 0.1);
-    --accent: var(--crimson);
+    --accent: #8F1C1C;
     --accent-hover: #7a1818;
-    --accent-ink: var(--paper);
-    --warn: var(--ochre);
+    --accent-ink: #F6F1E6;
+    --warn: #B87C2A;
     --warn-soft: rgba(184, 124, 42, 0.12);
     --warn-ink: #7a4f10;
-    --good: var(--sage);
+    --good: #4F6B56;
     --good-soft: rgba(79, 107, 86, 0.12);
     --good-ink: #2d4a33;
-    --danger: var(--crimson);
+    --danger: #8F1C1C;
     --danger-soft: rgba(143, 28, 28, 0.1);
-    --bad: var(--crimson);
+    --bad: #8F1C1C;
     --pill-radius: 999px;
 
-    --bg: var(--paper);
-    --bg-soft: var(--bone);
-    --surface: var(--paper);
-    --surface-2: var(--bone);
-    --line: var(--hairline);
+    --bg: #F6F1E6;
+    --bg-soft: #E8DFCE;
+    --surface: #F6F1E6;
+    --surface-2: #E8DFCE;
+    --line: #D9D1BE;
     --line-strong: #c5b89f;
-    --ink-2: var(--ink-soft);
+    --ink-2: #3B3A35;
     --ink-3: #7a7570;
     --ink-dim: #7a7570;
-    --border: var(--hairline);
+    --border: #D9D1BE;
 
     --radius-sm: 4px;
     --radius: 8px;
@@ -71,10 +84,28 @@
   }
 
   body {
-    @apply bg-paper text-ink font-sans antialiased;
+    @apply bg-obsidian text-fog font-sans antialiased;
     line-height: 1.55;
     letter-spacing: -0.005em;
   }
+}
+
+/* Noise overlay — subtle film grain at 3% opacity */
+.noise-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Cyan glow text shadow */
+.glow-cyan {
+  text-shadow: 0 0 18px rgba(34,225,215,0.4);
 }
 
 /* ===========================================================================
@@ -89,6 +120,8 @@
   max-width: 980px;
   margin: 0 auto;
   padding: 56px 32px 96px;
+  background: #F6F1E6;
+  color: #141414;
 }
 
 .shell-narrow {
@@ -868,7 +901,7 @@ textarea:focus-visible,
 [role="tab"]:focus-visible,
 [role="button"]:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
 

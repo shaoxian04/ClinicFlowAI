@@ -5,11 +5,11 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-oxblood text-paper hover:bg-oxblood/90",
-        secondary: "border border-hairline bg-paper text-ink hover:bg-bone",
-        ghost: "text-ink-soft hover:bg-bone/50",
-        destructive: "bg-crimson text-paper hover:bg-crimson/90",
-        link: "text-oxblood underline-offset-4 hover:underline",
+        primary: "bg-cyan text-obsidian hover:bg-cyan/90",
+        secondary: "border border-ink-rim bg-ink-well text-fog hover:bg-mica",
+        ghost: "text-fog-dim hover:bg-ink-well",
+        destructive: "bg-crimson text-fog hover:bg-crimson/90",
+        link: "text-cyan underline-offset-4 hover:underline",
       },
       size: {
         sm: "h-8 px-3 text-sm",
@@ -27,9 +27,9 @@ export const buttonVariants = cva(
 export const cardVariants = cva("rounded-sm p-6", {
   variants: {
     variant: {
-      paper: "bg-paper border border-hairline",
-      slate: "bg-slate text-paper border border-slate",
-      bone: "bg-bone border border-hairline",
+      paper: "bg-ink-well border border-ink-rim shadow-card",
+      slate: "bg-obsidian text-fog border border-ink-rim",
+      bone: "bg-mica border border-ink-rim",
     },
   },
   defaultVariants: {
@@ -42,14 +42,14 @@ export const badgeVariants = cva(
   {
     variants: {
       variant: {
-        neutral: "bg-bone text-ink-soft",
-        primary: "bg-oxblood/10 text-oxblood",
-        good: "bg-sage/10 text-sage",
-        warn: "bg-ochre/10 text-ochre",
+        neutral: "bg-mica text-fog-dim",
+        primary: "bg-cyan/10 text-cyan",
+        good: "bg-lime/10 text-lime",
+        warn: "bg-amber/10 text-amber",
         danger: "bg-crimson/10 text-crimson",
-        draft: "bg-oxblood/10 text-oxblood border-l-2 border-oxblood",
-        review: "bg-ochre/10 text-ochre",
-        published: "bg-sage/10 text-sage",
+        draft: "bg-coral/10 text-coral border-l-2 border-coral",
+        review: "bg-amber/10 text-amber",
+        published: "bg-lime/10 text-lime",
       },
     },
     defaultVariants: {
@@ -59,7 +59,7 @@ export const badgeVariants = cva(
 );
 
 export const inputVariants = cva(
-  "h-10 w-full rounded-sm border border-hairline bg-paper px-3 text-sm font-sans text-ink placeholder:text-ink-soft/50 focus:outline-none focus:ring-1 focus:ring-oxblood/40 disabled:opacity-50"
+  "h-10 w-full rounded-sm border border-ink-rim bg-ink-well px-3 text-sm font-sans text-fog placeholder:text-fog-dim/50 focus:outline-none focus:ring-1 focus:ring-cyan/40 disabled:opacity-50"
 );
 
 export const iconButtonVariants = cva(
@@ -67,11 +67,11 @@ export const iconButtonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-oxblood text-paper hover:bg-oxblood/90",
-        secondary: "border border-hairline bg-paper text-ink hover:bg-bone",
-        ghost: "text-ink-soft hover:bg-bone/50",
-        destructive: "bg-crimson text-paper hover:bg-crimson/90",
-        link: "text-oxblood underline-offset-4 hover:underline",
+        primary: "bg-cyan text-obsidian hover:bg-cyan/90",
+        secondary: "border border-ink-rim bg-ink-well text-fog hover:bg-mica",
+        ghost: "text-fog-dim hover:bg-ink-well",
+        destructive: "bg-crimson text-fog hover:bg-crimson/90",
+        link: "text-cyan underline-offset-4 hover:underline",
       },
       size: {
         sm: "h-8 w-8",

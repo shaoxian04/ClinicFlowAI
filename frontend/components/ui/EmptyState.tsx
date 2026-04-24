@@ -25,11 +25,11 @@ export function EmptyState({
       {...props}
     >
       {icon ? (
-        <div className="text-ink-soft/40 [&>svg]:w-10 [&>svg]:h-10">{icon}</div>
+        <div className="text-fog-dim/40 [&>svg]:w-10 [&>svg]:h-10">{icon}</div>
       ) : null}
-      <p className="font-sans text-base text-ink">{title}</p>
+      <p className="font-sans text-base text-fog">{title}</p>
       {description ? (
-        <p className="text-sm text-ink-soft max-w-[42ch]">{description}</p>
+        <p className="text-sm text-fog-dim max-w-[42ch]">{description}</p>
       ) : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>

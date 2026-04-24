@@ -13,7 +13,7 @@ export function Separator({
   if (orientation === "vertical") {
     return (
       <div
-        className={cn("w-px bg-hairline self-stretch", className)}
+        className={cn("w-px bg-ink-rim self-stretch", className)}
         role="separator"
         aria-orientation="vertical"
         {...(props as React.HTMLAttributes<HTMLDivElement>)}
@@ -22,7 +22,7 @@ export function Separator({
   }
   return (
     <hr
-      className={cn("border-t border-hairline my-4", className)}
+      className={cn("border-t border-ink-rim my-4", className)}
       {...props}
     />
   );

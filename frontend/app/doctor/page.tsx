@@ -135,14 +135,14 @@ export default function DoctorDashboard() {
         >
           {/* Page header */}
           <motion.div variants={fadeUp} className="mb-6">
-            <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-2">
+            <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-2">
               Clinician workspace
             </p>
-            <h1 className="font-display text-3xl text-ink leading-tight">
+            <h1 className="font-display text-3xl text-fog leading-tight">
               Today&apos;s{" "}
-              <em className="not-italic text-oxblood">visits</em>
+              <em className="not-italic text-cyan">visits</em>
             </h1>
-            <p className="font-sans text-sm text-ink-soft mt-2">
+            <p className="font-sans text-sm text-fog-dim mt-2">
               AI drafts appear first — edit and sign before finalizing.
             </p>
           </motion.div>
@@ -176,7 +176,7 @@ export default function DoctorDashboard() {
           {!loading && groups.length > 0 && (
             <motion.div variants={fadeUp}>
               {/* Group tabs */}
-              <div className="flex gap-0 border-b border-hairline mb-4" role="tablist">
+              <div className="flex gap-0 border-b border-ink-rim mb-4" role="tablist">
                 {groups.map((g) => (
                   <button
                     key={g.heading}
@@ -185,15 +185,15 @@ export default function DoctorDashboard() {
                     className={cn(
                       "px-4 py-2 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px",
                       effectiveGroup?.heading === g.heading
-                        ? "text-oxblood border-oxblood"
-                        : "text-ink-soft border-transparent hover:text-ink"
+                        ? "text-cyan border-cyan"
+                        : "text-fog-dim border-transparent hover:text-fog"
                     )}
                     onClick={() => selectGroup(g.heading)}
                   >
                     {g.heading}
                     <span className={cn(
                       "ml-2 font-mono text-xs",
-                      effectiveGroup?.heading === g.heading ? "text-oxblood/60" : "text-ink-soft/50"
+                      effectiveGroup?.heading === g.heading ? "text-cyan/60" : "text-fog-dim/50"
                     )}>
                       {g.visits.length}
                     </span>

@@ -56,7 +56,7 @@ function TypingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="w-1.5 h-1.5 rounded-full bg-ink-soft/40 animate-pulse"
+          className="w-1.5 h-1.5 rounded-full bg-fog-dim/40 animate-pulse"
           style={{ animationDelay: `${i * 0.2}s` }}
         />
       ))}
@@ -88,20 +88,20 @@ function StepProgress({
                 className={cn(
                   "w-2 h-2 rounded-full transition-colors duration-300",
                   isDone
-                    ? "bg-sage"
+                    ? "bg-lime"
                     : isActive
-                    ? "bg-oxblood"
-                    : "bg-hairline"
+                    ? "bg-cyan"
+                    : "bg-ink-rim"
                 )}
               />
               <span
                 className={cn(
                   "font-mono text-[10px] uppercase tracking-widest whitespace-nowrap transition-colors duration-300",
                   isDone
-                    ? "text-sage"
+                    ? "text-lime"
                     : isActive
-                    ? "text-oxblood font-medium"
-                    : "text-ink-soft/40"
+                    ? "text-cyan font-medium"
+                    : "text-fog-dim/40"
                 )}
               >
                 {label}
@@ -111,7 +111,7 @@ function StepProgress({
               <div
                 className={cn(
                   "flex-1 h-[1px] mx-1 mb-5 transition-colors duration-300",
-                  idx < activeStep ? "bg-sage/40" : "bg-hairline"
+                  idx < activeStep ? "bg-lime/40" : "bg-ink-rim"
                 )}
               />
             )}
@@ -232,10 +232,10 @@ export default function PreVisitNewPage() {
       <motion.div variants={fadeUp}>
         <Link
           href="/portal"
-          className="inline-flex items-center gap-1.5 font-sans text-sm text-ink-soft hover:text-oxblood transition-colors duration-150 group mb-8 block"
+          className="inline-flex items-center gap-1.5 font-sans text-sm text-fog-dim hover:text-cyan transition-colors duration-150 group mb-8 block"
         >
           <span className="font-mono" aria-hidden="true">←</span>
-          <span className="border-b border-transparent group-hover:border-oxblood transition-colors duration-150">
+          <span className="border-b border-transparent group-hover:border-cyan transition-colors duration-150">
             Return to portal
           </span>
         </Link>
@@ -243,14 +243,14 @@ export default function PreVisitNewPage() {
 
       {/* Header */}
       <motion.div variants={fadeUp} className="mb-8">
-        <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+        <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
           Pre-visit intake
         </p>
-        <h1 className="font-display text-3xl md:text-4xl text-ink leading-[1.1] tracking-tight">
+        <h1 className="font-display text-3xl md:text-4xl text-fog leading-[1.1] tracking-tight">
           Tell us how you&apos;re{" "}
-          <em className="not-italic text-oxblood">feeling</em>
+          <em className="not-italic text-cyan">feeling</em>
         </h1>
-        <p className="font-sans text-sm text-ink-soft leading-relaxed mt-3 max-w-prose">
+        <p className="font-sans text-sm text-fog-dim leading-relaxed mt-3 max-w-prose">
           Answer a short, guided conversation. Your doctor walks into the room
           already knowing your chief complaint — so the visit is for care, not
           clerical work.
@@ -266,20 +266,20 @@ export default function PreVisitNewPage() {
       <motion.div variants={fadeUp} ref={chatCardRef}>
         <Card variant="paper" className="p-0 overflow-hidden">
           {/* Chat header */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline bg-bone/30">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-rim bg-mica/30">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
-              <span className="font-sans text-sm font-medium text-ink">
-                Intake <em className="not-italic text-ink-soft font-normal">assistant</em>
+              <div className="w-2 h-2 rounded-full bg-lime animate-pulse" />
+              <span className="font-sans text-sm font-medium text-fog">
+                Intake <em className="not-italic text-fog-dim font-normal">assistant</em>
               </span>
             </div>
             {visitId && (
-              <span className="font-mono text-xs text-ink-soft/50 tracking-widest">
+              <span className="font-mono text-xs text-fog-dim/50 tracking-widest">
                 VISIT {visitId.slice(0, 8).toUpperCase()}
               </span>
             )}
             {!visitId && (
-              <span className="font-mono text-xs text-ink-soft/40 tracking-widest">
+              <span className="font-mono text-xs text-fog-dim/40 tracking-widest">
                 STARTING…
               </span>
             )}
@@ -302,8 +302,8 @@ export default function PreVisitNewPage() {
                   className={cn(
                     "max-w-[82%] rounded-md px-4 py-2.5 font-sans text-sm leading-relaxed",
                     m.role === "user"
-                      ? "bg-bone text-ink border border-hairline"
-                      : "bg-paper text-ink border-l-2 border-l-oxblood border border-hairline"
+                      ? "bg-mica text-fog border border-ink-rim"
+                      : "bg-ink-well text-fog border-l-2 border-l-coral border border-ink-rim"
                   )}
                 >
                   {m.content}
@@ -313,7 +313,7 @@ export default function PreVisitNewPage() {
 
             {busy && (
               <div className="flex justify-start">
-                <div className="bg-paper border-l-2 border-l-oxblood border border-hairline rounded-md">
+                <div className="bg-ink-well border-l-2 border-l-coral border border-ink-rim rounded-md">
                   <TypingDots />
                 </div>
               </div>
@@ -324,12 +324,12 @@ export default function PreVisitNewPage() {
           {!done && (
             <form
               onSubmit={send}
-              className="flex items-center gap-2 px-4 py-3 border-t border-hairline bg-paper"
+              className="flex items-center gap-2 px-4 py-3 border-t border-ink-rim bg-ink-well"
             >
               <input
                 ref={inputRef}
                 className={cn(
-                  "flex-1 h-9 bg-transparent font-sans text-sm text-ink placeholder:text-ink-soft/40",
+                  "flex-1 h-9 bg-transparent font-sans text-sm text-fog placeholder:text-fog-dim/40",
                   "focus:outline-none"
                 )}
                 value={input}
@@ -363,14 +363,14 @@ export default function PreVisitNewPage() {
           <Card variant="bone" className="space-y-5">
             {/* Header */}
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-sm bg-sage/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-8 h-8 rounded-sm bg-lime/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <CheckIcon />
               </div>
               <div>
-                <p className="font-display text-lg text-ink leading-tight">
+                <p className="font-display text-lg text-fog leading-tight">
                   Your intake is ready.
                 </p>
-                <p className="font-sans text-sm text-ink-soft mt-0.5">
+                <p className="font-sans text-sm text-fog-dim mt-0.5">
                   Your doctor will see this before you arrive.
                 </p>
               </div>
@@ -378,14 +378,14 @@ export default function PreVisitNewPage() {
 
             {/* Collected sections */}
             {sectionMap.size > 0 && (
-              <div className="border-t border-hairline pt-4 space-y-4">
+              <div className="border-t border-ink-rim pt-4 space-y-4">
                 {Array.from(sectionMap.entries()).map(([section, items]) => (
                   <div key={section}>
-                    <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-1.5">
+                    <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-1.5">
                       {section}
                     </p>
                     {items.map(({ key, value }) => (
-                      <p key={key} className="font-sans text-sm text-ink">
+                      <p key={key} className="font-sans text-sm text-fog">
                         {typeof value === "object"
                           ? JSON.stringify(value)
                           : String(value)}

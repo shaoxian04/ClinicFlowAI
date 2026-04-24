@@ -17,7 +17,7 @@ export const DialogOverlay = React.forwardRef<
   <RadixDialog.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-obsidian/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -34,13 +34,13 @@ export const DialogContent = React.forwardRef<
     <RadixDialog.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-[20vh] z-50 -translate-x-1/2 w-full max-w-lg bg-paper border border-hairline rounded-sm p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] focus:outline-none",
+        "fixed left-1/2 top-[20vh] z-50 -translate-x-1/2 w-full max-w-lg bg-ink-well border border-ink-rim rounded-sm p-6 shadow-elevated focus:outline-none",
         className
       )}
       {...props}
     >
       {children}
-      <RadixDialog.Close className="absolute right-4 top-4 text-ink-soft hover:text-ink transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-oxblood/40 rounded-xs">
+      <RadixDialog.Close className="absolute right-4 top-4 text-fog-dim hover:text-fog transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan/40 rounded-xs">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </RadixDialog.Close>
@@ -63,7 +63,7 @@ export const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixDialog.Title
     ref={ref}
-    className={cn("font-display text-lg text-ink font-medium", className)}
+    className={cn("font-display text-lg text-fog font-medium", className)}
     {...props}
   />
 ));
@@ -75,7 +75,7 @@ export const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixDialog.Description
     ref={ref}
-    className={cn("text-sm text-ink-soft font-sans", className)}
+    className={cn("text-sm text-fog-dim font-sans", className)}
     {...props}
   />
 ));

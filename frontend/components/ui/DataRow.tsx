@@ -13,10 +13,10 @@ export function DataRow({ label, value, mono = false, className, ...props }: Dat
       className={cn("flex items-baseline justify-between gap-4", className)}
       {...props}
     >
-      <span className="text-sm text-ink-soft font-sans flex-shrink-0">{label}</span>
+      <span className="text-sm text-fog-dim font-sans flex-shrink-0">{label}</span>
       <span
         className={cn(
-          "text-sm text-ink text-right",
+          "text-sm text-fog text-right",
           mono ? "font-mono" : "font-sans"
         )}
       >

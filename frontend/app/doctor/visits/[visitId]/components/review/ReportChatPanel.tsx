@@ -74,10 +74,10 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
     .map(normalise);
 
   return (
-    <section className="bg-paper rounded-sm border border-hairline flex flex-col h-full min-h-[400px]">
+    <section className="bg-ink-well rounded-sm border border-ink-rim flex flex-col h-full min-h-[400px]">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-hairline flex-shrink-0">
-        <SectionHeader title="Assistant" className="text-ink/70" />
+      <div className="px-4 pt-4 pb-3 border-b border-ink-rim flex-shrink-0">
+        <SectionHeader title="Assistant" className="text-fog/70" />
       </div>
 
       {/* Chat thread */}
@@ -86,11 +86,11 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
           if (t.kind === "transcript") {
             return (
               <li key={t.turnIndex} className="flex justify-center">
-                <span className="inline-flex items-center gap-2 rounded-xs border border-hairline bg-bone px-2.5 py-1 font-mono text-[10px] text-ink-soft uppercase tracking-widest">
-                  <span className="h-1 w-1 rounded-full bg-oxblood" aria-hidden />
+                <span className="inline-flex items-center gap-2 rounded-xs border border-ink-rim bg-mica px-2.5 py-1 font-mono text-[10px] text-fog-dim uppercase tracking-widest">
+                  <span className="h-1 w-1 rounded-full bg-coral" aria-hidden />
                   Transcript submitted
                   {t.wordCount != null && (
-                    <span className="text-ink-soft/60 normal-case tracking-normal">· {t.wordCount} words</span>
+                    <span className="text-fog-dim/60 normal-case tracking-normal">· {t.wordCount} words</span>
                   )}
                 </span>
               </li>
@@ -104,15 +104,15 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
                 t.role === "user" ? "items-end" : "items-start"
               )}
             >
-              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
+              <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">
                 {t.role === "user" ? "You" : "Assistant"}
               </span>
               <div
                 className={cn(
                   "rounded-md px-3 py-2 text-sm font-sans leading-relaxed max-w-[88%]",
                   t.role === "user"
-                    ? "bg-bone text-ink"
-                    : "bg-paper border border-hairline border-l-2 border-l-oxblood text-ink"
+                    ? "bg-mica text-fog"
+                    : "bg-ink-well border border-ink-rim border-l-2 border-l-coral text-fog"
                 )}
               >
                 {t.content}
@@ -124,10 +124,10 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
         {/* Show clarification question as a visible assistant bubble */}
         {clarification && !editing && (
           <li className="flex flex-col gap-0.5 items-start">
-            <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
+            <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">
               Assistant
             </span>
-            <div className="rounded-md px-3 py-2 text-sm font-sans leading-relaxed max-w-[88%] bg-ochre/5 border border-ochre/20 text-ink">
+            <div className="rounded-md px-3 py-2 text-sm font-sans leading-relaxed max-w-[88%] bg-amber/5 border border-amber/20 text-fog">
               {clarification.prompt}
             </div>
           </li>
@@ -135,10 +135,10 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
 
         {editing && (
           <li className="flex flex-col gap-0.5 items-start" aria-live="polite">
-            <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
+            <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">
               Assistant
             </span>
-            <div className="rounded-md px-3 py-2 text-sm font-sans text-ink-soft italic bg-paper border border-hairline">
+            <div className="rounded-md px-3 py-2 text-sm font-sans text-fog-dim italic bg-ink-well border border-ink-rim">
               Thinking…
             </div>
           </li>
@@ -146,7 +146,7 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
       </ol>
 
       {/* Chat input */}
-      <div className="flex-shrink-0 border-t border-hairline p-3 flex gap-2">
+      <div className="flex-shrink-0 border-t border-ink-rim p-3 flex gap-2">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -154,7 +154,7 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
           placeholder={placeholder}
           disabled={editing || locked}
           rows={2}
-          className="flex-1 rounded-xs border border-hairline bg-paper px-3 py-2 text-sm font-sans text-ink placeholder:text-ink-soft/50 focus:outline-none focus:ring-1 focus:ring-oxblood/40 resize-none disabled:opacity-50"
+          className="flex-1 rounded-xs border border-ink-rim bg-ink-well px-3 py-2 text-sm font-sans text-fog placeholder:text-fog-dim/50 focus:outline-none focus:ring-1 focus:ring-cyan/40 resize-none disabled:opacity-50"
         />
         <Button
           type="button"

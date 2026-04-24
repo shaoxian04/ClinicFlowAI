@@ -26,7 +26,7 @@ export function CardHeader({ title, action, className }: CardHeaderProps) {
     <div
       className={cn("flex items-center justify-between gap-3 mb-4", className)}
     >
-      <div className="font-sans font-medium text-sm text-ink-soft uppercase tracking-wider">
+      <div className="font-sans font-medium text-sm text-fog-dim uppercase tracking-wider">
         {title}
       </div>
       {action ? <div>{action}</div> : null}

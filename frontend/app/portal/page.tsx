@@ -68,14 +68,14 @@ export default function PortalHome() {
       >
         {/* Page header */}
         <motion.div variants={fadeUp} className="mb-10">
-          <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+          <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
             Patient portal
           </p>
-          <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight">
+          <h1 className="font-display text-3xl md:text-4xl text-fog leading-tight">
             Welcome back,{" "}
-            <em className="not-italic text-oxblood">{firstName}</em>.
+            <em className="not-italic text-cyan">{firstName}</em>.
           </h1>
-          <p className="font-sans text-sm text-ink-soft leading-relaxed mt-3">
+          <p className="font-sans text-sm text-fog-dim leading-relaxed mt-3">
             Start a new pre-visit chat before your appointment, or re-read any
             of your past consultation summaries below.
           </p>
@@ -84,15 +84,15 @@ export default function PortalHome() {
         {/* Primary CTA */}
         <motion.div variants={fadeUp}>
           <Card variant="bone" className="mb-8">
-            <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+            <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
               Next visit coming up?
             </p>
-            <h2 className="font-display text-xl text-ink leading-snug mb-2">
+            <h2 className="font-display text-xl text-fog leading-snug mb-2">
               Tell us how you&apos;re{" "}
-              <em className="not-italic text-oxblood">feeling</em> — your doctor
+              <em className="not-italic text-cyan">feeling</em> — your doctor
               reads it first.
             </h2>
-            <p className="font-sans text-sm text-ink-soft leading-relaxed mb-5">
+            <p className="font-sans text-sm text-fog-dim leading-relaxed mb-5">
               A short, friendly chat. Five minutes. Your doctor walks in already
               understanding what brought you in.
             </p>
@@ -133,12 +133,12 @@ export default function PortalHome() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="flex flex-col gap-1 p-4 bg-paper border border-hairline rounded-sm"
+                className="flex flex-col gap-1 p-4 bg-ink-well border border-ink-rim rounded-sm shadow-card"
               >
-                <span className="font-display text-2xl text-ink leading-none">
+                <span className="font-display text-2xl text-fog leading-none">
                   {stat.value}
                 </span>
-                <span className="font-mono text-[10px] text-ink-soft/60 uppercase tracking-widest leading-tight">
+                <span className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest leading-tight">
                   {stat.label}
                 </span>
               </div>
@@ -149,10 +149,10 @@ export default function PortalHome() {
         {/* Previous consultations */}
         <motion.div variants={fadeUp}>
           <div className="flex items-baseline justify-between mb-5">
-            <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-ink">
+            <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-fog">
               Previous consultations
             </h2>
-            <span className="font-mono text-xs text-ink-soft/60">
+            <span className="font-mono text-xs text-fog-dim/60">
               {loaded ? `${visits.length} total` : "Loading…"}
             </span>
           </div>

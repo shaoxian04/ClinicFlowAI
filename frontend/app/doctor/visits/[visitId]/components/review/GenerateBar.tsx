@@ -148,8 +148,8 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
 
   if (hasReport && !expanded) {
     return (
-      <section className="flex items-center gap-3 px-4 py-3 bg-bone/50 border border-hairline rounded-xs mb-4">
-        <span className="font-mono text-xs text-ink-soft flex-1">
+      <section className="flex items-center gap-3 px-4 py-3 bg-mica/50 border border-ink-rim rounded-xs mb-4">
+        <span className="font-mono text-xs text-fog-dim flex-1">
           Transcript: {transcript.trim().split(/\s+/).length} words
         </span>
         <Button type="button" variant="ghost" size="sm" onClick={() => setExpanded(true)}>
@@ -163,10 +163,10 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
   }
 
   return (
-    <section className="mb-4 border border-hairline rounded-xs bg-paper">
+    <section className="mb-4 border border-ink-rim rounded-xs bg-ink-well">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-hairline">
-        <label htmlFor="transcript-ta" className="font-mono text-xs text-ink-soft uppercase tracking-widest">
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-ink-rim">
+        <label htmlFor="transcript-ta" className="font-mono text-xs text-fog-dim uppercase tracking-widest">
           Consultation transcript
         </label>
         {/* Mode tabs */}
@@ -180,8 +180,8 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
               className={cn(
                 "px-3 py-1 text-xs font-sans transition-colors duration-150 border-b-2 -mb-px",
                 mode === m
-                  ? "text-oxblood border-oxblood"
-                  : "text-ink-soft border-transparent hover:text-ink"
+                  ? "text-cyan border-cyan"
+                  : "text-fog-dim border-transparent hover:text-fog"
               )}
               onClick={() => {
                 if (recording) stopRecording();
@@ -208,7 +208,7 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
               onChange={(e) => setTranscript(e.target.value)}
               rows={6}
               placeholder="Paste or type the consultation transcript…"
-              className="w-full rounded-xs border border-hairline bg-paper px-3 py-2 text-sm font-sans text-ink placeholder:text-ink-soft/50 focus:outline-none focus:ring-1 focus:ring-oxblood/40 resize-y"
+              className="w-full rounded-xs border border-ink-rim bg-ink-well px-3 py-2 text-sm font-sans text-fog placeholder:text-fog-dim/50 focus:outline-none focus:ring-1 focus:ring-cyan/40 resize-y"
             />
             <div className="flex items-center gap-3 mt-3">
               <Button
@@ -229,8 +229,8 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
         {mode === "voice" && (
           <div
             className={cn(
-              "border-2 border-dashed border-hairline rounded-xs p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors duration-150",
-              dragOver && "border-oxblood bg-oxblood/5",
+              "border-2 border-dashed border-ink-rim rounded-xs p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors duration-150",
+              dragOver && "border-coral bg-cyan/5",
               transcribing && "cursor-default"
             )}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -253,19 +253,19 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
             {transcribing ? (
               <>
                 <PhasedSpinner />
-                <span className="font-sans text-sm text-ink-soft">
+                <span className="font-sans text-sm text-fog-dim">
                   Transcribing {selectedFile?.name}…
                 </span>
               </>
             ) : (
               <>
-                <svg className="w-8 h-8 text-ink-soft/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+                <svg className="w-8 h-8 text-fog-dim/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                 </svg>
-                <span className="font-sans text-sm text-ink-soft">
+                <span className="font-sans text-sm text-fog-dim">
                   {dragOver ? "Drop audio file here" : "Click or drag an audio file to upload"}
                 </span>
-                <span className="font-mono text-xs text-ink-soft/50">
+                <span className="font-mono text-xs text-fog-dim/50">
                   MP3 · WAV · M4A · WebM · FLAC · OGG
                 </span>
               </>
@@ -287,7 +287,7 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
             {liveTranscribing ? (
               <>
                 <PhasedSpinner />
-                <span className="font-sans text-sm text-ink-soft">Transcribing recording…</span>
+                <span className="font-sans text-sm text-fog-dim">Transcribing recording…</span>
               </>
             ) : (
               <>
@@ -296,8 +296,8 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
                   className={cn(
                     "w-14 h-14 rounded-full flex items-center justify-center text-xl font-sans transition-colors duration-150 border-2",
                     recording
-                      ? "bg-crimson border-crimson text-paper hover:bg-crimson/90"
-                      : "bg-oxblood border-oxblood text-paper hover:bg-oxblood/90"
+                      ? "bg-crimson border-crimson text-fog hover:bg-crimson/90"
+                      : "bg-coral border-coral text-fog hover:bg-coral/90"
                   )}
                   onClick={recording ? stopRecording : startRecording}
                   aria-label={recording ? "Stop recording" : "Start live recording"}
@@ -305,11 +305,11 @@ export function GenerateBar({ visitId, onGenerate, generating, hasReport, initia
                   {recording ? "■" : "●"}
                 </button>
                 {recording && (
-                  <span className="font-mono text-sm text-ink" aria-live="polite">
+                  <span className="font-mono text-sm text-fog" aria-live="polite">
                     {formatTime(recSeconds)}
                   </span>
                 )}
-                <span className="font-sans text-sm text-ink-soft">
+                <span className="font-sans text-sm text-fog-dim">
                   {recording ? "Recording… click to stop" : "Click to start live recording"}
                 </span>
               </>

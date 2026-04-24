@@ -12,7 +12,7 @@ export const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixTabs.List
     ref={ref}
-    className={cn("flex gap-0 border-b border-hairline", className)}
+    className={cn("flex gap-0 border-b border-ink-rim", className)}
     {...props}
   />
 ));
@@ -25,7 +25,7 @@ export const TabsTrigger = React.forwardRef<
   <RadixTabs.Trigger
     ref={ref}
     className={cn(
-      "px-4 py-2 text-sm font-sans text-ink-soft transition-colors duration-150 data-[state=active]:text-oxblood data-[state=active]:border-b-2 data-[state=active]:border-oxblood focus:outline-none focus-visible:ring-1 focus-visible:ring-oxblood/40",
+      "px-4 py-2 text-sm font-sans text-fog-dim transition-colors duration-150 data-[state=active]:text-cyan data-[state=active]:border-b-2 data-[state=active]:border-cyan focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan/40",
       className
     )}
     {...props}

@@ -24,7 +24,7 @@ export function Field({
       {label ? <Label htmlFor={htmlFor}>{label}</Label> : null}
       {children}
       {hint && !error ? (
-        <p className="text-xs text-ink-soft/70 font-sans">{hint}</p>
+        <p className="text-xs text-fog-dim/70 font-sans">{hint}</p>
       ) : null}
       {error ? (
         <p className="text-xs text-crimson font-sans">{error}</p>

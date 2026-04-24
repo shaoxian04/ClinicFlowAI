@@ -1,18 +1,20 @@
 export const colors = {
-  paper: "#F6F1E6",
-  bone: "#E8DFCE",
-  ink: "#141414",
-  inkSoft: "#3B3A35",
-  oxblood: "#7A2E2E",
-  sage: "#4F6B56",
-  ochre: "#B87C2A",
-  crimson: "#8F1C1C",
-  slate: "#1F2A2B",
-  hairline: "#D9D1BE",
-  primary: "#7A2E2E",
-  success: "#4F6B56",
-  warning: "#B87C2A",
-  danger: "#8F1C1C",
+  obsidian: "#0A0F1A",
+  inkWell: "#0E1424",
+  inkRim: "#1A2133",
+  fog: "#E9EEF5",
+  fogDim: "#93A0B5",
+  cyan: "#22E1D7",
+  cyanSoft: "rgba(34,225,215,0.15)",
+  coral: "#FF7759",
+  lime: "#B8FF5C",
+  amber: "#F7B23B",
+  crimson: "#FF4D5E",
+  mica: "#2A3346",
+  primary: "#22E1D7",
+  success: "#B8FF5C",
+  warning: "#F7B23B",
+  danger: "#FF4D5E",
 } as const;
 
 export const fonts = {
@@ -28,8 +30,9 @@ export const radii = {
 } as const;
 
 export const shadows = {
-  card: "0 1px 3px rgba(0,0,0,0.06)",
-  elevated: "0 4px 12px rgba(0,0,0,0.08)",
+  card: "inset 0 1px 0 rgba(255,255,255,0.04)",
+  elevated: "0 0 18px rgba(34,225,215,0.12)",
+  glowCyan: "0 0 18px rgba(34,225,215,0.4)",
 } as const;
 
 export const spacing = {

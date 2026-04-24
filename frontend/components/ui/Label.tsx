@@ -7,7 +7,7 @@ export interface LabelProps
 export function Label({ className, ...props }: LabelProps) {
   return (
     <label
-      className={cn("text-sm font-medium text-ink-soft font-sans", className)}
+      className={cn("text-sm font-medium text-fog-dim font-sans", className)}
       {...props}
     />
   );

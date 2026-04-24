@@ -171,10 +171,10 @@ export default function PortalVisitDetail() {
         <motion.div variants={fadeUp} className="mb-8">
           <Link
             href="/portal"
-            className="inline-flex items-center gap-1.5 font-sans text-sm text-ink-soft hover:text-oxblood transition-colors duration-150 group"
+            className="inline-flex items-center gap-1.5 font-sans text-sm text-fog-dim hover:text-cyan transition-colors duration-150 group"
           >
             <span className="font-mono" aria-hidden="true">←</span>
-            <span className="border-b border-transparent group-hover:border-oxblood transition-colors duration-150">
+            <span className="border-b border-transparent group-hover:border-cyan transition-colors duration-150">
               All visits
             </span>
           </Link>
@@ -182,23 +182,23 @@ export default function PortalVisitDetail() {
 
         {/* Page header */}
         <motion.div variants={fadeUp} className="mb-6">
-          <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+          <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
             Your visit summary
           </p>
-          <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight">
+          <h1 className="font-display text-3xl md:text-4xl text-fog leading-tight">
             {lang === "en" ? (
               <>
                 What we{" "}
-                <em className="not-italic text-oxblood">discussed</em>
+                <em className="not-italic text-cyan">discussed</em>
               </>
             ) : (
               <>
                 Apa yang{" "}
-                <em className="not-italic text-oxblood">kita bincang</em>
+                <em className="not-italic text-cyan">kita bincang</em>
               </>
             )}
           </h1>
-          <p className="font-sans text-sm text-ink-soft mt-2">
+          <p className="font-sans text-sm text-fog-dim mt-2">
             {lang === "en" ? "Finalized on " : "Dimuktamadkan pada "}
             {detail.finalizedAt
               ? new Date(detail.finalizedAt).toLocaleString(
@@ -214,7 +214,7 @@ export default function PortalVisitDetail() {
           <div
             role="tablist"
             aria-label="Language"
-            className="flex gap-0 border-b border-hairline mb-6"
+            className="flex gap-0 border-b border-ink-rim mb-6"
           >
             {(["en", "ms"] as const).map((l) => (
               <button
@@ -223,10 +223,10 @@ export default function PortalVisitDetail() {
                 aria-selected={lang === l}
                 onClick={() => switchLang(l)}
                 className={cn(
-                  "px-4 py-2 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px focus:outline-none focus-visible:ring-1 focus-visible:ring-oxblood/40",
+                  "px-4 py-2 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan/40",
                   lang === l
-                    ? "text-oxblood border-oxblood"
-                    : "text-ink-soft border-transparent hover:text-ink"
+                    ? "text-cyan border-cyan"
+                    : "text-fog-dim border-transparent hover:text-fog"
                 )}
               >
                 {l === "en" ? "English" : "Bahasa Melayu"}
@@ -251,7 +251,7 @@ export default function PortalVisitDetail() {
               </PullQuote>
 
               {attributionLine && (
-                <p className="font-mono text-xs text-ink-soft/60 mt-3 pl-6">
+                <p className="font-mono text-xs text-fog-dim/60 mt-3 pl-6">
                   {attributionLine}
                 </p>
               )}
@@ -260,17 +260,17 @@ export default function PortalVisitDetail() {
             {/* Medications */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-ink">
+                <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-fog">
                   {medsCopy.heading}
                 </h2>
-                <span className="font-mono text-xs text-ink-soft/60">
+                <span className="font-mono text-xs text-fog-dim/60">
                   {medCount}{" "}
                   {medCount === 1 ? medsCopy.item : medsCopy.items}
                 </span>
               </div>
 
               {medCount === 0 ? (
-                <p className="font-sans text-sm text-ink-soft italic">
+                <p className="font-sans text-sm text-fog-dim italic">
                   {medsCopy.empty}
                 </p>
               ) : (

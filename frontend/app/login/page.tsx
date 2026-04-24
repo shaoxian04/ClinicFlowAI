@@ -44,15 +44,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col">
-      {/* Top hairline accent */}
-      <div className="h-[2px] bg-oxblood w-full" aria-hidden="true" />
+    <div className="min-h-screen bg-obsidian flex flex-col">
+      {/* Top cyan accent */}
+      <div className="h-[2px] bg-cyan w-full" aria-hidden="true" />
 
       {/* Back link row */}
       <div className="max-w-sm mx-auto w-full px-6 pt-8">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 font-sans text-sm text-ink-soft hover:text-oxblood transition-colors duration-150"
+          className="inline-flex items-center gap-1.5 font-sans text-sm text-fog-dim hover:text-cyan transition-colors duration-150"
         >
           <span aria-hidden="true">←</span>
           Back home
@@ -69,13 +69,13 @@ export default function LoginPage() {
         >
           {/* Header */}
           <motion.div variants={fadeUp} className="mb-8">
-            <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+            <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
               Welcome back
             </p>
-            <h1 className="font-display text-3xl text-ink leading-tight">
+            <h1 className="font-display text-3xl text-fog leading-tight">
               Sign in to CliniFlow
             </h1>
-            <p className="font-sans text-sm text-ink-soft leading-relaxed mt-2">
+            <p className="font-sans text-sm text-fog-dim leading-relaxed mt-2">
               One sign-in for all three phases of the visit — pre-visit, consultation, and summary.
             </p>
           </motion.div>
@@ -84,8 +84,8 @@ export default function LoginPage() {
           <motion.div
             variants={fadeUp}
             className={cn(
-              "bg-paper border border-hairline rounded-sm p-6",
-              "shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+              "bg-ink-well border border-ink-rim rounded-sm p-6",
+              "shadow-card"
             )}
           >
             <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -132,7 +132,7 @@ export default function LoginPage() {
 
             {/* Demo credentials */}
             <details className="group">
-              <summary className="font-sans text-xs text-ink-soft/60 cursor-pointer hover:text-ink-soft transition-colors duration-150 select-none list-none flex items-center gap-1.5">
+              <summary className="font-sans text-xs text-fog-dim/60 cursor-pointer hover:text-fog-dim transition-colors duration-150 select-none list-none flex items-center gap-1.5">
                 <span
                   className="font-mono inline-block transition-transform duration-150 group-open:rotate-90"
                   aria-hidden="true"
@@ -141,22 +141,22 @@ export default function LoginPage() {
                 </span>
                 Demo credentials
               </summary>
-              <div className="mt-3 flex flex-col gap-1.5 pl-4 border-l border-hairline">
-                <p className="font-sans text-xs text-ink-soft">
+              <div className="mt-3 flex flex-col gap-1.5 pl-4 border-l border-ink-rim">
+                <p className="font-sans text-xs text-fog-dim">
                   Demo patient:{" "}
-                  <code className="font-mono text-ink bg-bone px-1 rounded-xs">
+                  <code className="font-mono text-fog bg-mica px-1 rounded-xs">
                     patient@demo.local
                   </code>
                 </p>
-                <p className="font-sans text-xs text-ink-soft">
+                <p className="font-sans text-xs text-fog-dim">
                   Demo doctor:{" "}
-                  <code className="font-mono text-ink bg-bone px-1 rounded-xs">
+                  <code className="font-mono text-fog bg-mica px-1 rounded-xs">
                     doctor@demo.local
                   </code>
                 </p>
-                <p className="font-sans text-xs text-ink-soft">
+                <p className="font-sans text-xs text-fog-dim">
                   Password for both:{" "}
-                  <code className="font-mono text-ink bg-bone px-1 rounded-xs">
+                  <code className="font-mono text-fog bg-mica px-1 rounded-xs">
                     password
                   </code>
                 </p>
@@ -167,11 +167,11 @@ export default function LoginPage() {
           {/* Footer note */}
           <motion.p
             variants={fadeUp}
-            className="text-center mt-5 font-sans text-xs text-ink-soft/60"
+            className="text-center mt-5 font-sans text-xs text-fog-dim/60"
           >
             <Link
               href="/privacy"
-              className="hover:text-oxblood transition-colors duration-150"
+              className="hover:text-cyan transition-colors duration-150"
             >
               Privacy policy
             </Link>

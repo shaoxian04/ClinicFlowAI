@@ -16,14 +16,14 @@ export const SelectTrigger = React.forwardRef<
   <RadixSelect.Trigger
     ref={ref}
     className={cn(
-      "h-10 w-full rounded-sm border border-hairline bg-paper px-3 text-sm font-sans text-ink focus:outline-none focus:ring-1 focus:ring-oxblood/40 disabled:opacity-50 inline-flex items-center justify-between gap-2",
+      "h-10 w-full rounded-sm border border-ink-rim bg-ink-well px-3 text-sm font-sans text-fog focus:outline-none focus:ring-1 focus:ring-cyan/40 disabled:opacity-50 inline-flex items-center justify-between gap-2",
       className
     )}
     {...props}
   >
     {children}
     <RadixSelect.Icon>
-      <ChevronDown className="h-4 w-4 text-ink-soft" />
+      <ChevronDown className="h-4 w-4 text-fog-dim" />
     </RadixSelect.Icon>
   </RadixSelect.Trigger>
 ));
@@ -37,7 +37,7 @@ export const SelectContent = React.forwardRef<
     <RadixSelect.Content
       ref={ref}
       className={cn(
-        "relative z-50 min-w-[8rem] overflow-hidden bg-paper border border-hairline rounded-sm shadow-[0_1px_3px_rgba(0,0,0,0.06)]",
+        "relative z-50 min-w-[8rem] overflow-hidden bg-ink-well border border-ink-rim rounded-sm shadow-elevated",
         className
       )}
       position={position}
@@ -58,14 +58,14 @@ export const SelectItem = React.forwardRef<
   <RadixSelect.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-xs py-1.5 pl-8 pr-2 text-sm font-sans text-ink outline-none focus:bg-bone data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-xs py-1.5 pl-8 pr-2 text-sm font-sans text-fog outline-none focus:bg-mica data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <RadixSelect.ItemIndicator>
-        <Check className="h-4 w-4 text-oxblood" />
+        <Check className="h-4 w-4 text-cyan" />
       </RadixSelect.ItemIndicator>
     </span>
     <RadixSelect.ItemText>{children}</RadixSelect.ItemText>
@@ -80,7 +80,7 @@ export const SelectLabel = React.forwardRef<
   <RadixSelect.Label
     ref={ref}
     className={cn(
-      "py-1.5 pl-8 pr-2 text-xs font-medium font-sans text-ink-soft uppercase tracking-wider",
+      "py-1.5 pl-8 pr-2 text-xs font-medium font-sans text-fog-dim uppercase tracking-wider",
       className
     )}
     {...props}
@@ -94,7 +94,7 @@ export const SelectSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixSelect.Separator
     ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-hairline", className)}
+    className={cn("-mx-1 my-1 h-px bg-ink-rim", className)}
     {...props}
   />
 ));

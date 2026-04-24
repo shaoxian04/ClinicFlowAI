@@ -59,7 +59,7 @@ export function RedFlagsCard({ items, lang }: Props): JSX.Element | null {
               <span className="font-mono text-xs text-crimson/60 mt-0.5 flex-shrink-0">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="font-sans text-sm text-ink-soft">{item}</span>
+              <span className="font-sans text-sm text-fog-dim">{item}</span>
             </li>
           ))}
         </ul>

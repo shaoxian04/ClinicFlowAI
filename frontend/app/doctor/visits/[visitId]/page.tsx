@@ -145,14 +145,14 @@ export default function VisitDetailPage() {
         >
           {/* Page header */}
           <motion.div variants={fadeUp} className="mb-4">
-            <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-2">
+            <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-2">
               Clinician review
             </p>
-            <h1 className="font-display text-3xl text-ink leading-tight">
+            <h1 className="font-display text-3xl text-fog leading-tight">
               Visit with{" "}
-              <em className="not-italic text-oxblood">{detail.patientName}</em>
+              <em className="not-italic text-cyan">{detail.patientName}</em>
             </h1>
-            <p className="font-sans text-sm text-ink-soft mt-2">
+            <p className="font-sans text-sm text-fog-dim mt-2">
               Review the pre-visit intake, capture your consultation, and publish a bilingual summary to the patient.
             </p>
           </motion.div>
@@ -160,7 +160,7 @@ export default function VisitDetailPage() {
           {/* Status row */}
           <motion.div variants={fadeUp} className="flex items-center gap-3 mb-6">
             <Badge variant={chip.tone}>{chip.label}</Badge>
-            <span className="font-mono text-xs text-ink-soft/50">
+            <span className="font-mono text-xs text-fog-dim/50">
               {detail.visitId.slice(0, 8)}…
             </span>
           </motion.div>
