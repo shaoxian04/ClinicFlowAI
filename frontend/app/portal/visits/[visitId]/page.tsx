@@ -3,9 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import { PageHeader } from "@/app/components/PageHeader";
+import { cn } from "@/design/cn";
+import { fadeUp, staggerChildren } from "@/design/motion";
+import { PullQuote } from "@/components/ui/PullQuote";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { MedicationCard } from "@/app/portal/components/MedicationCard";
 import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
 import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
@@ -15,40 +20,52 @@ type Detail = {
   finalizedAt: string | null;
   summaryEn: string;
   summaryMs: string;
-  medications: { name: string; dosage: string; frequency: string; duration?: string; instructions?: string }[];
-  // Task 8.1: optional safety-net payload. Backend may omit either field until
-  // the Post-Visit agent populates them; we fall back to empty/null and the
-  // card components render nothing in that case.
+  medications: {
+    name: string;
+    dosage: string;
+    frequency: string;
+    duration?: string;
+    instructions?: string;
+  }[];
   redFlags?: string[];
   followUp?: { when: string; instruction: string } | null;
-  // Task 8.2: signing-doctor attribution. Nullable so the backend can stub
-  // when it can't resolve the doctor; in that case we hide the attribution
-  // line entirely (graceful fallback).
   doctorName?: string | null;
 };
 
-// Task 8.2: bilingual strings for the signing-doctor attribution line.
-// EN/MS prefix + a shared middle-dot separator. Kept as a local const rather
-// than mixing into an inline ternary so the i18n surface stays visible and
-// easy to audit.
-const ATTRIBUTION_COPY: Record<"en" | "ms", { signedBy: string; signedOnly: string; separator: string }> = {
+const ATTRIBUTION_COPY: Record<
+  "en" | "ms",
+  { signedBy: string; signedOnly: string; separator: string }
+> = {
   en: { signedBy: "Signed by", signedOnly: "Signed", separator: " · " },
-  ms: { signedBy: "Ditandatangani oleh", signedOnly: "Ditandatangani", separator: " · " },
+  ms: {
+    signedBy: "Ditandatangani oleh",
+    signedOnly: "Ditandatangani",
+    separator: " · ",
+  },
 };
 
-// Task 9.2: bilingual strings for the medications section.
-const MEDICATIONS_COPY: Record<"en" | "ms", { heading: string; item: string; items: string; empty: string }> = {
-  en: { heading: "Medications", item: "item", items: "items", empty: "No medications prescribed for this visit." },
-  ms: { heading: "Ubat-ubat", item: "perkara", items: "perkara", empty: "Tiada ubat ditetapkan untuk lawatan ini." },
+const MEDICATIONS_COPY: Record<
+  "en" | "ms",
+  { heading: string; item: string; items: string; empty: string }
+> = {
+  en: {
+    heading: "Medications",
+    item: "item",
+    items: "items",
+    empty: "No medications prescribed for this visit.",
+  },
+  ms: {
+    heading: "Ubat-ubat",
+    item: "perkara",
+    items: "perkara",
+    empty: "Tiada ubat ditetapkan untuk lawatan ini.",
+  },
 };
 
-/**
- * Format a date string as "4 Apr 2026" in the active locale. Malay uses the
- * ms-MY locale which renders short-months as Jan/Feb/Mac/Apr/Mei/Jun/Jul/Ogos/
- * Sep/Okt/Nov/Dis. Returns null for missing input so the caller can hide the
- * attribution line entirely.
- */
-function formatSignedDate(iso: string | null | undefined, lang: "en" | "ms"): string | null {
+function formatSignedDate(
+  iso: string | null | undefined,
+  lang: "en" | "ms"
+): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
@@ -69,12 +86,12 @@ export default function PortalVisitDetail() {
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Task 9.2: fade transition on language switch. Skipped entirely when the
-  // user prefers reduced motion — matchMedia is called at interaction time so
-  // SSR / missing window is never a concern.
   function switchLang(next: "en" | "ms") {
     if (next === lang) return;
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
       setLang(next);
       return;
     }
@@ -89,35 +106,44 @@ export default function PortalVisitDetail() {
 
   useEffect(() => {
     const user = getUser();
-    if (!user || user.role !== "PATIENT") { router.replace("/login"); return; }
+    if (!user || user.role !== "PATIENT") {
+      router.replace("/login");
+      return;
+    }
     apiGet<Detail>(`/patient/visits/${visitId}`)
       .then(setDetail)
       .catch((e) => setError(e.message));
   }, [visitId, router]);
 
+  /* ── Loading state ─────────────────────────────────────────────────────── */
+  if (!error && !detail) {
+    return (
+      <main className="max-w-2xl mx-auto px-6 py-10 space-y-4">
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="h-10 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </main>
+    );
+  }
+
+  /* ── Error state ───────────────────────────────────────────────────────── */
   if (error) {
     return (
-      <main className="shell shell-narrow">
-        <div className="banner banner-error">{error}</div>
+      <main className="max-w-2xl mx-auto px-6 py-10">
+        <div className="px-4 py-3 border border-crimson/30 bg-crimson/5 rounded-sm">
+          <p className="font-sans text-sm text-crimson">{error}</p>
+        </div>
       </main>
     );
   }
-  if (!detail) {
-    return (
-      <main className="shell shell-narrow">
-        <p className="empty">Loading your summary…</p>
-      </main>
-    );
-  }
+
+  if (!detail) return null;
 
   const body = lang === "en" ? detail.summaryEn : detail.summaryMs;
   const redFlagsList = detail.redFlags ?? [];
   const followUpData = detail.followUp ?? null;
-
-  // Task 8.2: compute the signing-doctor attribution line. We prefer finalizedAt
-  // as the "signed at" timestamp — the patient portal only ever sees finalized
-  // visits, so that's the semantically-correct moment of signature. When the
-  // doctor name isn't resolvable AND we have no date, we hide the line.
   const signedDate = formatSignedDate(detail.finalizedAt, lang);
   const attribCopy = ATTRIBUTION_COPY[lang];
   const doctorName = detail.doctorName?.trim() || "";
@@ -130,97 +156,146 @@ export default function PortalVisitDetail() {
     attributionLine = `${attribCopy.signedOnly}${attribCopy.separator}${signedDate}`;
   }
 
+  const medsCopy = MEDICATIONS_COPY[lang];
+  const medCount = detail.medications.length;
+
   return (
-    <main className="shell shell-narrow">
-      <Link href="/portal" className="back-link">← All visits</Link>
-
-      <div style={{ marginTop: 18 }}>
-        <PageHeader
-          eyebrow="Your visit summary"
-          title={
-            lang === "en" ? (
-              <>What we <em>discussed</em></>
-            ) : (
-              <>Apa yang <em>kita bincang</em></>
-            )
-          }
-          sub={`${lang === "en" ? "Finalized on " : "Dimuktamadkan pada "}${
-            detail.finalizedAt ? new Date(detail.finalizedAt).toLocaleString(lang === "en" ? "en-MY" : "ms-MY") : "—"
-          }.`}
-        />
-      </div>
-
-      <div role="tablist" className="lang-toggle" aria-label="Language">
-        <button
-          role="tab"
-          aria-selected={lang === "en"}
-          onClick={() => switchLang("en")}
-        >
-          English
-        </button>
-        <button
-          role="tab"
-          aria-selected={lang === "ms"}
-          onClick={() => switchLang("ms")}
-        >
-          Bahasa Melayu
-        </button>
-      </div>
-
-      {/* Task 9.2: lang-content wrapper drives the 180ms fade on language
-          switch. The is-transitioning class sets opacity:0 (90ms), then lang
-          state updates and the class is removed so it fades back to 1 (90ms).
-          Reduced-motion users bypass setTransitioning entirely (see switchLang). */}
-      <div className={`lang-content${transitioning ? " is-transitioning" : ""}`}>
-        <section className="summary-card" data-delay="1">
-          <span className="summary-quote" aria-hidden="true">&ldquo;</span>
-          <div className="summary-card-body">
-            {body || (lang === "en" ? "Summary is still being prepared…" : "Ringkasan sedang disediakan…")}
-          </div>
-        </section>
-
-        {/* Task 8.2: signing-doctor attribution. Rendered directly under the
-            summary card so patients see who confirmed their record. Hidden
-            entirely when neither name nor date is available. */}
-        {attributionLine && (
-          <p className="doctor-attribution">{attributionLine}</p>
-        )}
-
-        <section className="card" data-delay="2" style={{ marginTop: 24 }}>
-          <div className="card-head">
-            <h2>{MEDICATIONS_COPY[lang].heading}</h2>
-            <span className="card-idx">
-              {detail.medications.length}{" "}
-              {detail.medications.length === 1
-                ? MEDICATIONS_COPY[lang].item
-                : MEDICATIONS_COPY[lang].items}
+    <main className="max-w-2xl mx-auto px-6 py-10">
+      <motion.div
+        variants={staggerChildren}
+        initial="initial"
+        animate="animate"
+        className="flex flex-col"
+      >
+        {/* Back link */}
+        <motion.div variants={fadeUp} className="mb-8">
+          <Link
+            href="/portal"
+            className="inline-flex items-center gap-1.5 font-sans text-sm text-ink-soft hover:text-oxblood transition-colors duration-150 group"
+          >
+            <span className="font-mono" aria-hidden="true">←</span>
+            <span className="border-b border-transparent group-hover:border-oxblood transition-colors duration-150">
+              All visits
             </span>
-          </div>
-          {detail.medications.length === 0 ? (
-            <p className="empty">{MEDICATIONS_COPY[lang].empty}</p>
-          ) : (
-            <div className="med-grid">
-              {detail.medications.map((m, i) => (
-                <MedicationCard
-                  key={i}
-                  name={m.name}
-                  dosage={m.dosage}
-                  frequency={m.frequency}
-                  duration={m.duration}
-                  instructions={m.instructions}
-                  lang={lang}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+          </Link>
+        </motion.div>
 
-        {/* Task 8.1: safety-net cards. Red flags first (higher priority), then
-            follow-up. Both no-op on empty input so they disappear when the
-            backend has nothing to report. */}
-        <RedFlagsCard items={redFlagsList} lang={lang} />
-        <FollowUpCard data={followUpData} lang={lang} />
-      </div>
+        {/* Page header */}
+        <motion.div variants={fadeUp} className="mb-6">
+          <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+            Your visit summary
+          </p>
+          <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight">
+            {lang === "en" ? (
+              <>
+                What we{" "}
+                <em className="not-italic text-oxblood">discussed</em>
+              </>
+            ) : (
+              <>
+                Apa yang{" "}
+                <em className="not-italic text-oxblood">kita bincang</em>
+              </>
+            )}
+          </h1>
+          <p className="font-sans text-sm text-ink-soft mt-2">
+            {lang === "en" ? "Finalized on " : "Dimuktamadkan pada "}
+            {detail.finalizedAt
+              ? new Date(detail.finalizedAt).toLocaleString(
+                  lang === "en" ? "en-MY" : "ms-MY"
+                )
+              : "—"}
+            .
+          </p>
+        </motion.div>
+
+        {/* Language tabs — Radix-based via the Tabs primitive's parts directly */}
+        <motion.div variants={fadeUp} className="mb-8">
+          <div
+            role="tablist"
+            aria-label="Language"
+            className="flex gap-0 border-b border-hairline mb-6"
+          >
+            {(["en", "ms"] as const).map((l) => (
+              <button
+                key={l}
+                role="tab"
+                aria-selected={lang === l}
+                onClick={() => switchLang(l)}
+                className={cn(
+                  "px-4 py-2 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px focus:outline-none focus-visible:ring-1 focus-visible:ring-oxblood/40",
+                  lang === l
+                    ? "text-oxblood border-oxblood"
+                    : "text-ink-soft border-transparent hover:text-ink"
+                )}
+              >
+                {l === "en" ? "English" : "Bahasa Melayu"}
+              </button>
+            ))}
+          </div>
+
+          {/* Language-toggled content */}
+          <div
+            className={cn(
+              "flex flex-col gap-6 transition-opacity duration-[90ms]",
+              transitioning ? "opacity-0" : "opacity-100"
+            )}
+          >
+            {/* Pull-quote summary */}
+            <section>
+              <PullQuote>
+                {body ||
+                  (lang === "en"
+                    ? "Summary is still being prepared…"
+                    : "Ringkasan sedang disediakan…")}
+              </PullQuote>
+
+              {attributionLine && (
+                <p className="font-mono text-xs text-ink-soft/60 mt-3 pl-6">
+                  {attributionLine}
+                </p>
+              )}
+            </section>
+
+            {/* Medications */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-ink">
+                  {medsCopy.heading}
+                </h2>
+                <span className="font-mono text-xs text-ink-soft/60">
+                  {medCount}{" "}
+                  {medCount === 1 ? medsCopy.item : medsCopy.items}
+                </span>
+              </div>
+
+              {medCount === 0 ? (
+                <p className="font-sans text-sm text-ink-soft italic">
+                  {medsCopy.empty}
+                </p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {detail.medications.map((m, i) => (
+                    <MedicationCard
+                      key={i}
+                      name={m.name}
+                      dosage={m.dosage}
+                      frequency={m.frequency}
+                      duration={m.duration}
+                      instructions={m.instructions}
+                      lang={lang}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Red flags + Follow-up */}
+            <RedFlagsCard items={redFlagsList} lang={lang} />
+            <FollowUpCard data={followUpData} lang={lang} />
+          </div>
+        </motion.div>
+      </motion.div>
     </main>
   );
 }

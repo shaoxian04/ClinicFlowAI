@@ -1,35 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { LeafGlyph } from "./Leaf";
+import { usePathname } from "next/navigation";
+import { cn } from "@/design/cn";
 
-type Active = "home" | "new" | "history";
-
-const TABS: { key: Active; label: string; href: string }[] = [
-  { key: "home", label: "Home", href: "/portal" },
-  { key: "new", label: "New pre-visit chat", href: "/previsit/new" },
-  { key: "history", label: "Past consultations", href: "/portal#history" },
+const TABS: { label: string; href: string }[] = [
+  { label: "Home", href: "/portal" },
+  { label: "New pre-visit chat", href: "/previsit/new" },
 ];
 
-export function PortalNav({ active }: { active: Active }) {
+export function PortalNav({ active }: { active?: string } = {}) {
+  const pathname = usePathname();
+
   return (
-    <nav className="portal-nav" aria-label="Patient portal navigation">
-      <div className="portal-nav-inner">
-        <span className="portal-nav-brand">
-          <LeafGlyph size={14} color="var(--primary)" />
+    <nav
+      className="sticky top-14 z-40 bg-bone/70 backdrop-blur-sm border-b border-hairline"
+      aria-label="Patient portal navigation"
+    >
+      <div className="max-w-2xl mx-auto px-6 flex items-center justify-between h-10">
+        {/* Brand */}
+        <span className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest">
           Your portal
         </span>
-        <ul className="portal-nav-tabs">
-          {TABS.map((t) => (
-            <li key={t.key}>
-              <Link
-                href={t.href}
-                className={`portal-nav-tab${t.key === active ? " is-active" : ""}`}
-              >
-                {t.label}
-              </Link>
-            </li>
-          ))}
+
+        {/* Nav tabs */}
+        <ul className="flex items-center gap-0" role="list">
+          {TABS.map((t) => {
+            const isActive =
+              active != null
+                ? active === t.href.replace("/", "").split("/")[0] ||
+                  (active === "home" && t.href === "/portal") ||
+                  (active === "new" && t.href === "/previsit/new")
+                : pathname === t.href || pathname?.startsWith(t.href + "/");
+            return (
+              <li key={t.href}>
+                <Link
+                  href={t.href}
+                  className={cn(
+                    "inline-flex items-center h-10 px-4 font-sans text-xs transition-colors duration-150 border-b-2",
+                    isActive
+                      ? "text-oxblood border-oxblood"
+                      : "text-ink-soft/70 border-transparent hover:text-ink hover:border-hairline"
+                  )}
+                >
+                  {t.label}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </nav>

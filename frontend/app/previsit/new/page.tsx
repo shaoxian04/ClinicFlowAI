@@ -3,11 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 import { apiPost } from "../../../lib/api";
 import { getToken } from "../../../lib/auth";
-import { HeroEmblem } from "../../components/HeroEmblem";
-import { PageHeader } from "../../components/PageHeader";
+import { cn } from "@/design/cn";
+import { fadeUp, staggerChildren } from "@/design/motion";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 type Session = {
   visitId: string;
@@ -45,6 +49,98 @@ const FIELD_TO_SECTION: Record<string, string> = {
 
 type Message = { role: "assistant" | "user"; content: string };
 
+/* ─── Typing indicator ──────────────────────────────────────────────────── */
+function TypingDots() {
+  return (
+    <div className="flex items-center gap-1 px-4 py-3" aria-label="Assistant is typing">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-1.5 h-1.5 rounded-full bg-ink-soft/40 animate-pulse"
+          style={{ animationDelay: `${i * 0.2}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ─── Step progress ─────────────────────────────────────────────────────── */
+function StepProgress({
+  steps,
+  activeStep,
+}: {
+  steps: readonly string[];
+  activeStep: number;
+}) {
+  return (
+    <div
+      role="list"
+      aria-label="Intake progress"
+      className="flex items-center gap-0 mb-8"
+    >
+      {steps.map((label, idx) => {
+        const isDone = idx < activeStep || (idx === 4 && activeStep >= 4);
+        const isActive = idx === activeStep && !isDone;
+        return (
+          <div key={label} role="listitem" className="flex items-center gap-0 flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full transition-colors duration-300",
+                  isDone
+                    ? "bg-sage"
+                    : isActive
+                    ? "bg-oxblood"
+                    : "bg-hairline"
+                )}
+              />
+              <span
+                className={cn(
+                  "font-mono text-[10px] uppercase tracking-widest whitespace-nowrap transition-colors duration-300",
+                  isDone
+                    ? "text-sage"
+                    : isActive
+                    ? "text-oxblood font-medium"
+                    : "text-ink-soft/40"
+                )}
+              >
+                {label}
+              </span>
+            </div>
+            {idx < steps.length - 1 && (
+              <div
+                className={cn(
+                  "flex-1 h-[1px] mx-1 mb-5 transition-colors duration-300",
+                  idx < activeStep ? "bg-sage/40" : "bg-hairline"
+                )}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Send icon ─────────────────────────────────────────────────────────── */
+function SendIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 8h12M8 2l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ─── Check icon ────────────────────────────────────────────────────────── */
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ─── Page ──────────────────────────────────────────────────────────────── */
 export default function PreVisitNewPage() {
   const router = useRouter();
   const [visitId, setVisitId] = useState<string | null>(null);
@@ -56,7 +152,8 @@ export default function PreVisitNewPage() {
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
   const paneRef = useRef<HTMLDivElement>(null);
-  const chatCardRef = useRef<HTMLElement>(null);
+  const chatCardRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!getToken()) {
@@ -108,8 +205,6 @@ export default function PreVisitNewPage() {
   }
 
   const fieldEntries = Object.entries(fields);
-
-  // Group structured fields into readable sections for the completion card
   const sectionMap: Map<string, Array<{ key: string; value: unknown }>> = new Map();
   for (const [key, value] of fieldEntries) {
     const section = FIELD_TO_SECTION[key];
@@ -128,117 +223,194 @@ export default function PreVisitNewPage() {
       );
 
   return (
-    <main className="shell previsit-shell">
-      <Link href="/portal" className="back-link">← Back to portal</Link>
-      <div style={{ marginTop: 18, textAlign: "center" }}>
-        <PageHeader
-          eyebrow="Pre-visit intake"
-          title={<>Tell us how you&apos;re <em>feeling</em></>}
-          sub="Answer a short, guided conversation. Your doctor walks into the room already knowing your chief complaint, duration, and any red flags — so the visit is for care, not clerical work."
-        />
-      </div>
-
-      {/* Intake partners strip */}
-      <div className="intake-partners">
-        <div className="intake-partner-avatar" title="You">You</div>
-        <span className="intake-partner-sep">→</span>
-        <div className="intake-partner-avatar" title="Intake assistant">AI</div>
-        <span className="intake-partner-sep">→</span>
-        <div className="intake-partner-avatar" title="Your doctor">Dr</div>
-      </div>
-
-      {/* Progress indicator */}
-      <div className="intake-progress" role="list" aria-label="Intake progress">
-        {STEPS.map((label, idx) => {
-          const isDone = idx < activeStep || (idx === 4 && done);
-          const isActive = idx === activeStep && !isDone;
-          const cls = `intake-step${isDone ? " is-done" : isActive ? " is-active" : ""}`;
-          return (
-            <div key={label} className={cls} role="listitem">
-              <span className="intake-dot" />
-              <span>{label}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      <section className="card chat-card" data-delay="1" ref={chatCardRef}>
-        <div className="chat-head">
-          <span className="chat-head-title">
-            Intake <em>assistant</em>
+    <motion.main
+      variants={staggerChildren}
+      initial="initial"
+      animate="animate"
+    >
+      {/* Back link — editorial typographic style */}
+      <motion.div variants={fadeUp}>
+        <Link
+          href="/portal"
+          className="inline-flex items-center gap-1.5 font-sans text-sm text-ink-soft hover:text-oxblood transition-colors duration-150 group mb-8 block"
+        >
+          <span className="font-mono" aria-hidden="true">←</span>
+          <span className="border-b border-transparent group-hover:border-oxblood transition-colors duration-150">
+            Return to portal
           </span>
-          <span className="card-idx">
-            {visitId ? `VISIT ${visitId.slice(0, 8).toUpperCase()}` : "STARTING…"}
-          </span>
-        </div>
-        <div className="chat-pane" ref={paneRef}>
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`chat-bubble ${m.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
-            >
-              {m.content}
-            </div>
-          ))}
-          {busy && (
-            <div className="chat-typing" aria-label="Assistant is typing">
-              <span className="chat-typing-dot" />
-              <span className="chat-typing-dot" />
-              <span className="chat-typing-dot" />
-            </div>
-          )}
-        </div>
-        {!done && (
-          <form onSubmit={send} className="chat-form">
-            <input
-              className="input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={busy || !visitId}
-              placeholder="Type your answer…"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={busy || !visitId || !input.trim()}
-            >
-              Send →
-            </button>
-          </form>
-        )}
-      </section>
+        </Link>
+      </motion.div>
 
-      {done && (
-        <div className="intake-completion-card">
-          <div className="intake-completion-header">
-            <HeroEmblem size={80} />
-            <div>
-              <p className="intake-completion-title">Your intake is ready.</p>
-              <p className="intake-completion-sub">Your doctor will see this before you arrive.</p>
+      {/* Header */}
+      <motion.div variants={fadeUp} className="mb-8">
+        <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-3">
+          Pre-visit intake
+        </p>
+        <h1 className="font-display text-3xl md:text-4xl text-ink leading-[1.1] tracking-tight">
+          Tell us how you&apos;re{" "}
+          <em className="not-italic text-oxblood">feeling</em>
+        </h1>
+        <p className="font-sans text-sm text-ink-soft leading-relaxed mt-3 max-w-prose">
+          Answer a short, guided conversation. Your doctor walks into the room
+          already knowing your chief complaint — so the visit is for care, not
+          clerical work.
+        </p>
+      </motion.div>
+
+      {/* Step progress */}
+      <motion.div variants={fadeUp}>
+        <StepProgress steps={STEPS} activeStep={activeStep} />
+      </motion.div>
+
+      {/* Chat panel */}
+      <motion.div variants={fadeUp} ref={chatCardRef}>
+        <Card variant="paper" className="p-0 overflow-hidden">
+          {/* Chat header */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline bg-bone/30">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
+              <span className="font-sans text-sm font-medium text-ink">
+                Intake <em className="not-italic text-ink-soft font-normal">assistant</em>
+              </span>
             </div>
+            {visitId && (
+              <span className="font-mono text-xs text-ink-soft/50 tracking-widest">
+                VISIT {visitId.slice(0, 8).toUpperCase()}
+              </span>
+            )}
+            {!visitId && (
+              <span className="font-mono text-xs text-ink-soft/40 tracking-widest">
+                STARTING…
+              </span>
+            )}
           </div>
-          <div className="intake-completion-sections">
-            {Array.from(sectionMap.entries()).map(([section, items]) => (
-              <div key={section}>
-                <p className="intake-section-label">{section}</p>
-                {items.map(({ key, value }) => (
-                  <p key={key} className="intake-section-value">
-                    {typeof value === "object" ? JSON.stringify(value) : String(value)}
-                  </p>
-                ))}
+
+          {/* Messages */}
+          <div
+            ref={paneRef}
+            className="flex flex-col gap-3 p-5 min-h-[240px] max-h-[400px] overflow-y-auto"
+          >
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex",
+                  m.role === "user" ? "justify-end" : "justify-start"
+                )}
+              >
+                <div
+                  className={cn(
+                    "max-w-[82%] rounded-md px-4 py-2.5 font-sans text-sm leading-relaxed",
+                    m.role === "user"
+                      ? "bg-bone text-ink border border-hairline"
+                      : "bg-paper text-ink border-l-2 border-l-oxblood border border-hairline"
+                  )}
+                >
+                  {m.content}
+                </div>
               </div>
             ))}
+
+            {busy && (
+              <div className="flex justify-start">
+                <div className="bg-paper border-l-2 border-l-oxblood border border-hairline rounded-md">
+                  <TypingDots />
+                </div>
+              </div>
+            )}
           </div>
-          <div className="btn-row" style={{ marginTop: 18 }}>
-            <Link href="/portal" className="btn btn-primary">
-              Return to portal
-            </Link>
-          </div>
-        </div>
+
+          {/* Input area */}
+          {!done && (
+            <form
+              onSubmit={send}
+              className="flex items-center gap-2 px-4 py-3 border-t border-hairline bg-paper"
+            >
+              <input
+                ref={inputRef}
+                className={cn(
+                  "flex-1 h-9 bg-transparent font-sans text-sm text-ink placeholder:text-ink-soft/40",
+                  "focus:outline-none"
+                )}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={busy || !visitId}
+                placeholder="Type your answer…"
+                autoFocus
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                disabled={busy || !visitId || !input.trim()}
+                icon={<SendIcon />}
+              >
+                Send
+              </Button>
+            </form>
+          )}
+        </Card>
+      </motion.div>
+
+      {/* Completion card */}
+      {done && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mt-6"
+        >
+          <Card variant="bone" className="space-y-5">
+            {/* Header */}
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-sm bg-sage/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <CheckIcon />
+              </div>
+              <div>
+                <p className="font-display text-lg text-ink leading-tight">
+                  Your intake is ready.
+                </p>
+                <p className="font-sans text-sm text-ink-soft mt-0.5">
+                  Your doctor will see this before you arrive.
+                </p>
+              </div>
+            </div>
+
+            {/* Collected sections */}
+            {sectionMap.size > 0 && (
+              <div className="border-t border-hairline pt-4 space-y-4">
+                {Array.from(sectionMap.entries()).map(([section, items]) => (
+                  <div key={section}>
+                    <p className="font-mono text-xs text-ink-soft/60 uppercase tracking-widest mb-1.5">
+                      {section}
+                    </p>
+                    {items.map(({ key, value }) => (
+                      <p key={key} className="font-sans text-sm text-ink">
+                        {typeof value === "object"
+                          ? JSON.stringify(value)
+                          : String(value)}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="pt-1">
+              <Button asChild variant="primary" size="md">
+                <Link href="/portal">Return to portal</Link>
+              </Button>
+            </div>
+          </Card>
+        </motion.div>
       )}
 
-      {error && <div className="banner banner-error">{error}</div>}
-    </main>
+      {/* Error banner */}
+      {error && (
+        <div className="mt-4 px-4 py-3 border border-crimson/30 bg-crimson/5 rounded-sm">
+          <p className="font-sans text-sm text-crimson">{error}</p>
+        </div>
+      )}
+    </motion.main>
   );
 }
