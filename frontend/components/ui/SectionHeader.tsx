@@ -25,7 +25,7 @@ export function SectionHeader({
         </span>
       ) : null}
       {number ? (
-        <span className="text-ink-rim select-none flex-shrink-0">---</span>
+        <span className="text-ink-rim select-none flex-shrink-0" aria-hidden="true">---</span>
       ) : null}
       <span className="text-sm font-medium uppercase tracking-wider text-fog flex-1">
         {title}

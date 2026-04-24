@@ -72,6 +72,14 @@ export function AppHeader() {
             <span className="font-sans text-sm text-fog-dim truncate max-w-[180px]">
               {user.email}
             </span>
+            <span
+              className="hidden md:inline-flex items-center gap-1 font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest"
+              aria-hidden="true"
+              title="Open command palette"
+            >
+              <kbd className="px-1.5 py-0.5 rounded-xs border border-ink-rim bg-obsidian/50 text-fog-dim/70">⌘K</kbd>
+              <span className="opacity-70">palette</span>
+            </span>
             <button
               onClick={onSignOut}
               className="font-sans text-sm text-fog-dim hover:text-cyan transition-colors duration-150 cursor-pointer"

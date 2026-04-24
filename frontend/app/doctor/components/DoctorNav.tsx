@@ -30,11 +30,11 @@ export default function DoctorNav({ active }: Props) {
   }
 
   return (
-    <nav className="bg-slate border-b border-slate/80">
+    <nav className="bg-ink-well border-b border-ink-rim">
       <div className="max-w-screen-xl mx-auto px-6 flex items-center gap-6 h-11">
         <div className="flex items-center gap-2 mr-4 flex-shrink-0">
           <StethoscopeGlyph size={13} />
-          <span className="font-mono text-xs text-paper/60 uppercase tracking-widest">
+          <span className="font-mono text-xs text-fog-dim uppercase tracking-widest">
             Clinician workspace
           </span>
         </div>
@@ -47,7 +47,7 @@ export default function DoctorNav({ active }: Props) {
                   role="tab"
                   aria-selected={false}
                   aria-disabled="true"
-                  className="px-4 py-2 text-sm font-sans text-paper/30 cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-sans text-fog-dim/40 cursor-not-allowed"
                 >
                   {tab.label}
                 </span>
@@ -63,8 +63,8 @@ export default function DoctorNav({ active }: Props) {
                 className={cn(
                   "px-4 py-2 text-sm font-sans transition-colors duration-150 border-b-2 -mb-px",
                   tabActive
-                    ? "text-paper border-paper/70"
-                    : "text-paper/60 border-transparent hover:text-paper/90"
+                    ? "text-cyan border-cyan"
+                    : "text-fog-dim border-transparent hover:text-fog"
                 )}
               >
                 {tab.label}
@@ -89,7 +89,7 @@ function StethoscopeGlyph({ size = 14 }: { size?: number }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="text-paper/50"
+      className="text-cyan/70"
     >
       <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
       <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
