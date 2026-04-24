@@ -54,6 +54,17 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
   }
 
   async function handleChatSubmit(text: string) {
+    // Optimistic append — show the user's message immediately. A
+    // negative turnIndex keeps it out of the real backend turn space;
+    // refreshChat() below replaces the whole list with the canonical
+    // turns once the server responds.
+    const optimisticTurn: ChatTurn = {
+      turnIndex: -Date.now(),
+      role: "user",
+      content: text,
+      createdAt: new Date().toISOString(),
+    };
+    dispatch({ type: "CHAT_APPEND", turn: optimisticTurn });
     dispatch({ type: "EDIT_START" });
     try {
       const path = state.clarification ? "clarify-sync" : "edit-sync";
@@ -117,9 +128,10 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
 
       <AgentThinkingTrail active={state.generating} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 items-start">
         <ReportPanel
           report={state.report}
+          reportVersion={state.reportVersion}
           approved={state.approved}
           onApprove={handleApprove}
           onPatch={handlePatch}
@@ -127,13 +139,17 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
           locked={locked}
           doctorName={doctorName}
         />
-        <ReportChatPanel
-          turns={state.chat}
-          clarification={state.clarification}
-          editing={state.editing}
-          onSubmit={handleChatSubmit}
-          locked={locked}
-        />
+        {/* Sticky on large screens so the input stays reachable while
+            the doctor scrolls the (potentially long) report. */}
+        <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]">
+          <ReportChatPanel
+            turns={state.chat}
+            clarification={state.clarification}
+            editing={state.editing}
+            onSubmit={handleChatSubmit}
+            locked={locked}
+          />
+        </div>
       </div>
     </div>
   );

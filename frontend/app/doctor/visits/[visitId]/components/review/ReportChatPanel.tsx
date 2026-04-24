@@ -74,7 +74,7 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
     .map(normalise);
 
   return (
-    <section className="bg-ink-well rounded-sm border border-ink-rim flex flex-col h-full min-h-[400px]">
+    <section className="bg-ink-well rounded-sm border border-ink-rim flex flex-col h-full min-h-[400px] max-h-[inherit]">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-ink-rim flex-shrink-0">
         <SectionHeader title="Assistant" className="text-fog/70" />

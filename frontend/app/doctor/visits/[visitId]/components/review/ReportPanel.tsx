@@ -10,6 +10,7 @@ import { SignatureStamp } from "@/components/ui/SignatureStamp";
 
 export interface ReportPanelProps {
   report: MedicalReport | null;
+  reportVersion?: number;
   approved: boolean;
   onApprove: () => void | Promise<void>;
   onPatch: (path: string, value: unknown) => void | Promise<void>;
@@ -27,12 +28,15 @@ const VITAL_FIELDS: Array<{ key: string; label: string; placeholder: string }> =
   { key: "weight", label: "Weight", placeholder: "70 kg" },
 ];
 
-const inputCls = "w-full rounded-xs border border-ink-rim bg-ink-well text-fog placeholder:text-fog-dim/40 px-2.5 py-1.5 text-sm font-sans focus:outline-none focus:ring-1 focus:ring-cyan/40 focus:border-cyan/40 disabled:opacity-50 disabled:bg-mica/40";
-const textareaCls = "w-full rounded-xs border border-ink-rim bg-ink-well text-fog placeholder:text-fog-dim/40 px-2.5 py-1.5 text-sm font-sans focus:outline-none focus:ring-1 focus:ring-cyan/40 focus:border-cyan/40 resize-y disabled:opacity-50 disabled:bg-mica/40 min-h-[72px]";
-const labelCls = "block font-mono text-[10px] text-fog-dim uppercase tracking-widest mb-1";
-const fieldWrapCls = "mb-3";
+// Input wells are darker than the panel surface so they read as clear
+// input zones on obsidian. Text bumped to [15px] + leading-relaxed for
+// long-form readability of clinical prose.
+const inputCls = "w-full rounded-xs border border-ink-rim bg-obsidian text-fog placeholder:text-fog-dim/40 px-3 py-2 text-[15px] font-sans leading-relaxed focus:outline-none focus:ring-1 focus:ring-cyan/50 focus:border-cyan/50 disabled:opacity-50 disabled:bg-mica/40";
+const textareaCls = "w-full rounded-xs border border-ink-rim bg-obsidian text-fog placeholder:text-fog-dim/40 px-3 py-2 text-[15px] font-sans leading-relaxed focus:outline-none focus:ring-1 focus:ring-cyan/50 focus:border-cyan/50 resize-y disabled:opacity-50 disabled:bg-mica/40 min-h-[88px]";
+const labelCls = "block font-mono text-[11px] text-fog/70 uppercase tracking-widest mb-1.5";
+const fieldWrapCls = "mb-4";
 
-export function ReportPanel({ report, approved, onApprove, onPatch, patching, locked, doctorName }: ReportPanelProps) {
+export function ReportPanel({ report, reportVersion = 0, approved, onApprove, onPatch, patching, locked, doctorName }: ReportPanelProps) {
   if (report == null) {
     return (
       <section className="relative bg-ink-well rounded-sm border border-ink-rim p-5 flex flex-col gap-2">
@@ -80,7 +84,10 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
           ? "border-l-2 border-l-coral pl-4"
           : "pl-0"
       )}>
-        <fieldset disabled={locked} className="border-none p-0 m-0">
+        {/* key tied to reportVersion — forces uncontrolled inputs to
+            remount and pick up new defaultValues when the agent edit
+            returns an updated report. */}
+        <fieldset key={reportVersion} disabled={locked} className="border-none p-0 m-0">
           {/* ======================== SUBJECTIVE ======================== */}
           <SectionHeader number="01" title="Subjective" className="mb-3" />
 
@@ -353,7 +360,7 @@ interface MedRowProps {
   patching: Set<string>;
   onRemove: () => void;
 }
-const medInputCls = "w-full rounded-xs border border-ink-rim bg-ink-well text-fog placeholder:text-fog-dim/40 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cyan/40 focus:border-cyan/40 disabled:opacity-50";
+const medInputCls = "w-full rounded-xs border border-ink-rim bg-obsidian text-fog placeholder:text-fog-dim/40 px-2 py-1.5 text-[13px] font-mono focus:outline-none focus:ring-1 focus:ring-cyan/50 focus:border-cyan/50 disabled:opacity-50";
 function MedRow({ med, index, onPatch, patching, onRemove }: MedRowProps) {
   const p = (f: string) => `plan.medications[${index}].${f}`;
   const cls = (f: string) => cn(medInputCls, patching.has(p(f)) ? "opacity-60" : "");
@@ -417,7 +424,7 @@ function ChipListEditor({ path, items: rawItems, onPatch, patching, placeholder 
       {items.map((t, i) => (
         <span
           key={i}
-          className="inline-flex items-center gap-1 rounded-xs border border-ink-rim bg-mica px-2 py-0.5 font-sans text-xs text-fog"
+          className="inline-flex items-center gap-1 rounded-xs border border-cyan/30 bg-cyan/10 px-2 py-0.5 font-sans text-xs text-cyan"
         >
           {t}
           <button
@@ -432,7 +439,7 @@ function ChipListEditor({ path, items: rawItems, onPatch, patching, placeholder 
       ))}
       <input
         type="text"
-        className="rounded-xs border border-ink-rim bg-ink-well text-fog placeholder:text-fog-dim/40 px-2 py-0.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-cyan/40 focus:border-cyan/40 min-w-[120px] flex-1"
+        className="rounded-xs border border-ink-rim bg-obsidian text-fog placeholder:text-fog-dim/40 px-2 py-1 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-cyan/50 focus:border-cyan/50 min-w-[120px] flex-1"
         placeholder={placeholder}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
