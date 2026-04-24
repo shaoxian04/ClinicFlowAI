@@ -25,19 +25,20 @@ const VITAL_FIELDS: Array<{ key: string; label: string; placeholder: string }> =
   { key: "weight", label: "Weight", placeholder: "70 kg" },
 ];
 
-const inputCls = "w-full rounded-xs border border-hairline bg-slate/80 text-paper/90 placeholder:text-paper/30 px-2.5 py-1.5 text-sm font-sans focus:outline-none focus:ring-1 focus:ring-oxblood/40 disabled:opacity-50";
-const textareaCls = "w-full rounded-xs border border-hairline bg-slate/80 text-paper/90 placeholder:text-paper/30 px-2.5 py-1.5 text-sm font-sans focus:outline-none focus:ring-1 focus:ring-oxblood/40 resize-y disabled:opacity-50 min-h-[72px]";
-const labelCls = "block font-mono text-[10px] text-paper/40 uppercase tracking-widest mb-1";
+const inputCls = "w-full rounded-xs border border-hairline bg-paper text-ink placeholder:text-ink-soft/40 px-2.5 py-1.5 text-sm font-sans focus:outline-none focus:ring-1 focus:ring-oxblood/40 focus:border-oxblood/40 disabled:opacity-50 disabled:bg-bone/40";
+const textareaCls = "w-full rounded-xs border border-hairline bg-paper text-ink placeholder:text-ink-soft/40 px-2.5 py-1.5 text-sm font-sans focus:outline-none focus:ring-1 focus:ring-oxblood/40 focus:border-oxblood/40 resize-y disabled:opacity-50 disabled:bg-bone/40 min-h-[72px]";
+const labelCls = "block font-mono text-[10px] text-ink-soft uppercase tracking-widest mb-1";
 const fieldWrapCls = "mb-3";
 
 export function ReportPanel({ report, approved, onApprove, onPatch, patching, locked }: ReportPanelProps) {
   if (report == null) {
     return (
-      <section className="bg-slate rounded-sm border border-slate/80 p-5 flex flex-col gap-2">
+      <section className="bg-paper rounded-sm border border-hairline p-5 flex flex-col gap-2">
+        <h2 className="sr-only">Report</h2>
         <div className="flex items-center justify-between mb-2">
-          <span className="font-sans font-medium text-sm text-paper/70 uppercase tracking-wider">Report</span>
+          <span className="font-sans font-medium text-sm text-ink uppercase tracking-wider">Report</span>
         </div>
-        <p className="font-sans text-sm text-paper/40">Report will appear here once generated.</p>
+        <p className="font-sans text-sm text-ink-soft">Report will appear here once generated.</p>
       </section>
     );
   }
@@ -47,7 +48,7 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
   const fieldCls = (path: string) => patching.has(path) ? "opacity-60" : "";
 
   return (
-    <section className="bg-slate rounded-sm border border-slate/80 p-5 overflow-y-auto">
+    <section className="bg-paper rounded-sm border border-hairline p-5 overflow-y-auto">
       <h2 className="sr-only">Report</h2>
       {/* Header row with AI DRAFT badge and Approve button */}
       <div className="flex items-center justify-between gap-3 mb-4">
@@ -77,7 +78,7 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
       )}>
         <fieldset disabled={locked} className="border-none p-0 m-0">
           {/* ======================== SUBJECTIVE ======================== */}
-          <SectionHeader number="01" title="Subjective" className="mb-3 text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60" />
+          <SectionHeader number="01" title="Subjective" className="mb-3" />
 
           <div className={cn(fieldWrapCls, fieldCls("subjective.chiefComplaint"))}>
             <label className={labelCls}>Chief complaint</label>
@@ -130,10 +131,10 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
             />
           </div>
 
-          <Separator className="my-4 border-paper/10" />
+          <Separator className="my-4" />
 
           {/* ======================== OBJECTIVE ======================== */}
-          <SectionHeader number="02" title="Objective" className="mb-3 text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60" />
+          <SectionHeader number="02" title="Objective" className="mb-3" />
 
           <div className={fieldWrapCls}>
             <label className={labelCls}>Vital signs</label>
@@ -142,7 +143,7 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
                 const path = `objective.vitalSigns.${key}`;
                 return (
                   <div key={key} className={cn("flex flex-col gap-0.5", fieldCls(path))}>
-                    <span className="font-mono text-[10px] text-paper/40">{label}</span>
+                    <span className="font-mono text-[10px] text-ink-soft">{label}</span>
                     <input
                       type="text"
                       className={inputCls}
@@ -165,10 +166,10 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
             />
           </div>
 
-          <Separator className="my-4 border-paper/10" />
+          <Separator className="my-4" />
 
           {/* ======================== ASSESSMENT ======================== */}
-          <SectionHeader number="03" title="Assessment" className="mb-3 text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60" />
+          <SectionHeader number="03" title="Assessment" className="mb-3" />
 
           <div className={cn(fieldWrapCls, fieldCls("assessment.primaryDiagnosis"))}>
             <label className={labelCls}>Primary diagnosis</label>
@@ -202,10 +203,10 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
             />
           </div>
 
-          <Separator className="my-4 border-paper/10" />
+          <Separator className="my-4" />
 
           {/* ======================== PLAN ======================== */}
-          <SectionHeader number="04" title="Plan" className="mb-3 text-paper/70 [&>span:first-child]:text-paper/30 [&>span:nth-child(2)]:text-paper/20 [&>span:last-child]:text-paper/60" />
+          <SectionHeader number="04" title="Plan" className="mb-3" />
 
           <div className={fieldWrapCls}>
             <label className={labelCls}>Medications</label>
@@ -244,7 +245,7 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
                 type="checkbox"
                 defaultChecked={report.plan.followUp.needed}
                 onBlur={(e) => onPatch("plan.followUp.needed", e.target.checked)}
-                className="rounded-xs border border-paper/30 bg-slate/80 checked:bg-oxblood"
+                className="rounded-xs border border-hairline bg-paper accent-oxblood"
               />
               <span>Follow-up needed</span>
             </label>
@@ -314,11 +315,11 @@ function MedList({ meds: rawMeds, onPatch, patching }: MedListProps) {
       {/* Header row */}
       <div className="grid grid-cols-[1fr_80px_80px_80px_60px_28px] gap-1.5">
         {["Drug", "Dose", "Freq", "Duration", "Route", ""].map((h, i) => (
-          <span key={i} className="font-mono text-[9px] text-paper/30 uppercase tracking-widest">{h}</span>
+          <span key={i} className="font-mono text-[9px] text-ink-soft uppercase tracking-widest">{h}</span>
         ))}
       </div>
       {meds.length === 0 && (
-        <p className="font-sans text-xs text-paper/40">No medications prescribed.</p>
+        <p className="font-sans text-xs text-ink-soft">No medications prescribed.</p>
       )}
       {meds.map((med, i) => (
         <MedRow
@@ -332,7 +333,7 @@ function MedList({ meds: rawMeds, onPatch, patching }: MedListProps) {
       ))}
       <button
         type="button"
-        className="font-sans text-xs text-paper/50 hover:text-paper/80 transition-colors duration-150 text-left mt-1"
+        className="font-sans text-xs text-oxblood hover:text-oxblood/80 transition-colors duration-150 text-left mt-1"
         onClick={addMed}
       >
         + Add medication
@@ -348,7 +349,7 @@ interface MedRowProps {
   patching: Set<string>;
   onRemove: () => void;
 }
-const medInputCls = "w-full rounded-xs border border-paper/10 bg-slate/60 text-paper/90 placeholder:text-paper/20 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-oxblood/40 disabled:opacity-50";
+const medInputCls = "w-full rounded-xs border border-hairline bg-paper text-ink placeholder:text-ink-soft/40 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-oxblood/40 focus:border-oxblood/40 disabled:opacity-50";
 function MedRow({ med, index, onPatch, patching, onRemove }: MedRowProps) {
   const p = (f: string) => `plan.medications[${index}].${f}`;
   const cls = (f: string) => cn(medInputCls, patching.has(p(f)) ? "opacity-60" : "");
@@ -376,7 +377,7 @@ function MedRow({ med, index, onPatch, patching, onRemove }: MedRowProps) {
         className={cls("route")} />
       <button
         type="button"
-        className="text-paper/30 hover:text-crimson transition-colors duration-150 font-mono text-sm flex-shrink-0 flex items-center justify-center h-7 w-7"
+        className="text-ink-soft hover:text-crimson transition-colors duration-150 font-mono text-sm flex-shrink-0 flex items-center justify-center h-7 w-7"
         onClick={onRemove}
         aria-label="Remove medication"
       >
@@ -412,14 +413,14 @@ function ChipListEditor({ path, items: rawItems, onPatch, patching, placeholder 
       {items.map((t, i) => (
         <span
           key={i}
-          className="inline-flex items-center gap-1 rounded-xs border border-paper/20 bg-paper/10 px-2 py-0.5 font-sans text-xs text-paper/80"
+          className="inline-flex items-center gap-1 rounded-xs border border-hairline bg-bone px-2 py-0.5 font-sans text-xs text-ink"
         >
           {t}
           <button
             type="button"
             onClick={() => remove(i)}
             aria-label={`Remove ${t}`}
-            className="text-paper/40 hover:text-crimson transition-colors duration-150 text-sm leading-none"
+            className="text-ink-soft hover:text-crimson transition-colors duration-150 text-sm leading-none"
           >
             ×
           </button>
@@ -427,7 +428,7 @@ function ChipListEditor({ path, items: rawItems, onPatch, patching, placeholder 
       ))}
       <input
         type="text"
-        className="rounded-xs border border-paper/10 bg-slate/60 text-paper/90 placeholder:text-paper/20 px-2 py-0.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-oxblood/40 min-w-[120px] flex-1"
+        className="rounded-xs border border-hairline bg-paper text-ink placeholder:text-ink-soft/40 px-2 py-0.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-oxblood/40 focus:border-oxblood/40 min-w-[120px] flex-1"
         placeholder={placeholder}
         onKeyDown={(e) => {
           if (e.key === "Enter") {

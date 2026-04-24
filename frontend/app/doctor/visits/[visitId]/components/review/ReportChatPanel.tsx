@@ -14,16 +14,38 @@ export interface ReportChatPanelProps {
   locked: boolean;
 }
 
-function prettify(turn: ChatTurn): ChatTurn {
-  if (turn.role !== "user") return turn;
+const TRANSCRIPT_WRAPPER = /^Visit [0-9a-f-]+ — transcript \/ edit input:\n\n([\s\S]*)$/;
+const EDIT_REQUEST = /^Doctor edit request:\n([\s\S]*)$/;
+
+type RenderKind = "transcript" | "message";
+interface RenderTurn extends ChatTurn {
+  kind: RenderKind;
+  wordCount?: number;
+}
+
+/**
+ * Normalise turns for rendering. The agent wraps every user input with
+ * "Visit UUID — transcript / edit input:\n\n<body>". If the <body> is a
+ * "Doctor edit request: …" it's a chat-initiated edit; otherwise it's the
+ * raw transcript submitted from the GenerateBar. We collapse transcript
+ * submissions into a compact marker so the chat doesn't dump ~500 words.
+ */
+function normalise(turn: ChatTurn): RenderTurn {
+  if (turn.role !== "user") return { ...turn, kind: "message" };
   let content = turn.content;
-  // Strip outer agent prefix: "Visit {uuid} — transcript / edit input:\n\n..."
-  const m = content.match(/^Visit [0-9a-f-]+ — transcript \/ edit input:\n\n([\s\S]*)$/);
-  if (m) content = m[1];
-  // Strip edit prefix: "Doctor edit request:\n..."
-  const m2 = content.match(/^Doctor edit request:\n([\s\S]*)$/);
-  if (m2) content = m2[1];
-  return { ...turn, content };
+  const outer = content.match(TRANSCRIPT_WRAPPER);
+  if (outer) content = outer[1];
+  const edit = content.match(EDIT_REQUEST);
+  if (edit) {
+    return { ...turn, content: edit[1], kind: "message" };
+  }
+  // Raw body with no edit-request prefix ⇒ this is a transcript/initial
+  // submission. Render as a compact marker instead of a full bubble.
+  if (outer) {
+    const words = content.trim().split(/\s+/).filter(Boolean).length;
+    return { ...turn, content, kind: "transcript", wordCount: words };
+  }
+  return { ...turn, content, kind: "message" };
 }
 
 export function ReportChatPanel({ turns, clarification, editing, onSubmit, locked }: ReportChatPanelProps) {
@@ -49,7 +71,7 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
 
   const visibleTurns = turns
     .filter(t => t.content && t.content.trim().length > 0)
-    .map(prettify);
+    .map(normalise);
 
   return (
     <section className="bg-paper rounded-sm border border-hairline flex flex-col h-full min-h-[400px]">
@@ -60,29 +82,44 @@ export function ReportChatPanel({ turns, clarification, editing, onSubmit, locke
 
       {/* Chat thread */}
       <ol className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0">
-        {visibleTurns.map((t) => (
-          <li
-            key={t.turnIndex}
-            className={cn(
-              "flex flex-col gap-0.5",
-              t.role === "user" ? "items-end" : "items-start"
-            )}
-          >
-            <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
-              {t.role === "user" ? "You" : "Assistant"}
-            </span>
-            <div
+        {visibleTurns.map((t) => {
+          if (t.kind === "transcript") {
+            return (
+              <li key={t.turnIndex} className="flex justify-center">
+                <span className="inline-flex items-center gap-2 rounded-xs border border-hairline bg-bone px-2.5 py-1 font-mono text-[10px] text-ink-soft uppercase tracking-widest">
+                  <span className="h-1 w-1 rounded-full bg-oxblood" aria-hidden />
+                  Transcript submitted
+                  {t.wordCount != null && (
+                    <span className="text-ink-soft/60 normal-case tracking-normal">· {t.wordCount} words</span>
+                  )}
+                </span>
+              </li>
+            );
+          }
+          return (
+            <li
+              key={t.turnIndex}
               className={cn(
-                "rounded-md px-3 py-2 text-sm font-sans leading-relaxed max-w-[88%]",
-                t.role === "user"
-                  ? "bg-bone text-ink"
-                  : "bg-paper border border-hairline border-l-2 border-l-oxblood text-ink"
+                "flex flex-col gap-0.5",
+                t.role === "user" ? "items-end" : "items-start"
               )}
             >
-              {t.content}
-            </div>
-          </li>
-        ))}
+              <span className="font-mono text-[10px] text-ink-soft/50 uppercase tracking-widest">
+                {t.role === "user" ? "You" : "Assistant"}
+              </span>
+              <div
+                className={cn(
+                  "rounded-md px-3 py-2 text-sm font-sans leading-relaxed max-w-[88%]",
+                  t.role === "user"
+                    ? "bg-bone text-ink"
+                    : "bg-paper border border-hairline border-l-2 border-l-oxblood text-ink"
+                )}
+              >
+                {t.content}
+              </div>
+            </li>
+          );
+        })}
 
         {/* Show clarification question as a visible assistant bubble */}
         {clarification && !editing && (
