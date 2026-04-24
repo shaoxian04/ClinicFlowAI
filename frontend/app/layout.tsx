@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import { Fraunces, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppHeader } from "./components/AppHeader";
 
@@ -11,9 +11,17 @@ const fraunces = Fraunces({
   axes: ["opsz", "SOFT"],
 });
 
-const outfit = Outfit({
+const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-body",
+  display: "swap",
+  preload: false,
+  weight: ["400", "500", "600"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
   preload: false,
 });
@@ -29,7 +37,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${outfit.variable}`}>
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${ibmPlexSans.variable} ${jetBrainsMono.variable}`}
+    >
       <body>
         <AppHeader />
         {children}
