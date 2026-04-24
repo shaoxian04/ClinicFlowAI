@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Separator } from "@/components/ui/Separator";
+import { SignatureStamp } from "@/components/ui/SignatureStamp";
 
 export interface ReportPanelProps {
   report: MedicalReport | null;
@@ -14,6 +15,7 @@ export interface ReportPanelProps {
   onPatch: (path: string, value: unknown) => void | Promise<void>;
   patching: Set<string>;
   locked: boolean;
+  doctorName?: string;
 }
 
 const VITAL_FIELDS: Array<{ key: string; label: string; placeholder: string }> = [
@@ -30,10 +32,10 @@ const textareaCls = "w-full rounded-xs border border-ink-rim bg-ink-well text-fo
 const labelCls = "block font-mono text-[10px] text-fog-dim uppercase tracking-widest mb-1";
 const fieldWrapCls = "mb-3";
 
-export function ReportPanel({ report, approved, onApprove, onPatch, patching, locked }: ReportPanelProps) {
+export function ReportPanel({ report, approved, onApprove, onPatch, patching, locked, doctorName }: ReportPanelProps) {
   if (report == null) {
     return (
-      <section className="bg-ink-well rounded-sm border border-ink-rim p-5 flex flex-col gap-2">
+      <section className="relative bg-ink-well rounded-sm border border-ink-rim p-5 flex flex-col gap-2">
         <h2 className="sr-only">Report</h2>
         <div className="flex items-center justify-between mb-2">
           <span className="font-sans font-medium text-sm text-fog uppercase tracking-wider">Report</span>
@@ -48,8 +50,10 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
   const fieldCls = (path: string) => patching.has(path) ? "opacity-60" : "";
 
   return (
-    <section className="bg-ink-well rounded-sm border border-ink-rim p-5 overflow-y-auto">
+    <section className="relative bg-ink-well rounded-sm border border-ink-rim p-5 overflow-y-auto">
       <h2 className="sr-only">Report</h2>
+      {/* Signature stamp — decorative watermark, does not block clicks */}
+      <SignatureStamp visible={approved || locked} doctorName={doctorName} />
       {/* Header row with AI DRAFT badge and Approve button */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">

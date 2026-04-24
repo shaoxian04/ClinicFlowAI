@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppHeader } from "./components/AppHeader";
+import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -42,8 +43,10 @@ export default function RootLayout({
       className={`${fraunces.variable} ${ibmPlexSans.variable} ${jetBrainsMono.variable}`}
     >
       <body className="noise-overlay">
-        <AppHeader />
-        {children}
+        <CommandPaletteProvider>
+          <AppHeader />
+          {children}
+        </CommandPaletteProvider>
       </body>
     </html>
   );

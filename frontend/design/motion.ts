@@ -1,5 +1,11 @@
 import type { Variants } from "framer-motion";
 
+export const countUp = {
+  stiffness: 120,
+  damping: 20,
+  mass: 1,
+};
+
 export const fadeUp: Variants = {
   initial: { opacity: 0, y: 12 },
   animate: {
@@ -30,5 +36,25 @@ export const slideInRight: Variants = {
     opacity: 1,
     x: 0,
     transition: { duration: 0.3 },
+  },
+};
+
+export const stampSettle: Variants = {
+  initial: {
+    opacity: 0,
+    scale: 1.3,
+    rotate: 18,
+  },
+  animate: {
+    opacity: 0.95,
+    scale: 1,
+    rotate: -2,
+    transition: {
+      type: "spring",
+      stiffness: 180,
+      damping: 14,
+      mass: 0.8,
+      duration: 0.6,
+    },
   },
 };

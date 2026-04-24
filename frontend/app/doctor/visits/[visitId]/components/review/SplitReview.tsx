@@ -5,10 +5,12 @@ import { apiGet, apiPost, apiPatch } from "@/lib/api";
 import { initialReviewState, reviewReducer } from "@/lib/reviewReducer";
 import type { ChatTurn, ReportReviewResult, MedicalReport } from "@/lib/types/report";
 import { cn } from "@/design/cn";
+import { getUser } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 import { GenerateBar } from "./GenerateBar";
 import { ReportPanel } from "./ReportPanel";
 import { ReportChatPanel } from "./ReportChatPanel";
+import { AgentThinkingTrail } from "./AgentThinkingTrail";
 
 export interface SplitReviewProps {
   visitId: string;
@@ -24,6 +26,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
     report: initialReport,
     approved: initialApproved,
   });
+  const doctorName = getUser()?.fullName;
 
   const refreshChat = useCallback(async () => {
     try {
@@ -112,6 +115,8 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
         hasReport={state.report != null}
       />
 
+      <AgentThinkingTrail active={state.generating} />
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4">
         <ReportPanel
           report={state.report}
@@ -120,6 +125,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
           onPatch={handlePatch}
           patching={state.patching}
           locked={locked}
+          doctorName={doctorName}
         />
         <ReportChatPanel
           turns={state.chat}

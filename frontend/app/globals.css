@@ -108,6 +108,30 @@
   text-shadow: 0 0 18px rgba(34,225,215,0.4);
 }
 
+/* Shimmer animation for agent thinking trail active pill */
+@keyframes shimmer-cyan {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-pill {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(34, 225, 215, 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-cyan 1.5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-pill {
+    animation: none;
+    background: rgba(34, 225, 215, 0.08);
+  }
+}
+
 /* ===========================================================================
    LEGACY — staff + admin classes. DO NOT REMOVE until those pages are rewritten.
    Collected verbatim from frontend/app/staff/** and frontend/app/admin/**

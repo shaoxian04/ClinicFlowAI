@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { MedicationCard } from "@/app/portal/components/MedicationCard";
 import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
 import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
+import { LangCrossfade } from "@/components/ui/LangCrossfade";
 
 type Detail = {
   visitId: string;
@@ -82,26 +83,11 @@ export default function PortalVisitDetail() {
   const visitId = params.visitId;
   const [detail, setDetail] = useState<Detail | null>(null);
   const [lang, setLang] = useState<"en" | "ms">("en");
-  const [transitioning, setTransitioning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function switchLang(next: "en" | "ms") {
     if (next === lang) return;
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      setLang(next);
-      return;
-    }
-    if (timerRef.current !== null) clearTimeout(timerRef.current);
-    setTransitioning(true);
-    timerRef.current = setTimeout(() => {
-      setLang(next);
-      setTransitioning(false);
-      timerRef.current = null;
-    }, 90);
+    setLang(next);
   }
 
   useEffect(() => {
@@ -234,66 +220,63 @@ export default function PortalVisitDetail() {
             ))}
           </div>
 
-          {/* Language-toggled content */}
-          <div
-            className={cn(
-              "flex flex-col gap-6 transition-opacity duration-[90ms]",
-              transitioning ? "opacity-0" : "opacity-100"
-            )}
-          >
-            {/* Pull-quote summary */}
-            <section>
-              <PullQuote>
-                {body ||
-                  (lang === "en"
-                    ? "Summary is still being prepared…"
-                    : "Ringkasan sedang disediakan…")}
-              </PullQuote>
+          {/* Language-toggled content — wrapped in ink-bleed crossfade */}
+          <LangCrossfade lang={lang}>
+            <div className="flex flex-col gap-6">
+              {/* Pull-quote summary */}
+              <section>
+                <PullQuote>
+                  {body ||
+                    (lang === "en"
+                      ? "Summary is still being prepared…"
+                      : "Ringkasan sedang disediakan…")}
+                </PullQuote>
 
-              {attributionLine && (
-                <p className="font-mono text-xs text-fog-dim/60 mt-3 pl-6">
-                  {attributionLine}
-                </p>
-              )}
-            </section>
+                {attributionLine && (
+                  <p className="font-mono text-xs text-fog-dim/60 mt-3 pl-6">
+                    {attributionLine}
+                  </p>
+                )}
+              </section>
 
-            {/* Medications */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-fog">
-                  {medsCopy.heading}
-                </h2>
-                <span className="font-mono text-xs text-fog-dim/60">
-                  {medCount}{" "}
-                  {medCount === 1 ? medsCopy.item : medsCopy.items}
-                </span>
-              </div>
-
-              {medCount === 0 ? (
-                <p className="font-sans text-sm text-fog-dim italic">
-                  {medsCopy.empty}
-                </p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {detail.medications.map((m, i) => (
-                    <MedicationCard
-                      key={i}
-                      name={m.name}
-                      dosage={m.dosage}
-                      frequency={m.frequency}
-                      duration={m.duration}
-                      instructions={m.instructions}
-                      lang={lang}
-                    />
-                  ))}
+              {/* Medications */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-fog">
+                    {medsCopy.heading}
+                  </h2>
+                  <span className="font-mono text-xs text-fog-dim/60">
+                    {medCount}{" "}
+                    {medCount === 1 ? medsCopy.item : medsCopy.items}
+                  </span>
                 </div>
-              )}
-            </section>
 
-            {/* Red flags + Follow-up */}
-            <RedFlagsCard items={redFlagsList} lang={lang} />
-            <FollowUpCard data={followUpData} lang={lang} />
-          </div>
+                {medCount === 0 ? (
+                  <p className="font-sans text-sm text-fog-dim italic">
+                    {medsCopy.empty}
+                  </p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {detail.medications.map((m, i) => (
+                      <MedicationCard
+                        key={i}
+                        name={m.name}
+                        dosage={m.dosage}
+                        frequency={m.frequency}
+                        duration={m.duration}
+                        instructions={m.instructions}
+                        lang={lang}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Red flags + Follow-up */}
+              <RedFlagsCard items={redFlagsList} lang={lang} />
+              <FollowUpCard data={followUpData} lang={lang} />
+            </div>
+          </LangCrossfade>
         </motion.div>
       </motion.div>
     </main>

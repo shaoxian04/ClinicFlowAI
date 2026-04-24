@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Separator } from "@/components/ui/Separator";
-import { StatTile } from "@/components/ui/StatTile";
+import { AnimatedStatTile } from "@/components/ui/AnimatedStatTile";
 import DoctorNav from "./components/DoctorNav";
 import VisitRow from "./components/VisitRow";
 
@@ -123,6 +123,34 @@ export default function DoctorDashboard() {
     [visits]
   );
 
+  function computeSparkline(
+    allVisits: VisitSummary[],
+    filterFn: (v: VisitSummary) => boolean
+  ): number[] {
+    const now = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (6 - i));
+      const dayStr = d.toISOString().slice(0, 10);
+      return allVisits.filter(
+        (v) => v.createdAt.slice(0, 10) === dayStr && filterFn(v)
+      ).length;
+    });
+  }
+
+  const awaitingSparkline = useMemo(
+    () => computeSparkline(visits, (v) => v.preVisitDone && !v.soapFinalized),
+    [visits]
+  );
+  const todaySparkline = useMemo(
+    () => computeSparkline(visits, (v) => isToday(v.createdAt)),
+    [visits]
+  );
+  const finalizedSparkline = useMemo(
+    () => computeSparkline(visits, (v) => v.soapFinalized),
+    [visits]
+  );
+
   return (
     <>
       <DoctorNav active="today" />
@@ -149,10 +177,10 @@ export default function DoctorDashboard() {
 
           {/* KPI strip */}
           {!loading && (
-            <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3 mb-8 max-w-sm">
-              <StatTile label="Awaiting review" value={awaitingCount} />
-              <StatTile label="Today" value={todayCount} />
-              <StatTile label="Finalized" value={finalizedCount} />
+            <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3 mb-8 max-w-md">
+              <AnimatedStatTile label="Awaiting review" value={awaitingCount} sparklineData={awaitingSparkline} />
+              <AnimatedStatTile label="Today" value={todayCount} sparklineData={todaySparkline} />
+              <AnimatedStatTile label="Finalized" value={finalizedCount} sparklineData={finalizedSparkline} />
             </motion.div>
           )}
 
