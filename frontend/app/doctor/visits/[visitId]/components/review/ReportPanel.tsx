@@ -48,6 +48,7 @@ export function ReportPanel({ report, approved, onApprove, onPatch, patching, lo
 
   return (
     <section className="bg-slate rounded-sm border border-slate/80 p-5 overflow-y-auto">
+      <h2 className="sr-only">Report</h2>
       {/* Header row with AI DRAFT badge and Approve button */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">

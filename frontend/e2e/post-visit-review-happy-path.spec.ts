@@ -38,5 +38,5 @@ test("doctor generates, approves, and publishes a report", async ({ page }) => {
   await expect(page).toHaveURL(/#preview$/);
 
   await page.getByRole("button", { name: /publish to patient/i }).click();
-  await expect(page.getByText(/published/i)).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/published on/i)).toBeVisible({ timeout: 60_000 });
 });
