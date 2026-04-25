@@ -71,49 +71,33 @@ export function ProcessDiagram({ className }: ProcessDiagramProps) {
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.6 }}
         />
 
-        {/* Data packet on path 1 */}
+        {/* Data packets — SMIL animateMotion follows the actual path
+            with infinite loop independent of viewport state. */}
         {!reduced && (
-          <motion.circle
-            r={4}
-            fill="#22E1D7"
-            fillOpacity={0.8}
-            initial={{ x: 190, y: 60, opacity: 0 }}
-            whileInView={{
-              x: [190, 300, 410],
-              y: [60, 60, 60],
-              opacity: [0, 1, 0],
-              transition: {
-                duration: 1.5,
-                delay: 1.0,
-                repeat: Infinity,
-                repeatDelay: 3,
-                ease: "easeInOut",
-              },
-            }}
-            viewport={{ once: true }}
-          />
-        )}
-        {/* Data packet on path 2 */}
-        {!reduced && (
-          <motion.circle
-            r={4}
-            fill="#FF5C9C"
-            fillOpacity={0.8}
-            initial={{ x: 490, y: 60, opacity: 0 }}
-            whileInView={{
-              x: [490, 600, 710],
-              y: [60, 60, 60],
-              opacity: [0, 1, 0],
-              transition: {
-                duration: 1.5,
-                delay: 1.8,
-                repeat: Infinity,
-                repeatDelay: 3,
-                ease: "easeInOut",
-              },
-            }}
-            viewport={{ once: true }}
-          />
+          <>
+            <circle r={4} fill="#22E1D7" fillOpacity={0.9}>
+              <animateMotion dur="2.4s" repeatCount="indefinite" path={pathH1} begin="1.2s" />
+              <animate
+                attributeName="opacity"
+                values="0;1;1;0"
+                keyTimes="0;0.15;0.85;1"
+                dur="2.4s"
+                repeatCount="indefinite"
+                begin="1.2s"
+              />
+            </circle>
+            <circle r={4} fill="#FF5C9C" fillOpacity={0.9}>
+              <animateMotion dur="2.4s" repeatCount="indefinite" path={pathH2} begin="2.0s" />
+              <animate
+                attributeName="opacity"
+                values="0;1;1;0"
+                keyTimes="0;0.15;0.85;1"
+                dur="2.4s"
+                repeatCount="indefinite"
+                begin="2.0s"
+              />
+            </circle>
+          </>
         )}
 
         {/* Node 1 — Pre-visit */}

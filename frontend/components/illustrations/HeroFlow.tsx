@@ -122,63 +122,66 @@ export function HeroFlow({ className }: HeroFlowProps) {
         transition={{ duration: 1.6, ease: "easeOut", delay: 0.3 }}
       />
 
-      {/* ── Particles along path 1 ── */}
+      {/* ── Particles traveling the paths ──
+          Use SVG SMIL <animateMotion> for native path traversal.
+          framer-motion can't interpolate CSS offsetDistance reliably. */}
       {!reduced && (
-        <motion.circle
-          r={3}
-          fill="#22E1D7"
-          fillOpacity={0.6}
-          filter="url(#hf-glow-cyan)"
-          style={{ offsetPath: `path('${path1}')` } as React.CSSProperties}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, 0.8, 0.8, 0],
-            transition: { duration: 3.5, repeat: Infinity, ease: "linear" },
-          }}
-        />
-      )}
-      {!reduced && (
-        <motion.circle
-          r={2.5}
-          fill="#8B5CF6"
-          fillOpacity={0.7}
-          filter="url(#hf-glow-violet)"
-          style={{ offsetPath: `path('${path1}')` } as React.CSSProperties}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, 0.7, 0.7, 0],
-            transition: { duration: 3.5, repeat: Infinity, ease: "linear", delay: 1.75 },
-          }}
-        />
-      )}
-      {/* ── Particles along path 2 ── */}
-      {!reduced && (
-        <motion.circle
-          r={3}
-          fill="#8B5CF6"
-          fillOpacity={0.6}
-          filter="url(#hf-glow-violet)"
-          style={{ offsetPath: `path('${path2}')` } as React.CSSProperties}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, 0.8, 0.8, 0],
-            transition: { duration: 3.5, repeat: Infinity, ease: "linear", delay: 0.5 },
-          }}
-        />
-      )}
-      {!reduced && (
-        <motion.circle
-          r={2.5}
-          fill="#FF5C9C"
-          fillOpacity={0.7}
-          filter="url(#hf-glow-magenta)"
-          style={{ offsetPath: `path('${path2}')` } as React.CSSProperties}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, 0.7, 0.7, 0],
-            transition: { duration: 3.5, repeat: Infinity, ease: "linear", delay: 2.25 },
-          }}
-        />
+        <>
+          {/* Cyan particle on path 1 */}
+          <circle r={3} fill="#22E1D7" fillOpacity={0.85} filter="url(#hf-glow-cyan)">
+            <animateMotion
+              dur="3.5s"
+              repeatCount="indefinite"
+              path={path1}
+              rotate="auto"
+              begin="0.6s"
+            />
+            <animate
+              attributeName="opacity"
+              values="0;1;1;0"
+              keyTimes="0;0.15;0.85;1"
+              dur="3.5s"
+              repeatCount="indefinite"
+              begin="0.6s"
+            />
+          </circle>
+          {/* Violet trailing particle on path 1 */}
+          <circle r={2.5} fill="#8B5CF6" fillOpacity={0.7} filter="url(#hf-glow-violet)">
+            <animateMotion dur="3.5s" repeatCount="indefinite" path={path1} begin="2.35s" />
+            <animate
+              attributeName="opacity"
+              values="0;1;1;0"
+              keyTimes="0;0.15;0.85;1"
+              dur="3.5s"
+              repeatCount="indefinite"
+              begin="2.35s"
+            />
+          </circle>
+          {/* Violet particle on path 2 */}
+          <circle r={3} fill="#8B5CF6" fillOpacity={0.85} filter="url(#hf-glow-violet)">
+            <animateMotion dur="3.5s" repeatCount="indefinite" path={path2} begin="1.1s" />
+            <animate
+              attributeName="opacity"
+              values="0;1;1;0"
+              keyTimes="0;0.15;0.85;1"
+              dur="3.5s"
+              repeatCount="indefinite"
+              begin="1.1s"
+            />
+          </circle>
+          {/* Magenta trailing particle on path 2 */}
+          <circle r={2.5} fill="#FF5C9C" fillOpacity={0.7} filter="url(#hf-glow-magenta)">
+            <animateMotion dur="3.5s" repeatCount="indefinite" path={path2} begin="2.85s" />
+            <animate
+              attributeName="opacity"
+              values="0;1;1;0"
+              keyTimes="0;0.15;0.85;1"
+              dur="3.5s"
+              repeatCount="indefinite"
+              begin="2.85s"
+            />
+          </circle>
+        </>
       )}
 
       {/* ────────────── Node 1 — Pre-visit (top) ────────────── */}
