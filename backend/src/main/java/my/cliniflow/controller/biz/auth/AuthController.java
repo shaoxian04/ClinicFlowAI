@@ -1,6 +1,7 @@
 package my.cliniflow.controller.biz.auth;
 
 import jakarta.validation.Valid;
+import my.cliniflow.application.biz.patient.PatientSeedDemoAppService;
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.auth.request.LoginRequest;
@@ -18,11 +19,13 @@ public class AuthController {
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
+    private final PatientSeedDemoAppService seed;
 
-    public AuthController(UserRepository users, PasswordEncoder encoder, JwtService jwt) {
+    public AuthController(UserRepository users, PasswordEncoder encoder, JwtService jwt, PatientSeedDemoAppService seed) {
         this.users = users;
         this.encoder = encoder;
         this.jwt = jwt;
+        this.seed = seed;
     }
 
     @PostMapping("/login")
@@ -34,6 +37,6 @@ public class AuthController {
             return WebResult.error(ResultCode.UNAUTHORIZED, "invalid credentials");
         }
         String token = jwt.issue(u.getId(), u.getEmail(), u.getRole());
-        return WebResult.ok(new LoginResponse(token, u.getId(), u.getEmail(), u.getRole(), u.getFullName()));
+        return WebResult.ok(new LoginResponse(token, u.getId(), u.getEmail(), u.getRole(), u.getFullName(), seed.isEnabled()));
     }
 }

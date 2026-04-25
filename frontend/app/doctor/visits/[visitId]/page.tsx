@@ -2,14 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import { PageHeader } from "@/app/components/PageHeader";
+import { fadeUp, staggerChildren } from "@/design/motion";
+import { Badge } from "@/components/ui/Badge";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { PhaseTabs, PhaseKey } from "@/app/doctor/components/PhaseTabs";
 import { PatientContextPanel } from "@/app/doctor/components/PatientContextPanel";
 import { SplitReview } from "./components/review/SplitReview";
 import { ReportPreview } from "./components/ReportPreview";
+import { PreVisitSummary } from "./components/PreVisitSummary";
+import DoctorNav from "@/app/doctor/components/DoctorNav";
 import type { MedicalReport } from "@/lib/types/report";
+import type { PreVisitFields } from "@/lib/types/preVisit";
 
 type Soap = {
   subjective: string;
@@ -28,7 +34,11 @@ type VisitDetail = {
   patientId: string;
   patientName: string;
   status: string;
-  preVisitStructured: Record<string, unknown>;
+  preVisitStructured?: {
+    fields?: PreVisitFields;
+    history?: Array<{ role: string; content: string }>;
+    done?: boolean;
+  } | null;
   soap: Soap;
   createdAt: string;
   finalizedAt: string | null;
@@ -68,62 +78,29 @@ export default function VisitDetailPage() {
 
   if (!detail) {
     return (
-      <main className="shell visit-shell">
-        <p className="empty">Loading visit…</p>
-      </main>
+      <>
+        <DoctorNav active="today" />
+        <main className="max-w-screen-xl mx-auto px-6 py-8">
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-96 w-full mt-4" />
+          </div>
+        </main>
+      </>
     );
   }
 
-  const fields = (detail.preVisitStructured?.fields ?? {}) as Record<string, unknown>;
-  const history = Array.isArray(detail.preVisitStructured?.history)
-    ? (detail.preVisitStructured?.history as Array<{ role?: string; content?: string }>)
-    : [];
-  const hasFields = Object.keys(fields).length > 0;
-  const hasHistory = history.length > 0;
   const locked = detail.soap.finalized;
-
   const chip = visitStateChip(detail);
 
   const preVisitPanel = (
-    <section className="card" data-delay="1" id="section-intake">
-      <div className="card-head">
-        <h2>Pre-visit intake</h2>
-        <span className="card-idx">01 / INTAKE</span>
-      </div>
-      {hasFields && (
-        <ul>
-          {Object.entries(fields).map(([k, v]) => (
-            <li key={k}><strong>{k}:</strong> {String(v)}</li>
-          ))}
-        </ul>
-      )}
-      {hasHistory && (
-        <div className="previsit-transcript" style={{ marginTop: hasFields ? "1rem" : 0 }}>
-          {!hasFields && (
-            <p className="muted" style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}>
-              Structured fields not yet captured — showing the patient&apos;s intake conversation below.
-            </p>
-          )}
-          <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "0.5rem" }}>
-            {history.map((m, i) => {
-              const role = (m.role ?? "").toLowerCase();
-              const label = role === "user" ? "Patient" : role === "assistant" ? "Assistant" : role || "—";
-              return (
-                <li key={i} style={{ borderLeft: "2px solid #cfd7cc", paddingLeft: "0.75rem" }}>
-                  <div style={{ fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#6a7468" }}>
-                    {label}
-                  </div>
-                  <div style={{ whiteSpace: "pre-wrap" }}>{m.content ?? ""}</div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
-      {!hasFields && !hasHistory && (
-        <p className="empty">No pre-visit data captured.</p>
-      )}
-    </section>
+    <PreVisitSummary
+      fields={detail.preVisitStructured?.fields}
+      done={!!detail.preVisitStructured?.done}
+      capturedAt={null}
+    />
   );
 
   const consultationPanel = (
@@ -133,16 +110,22 @@ export default function VisitDetailPage() {
       initialApproved={detail.soap.previewApprovedAt != null}
       locked={locked}
       onNavigateToPreview={() => {
+        refetch();
         window.location.hash = "#preview";
       }}
     />
   );
 
+  const currentUser = getUser();
+  const doctorName = currentUser?.fullName ?? "Attending";
+
   const reportPreviewPanel = (
     <ReportPreview
       visitId={visitId}
-      summaryEn={detail.soap?.summaryEn}
-      summaryMs={detail.soap?.summaryMs}
+      patientName={detail.patientName}
+      doctorName={doctorName}
+      createdAt={detail.createdAt}
+      report={detail.reportDraft ?? null}
       finalized={detail.soap?.finalized ?? false}
       approved={detail.soap?.previewApprovedAt != null}
       finalizedAt={detail.finalizedAt}
@@ -151,48 +134,69 @@ export default function VisitDetailPage() {
   );
 
   return (
-    <main className="shell visit-shell">
-      <PageHeader
-        eyebrow="Clinician review"
-        title={<>Visit with <em>{detail.patientName}</em></>}
-        sub="Review the pre-visit intake, capture your consultation, and publish a bilingual summary to the patient."
-      />
+    <>
+      <DoctorNav active="today" />
+      <main className="max-w-screen-xl mx-auto px-6 py-8">
+        <motion.div
+          variants={staggerChildren}
+          initial="initial"
+          animate="animate"
+          className="flex flex-col"
+        >
+          {/* Page header */}
+          <motion.div variants={fadeUp} className="mb-4">
+            <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-2">
+              Clinician review
+            </p>
+            <h1 className="font-display text-3xl text-fog leading-tight">
+              Visit with{" "}
+              <em className="not-italic text-cyan">{detail.patientName}</em>
+            </h1>
+            <p className="font-sans text-sm text-fog-dim mt-2">
+              Review the pre-visit intake, capture your consultation, and publish a bilingual summary to the patient.
+            </p>
+          </motion.div>
 
-      <div className="status-row">
-        <span className={`visit-chip chip-${chip.tone}`}>{chip.label}</span>
-        <span className="pill pill-ghost"><code>{detail.visitId.slice(0, 8)}…</code></span>
-      </div>
+          {/* Status row */}
+          <motion.div variants={fadeUp} className="flex items-center gap-3 mb-6">
+            <Badge variant={chip.tone}>{chip.label}</Badge>
+            <span className="font-mono text-xs text-fog-dim/50">
+              {detail.visitId.slice(0, 8)}…
+            </span>
+          </motion.div>
 
-      {error && <div className="banner banner-error">{error}</div>}
+          {error && (
+            <motion.div variants={fadeUp}>
+              <div className="flex items-start gap-2 px-4 py-3 mb-4 bg-crimson/10 border border-crimson/30 rounded-xs text-sm text-crimson font-sans" role="alert">{error}</div>
+            </motion.div>
+          )}
 
-      {/* Tab list — always rendered; panels below are context-dependent */}
-      <PhaseTabs
-        consultationNeedsReview={false}
-        reportPreviewNeedsReview={locked && activePhase !== "preview"}
-        onActiveChange={onPhaseChange}
-        panelFocusable={{ pre: true, preview: true }}
-      >
-        {{
-          pre: (
-            /* Pre-Visit: two-column layout with patient context sidebar */
-            <div className="visit-rail-grid visit-rail-grid-tri">
-              {/* Empty slot to hold the ProgressRail column position */}
-              <div aria-hidden="true" />
-              <div className="visit-rail-main">{preVisitPanel}</div>
-              <PatientContextPanel patientId={detail.patientId} />
-            </div>
-          ),
-          visit: (
-            /* Consultation: full-width review layout, no rail grid */
-            <div className="review-tabpanel">{consultationPanel}</div>
-          ),
-          preview: (
-            /* Report Preview: full-width layout */
-            <div className="review-tabpanel">{reportPreviewPanel}</div>
-          ),
-        }}
-      </PhaseTabs>
-
-    </main>
+          {/* Tabs */}
+          <motion.div variants={fadeUp}>
+            <PhaseTabs
+              consultationNeedsReview={false}
+              reportPreviewNeedsReview={locked && activePhase !== "preview"}
+              onActiveChange={onPhaseChange}
+              panelFocusable={{ pre: true, preview: true }}
+            >
+              {{
+                pre: (
+                  <div className="flex gap-6 items-start">
+                    <div className="flex-1 min-w-0">{preVisitPanel}</div>
+                    <PatientContextPanel patientId={detail.patientId} />
+                  </div>
+                ),
+                visit: (
+                  <div>{consultationPanel}</div>
+                ),
+                preview: (
+                  <div>{reportPreviewPanel}</div>
+                ),
+              }}
+            </PhaseTabs>
+          </motion.div>
+        </motion.div>
+      </main>
+    </>
   );
 }

@@ -6,7 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -269,6 +273,44 @@ public class AgentServiceClient {
         }
     }
 
+    public AgentPatientContext getPatientContext(UUID patientId) {
+        log.info("[AGENT] GET /agents/patient-context/{}", patientId);
+        try {
+            AgentPatientContext resp = client.get()
+                .uri("/agents/patient-context/{id}", patientId)
+                .retrieve()
+                .bodyToMono(AgentPatientContext.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /agents/patient-context/{} returned null body", patientId);
+                return new AgentPatientContext(patientId.toString(), List.of(), List.of(), List.of(), List.of());
+            }
+            return resp;
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /agents/patient-context/{} HTTP {} body={}",
+                patientId, e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /agents/patient-context/{} FAILED err={}", patientId, e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
+    public record AgentPatientContext(
+        @com.fasterxml.jackson.annotation.JsonProperty("patient_id")    String patientId,
+        List<String>                                                     allergies,
+        List<String>                                                     conditions,
+        List<String>                                                     medications,
+        @com.fasterxml.jackson.annotation.JsonProperty("recent_visits") List<AgentRecentVisit> recentVisits
+    ) {
+        public record AgentRecentVisit(
+            @com.fasterxml.jackson.annotation.JsonProperty("visit_id")          String visitId,
+            @com.fasterxml.jackson.annotation.JsonProperty("visited_at")        String visitedAt,
+            @com.fasterxml.jackson.annotation.JsonProperty("primary_diagnosis") String primaryDiagnosis,
+            @com.fasterxml.jackson.annotation.JsonProperty("chief_complaint")   String chiefComplaint
+        ) {}
+    }
+
     public ChatTurnsDto getReportChat(UUID visitId) {
         log.info("[AGENT] GET /agents/report/chat visitId={}", visitId);
         try {
@@ -292,6 +334,40 @@ public class AgentServiceClient {
         }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SeedDemoBulkRequest(List<SeedDemoPatient> patients) {
+        public record SeedDemoPatient(
+            String id,
+            @com.fasterxml.jackson.annotation.JsonProperty("full_name") String fullName,
+            String dob,
+            String gender
+        ) {}
+    }
+    public record SeedDemoBulkResponse(int seeded) {}
+
+    public SeedDemoBulkResponse seedDemoBulk(SeedDemoBulkRequest body) {
+        log.info("[AGENT] POST /agents/patient-context/seed-demo-bulk n={}", body.patients().size());
+        try {
+            SeedDemoBulkResponse resp = withCorrelation(client.post().uri("/agents/patient-context/seed-demo-bulk"))
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(SeedDemoBulkResponse.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /seed-demo-bulk returned null body");
+                return new SeedDemoBulkResponse(0);
+            }
+            log.info("[AGENT] /seed-demo-bulk OK seeded={}", resp.seeded());
+            return resp;
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /seed-demo-bulk HTTP {} body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /seed-demo-bulk FAILED error={}", e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
     public record ChatTurnsDto(List<ChatTurnDto> turns) {}
 
     public record ChatTurnDto(
@@ -301,4 +377,44 @@ public class AgentServiceClient {
         @com.fasterxml.jackson.annotation.JsonProperty("tool_call_name") String toolCallName,
         @com.fasterxml.jackson.annotation.JsonProperty("created_at") String createdAt
     ) {}
+
+    public SttResult callStt(byte[] audioBytes, String contentType, String filename) {
+        if (audioBytes == null || audioBytes.length == 0) {
+            throw new IllegalArgumentException("audioBytes must not be null or empty");
+        }
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("audio", new ByteArrayResource(audioBytes) {
+            @Override public String getFilename() { return filename; }
+        }).contentType(MediaType.parseMediaType(contentType));
+
+        log.info("[AGENT] POST /agents/stt/transcribe size={} contentType={}", audioBytes.length, contentType);
+        try {
+            SttResponse resp = withCorrelation(
+                    (WebClient.RequestBodySpec) client.post()
+                        .uri("/agents/stt/transcribe")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                )
+                .body(BodyInserters.fromMultipartData(builder.build()))
+                .retrieve()
+                .bodyToMono(SttResponse.class)
+                .block();
+            if (resp == null) {
+                log.warn("[AGENT] /agents/stt/transcribe returned null body");
+                return new SttResult("");
+            }
+            log.info("[AGENT] /agents/stt/transcribe OK textLen={}", resp.text() == null ? 0 : resp.text().length());
+            return new SttResult(resp.text() == null ? "" : resp.text());
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /agents/stt/transcribe HTTP {} body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /agents/stt/transcribe FAILED error={}", e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
+    public record SttResponse(
+        @com.fasterxml.jackson.annotation.JsonProperty("text") String text
+    ) {}
+    public record SttResult(String text) {}
 }

@@ -19,9 +19,6 @@ export function ConsentGate({ children }: Props) {
       router.replace("/login");
       return;
     }
-    if (user.role === "PATIENT" && !user.consentGiven) {
-      router.replace("/consent");
-    }
   }, [router]);
 
   // Return null on first render to match SSR output (no window) — prevents hydration mismatch.
@@ -29,7 +26,6 @@ export function ConsentGate({ children }: Props) {
 
   const user = getUser();
   if (!user) return null;
-  if (user.role === "PATIENT" && !user.consentGiven) return null;
 
   return <>{children}</>;
 }

@@ -4,10 +4,13 @@ import { useEffect, useReducer, useCallback } from "react";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
 import { initialReviewState, reviewReducer } from "@/lib/reviewReducer";
 import type { ChatTurn, ReportReviewResult, MedicalReport } from "@/lib/types/report";
+import { cn } from "@/design/cn";
+import { getUser } from "@/lib/auth";
+import { Button } from "@/components/ui/Button";
 import { GenerateBar } from "./GenerateBar";
 import { ReportPanel } from "./ReportPanel";
 import { ReportChatPanel } from "./ReportChatPanel";
-import "./review.css";
+import { AgentThinkingTrail } from "./AgentThinkingTrail";
 
 export interface SplitReviewProps {
   visitId: string;
@@ -23,6 +26,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
     report: initialReport,
     approved: initialApproved,
   });
+  const doctorName = getUser()?.fullName;
 
   const refreshChat = useCallback(async () => {
     try {
@@ -50,6 +54,17 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
   }
 
   async function handleChatSubmit(text: string) {
+    // Optimistic append — show the user's message immediately. A
+    // negative turnIndex keeps it out of the real backend turn space;
+    // refreshChat() below replaces the whole list with the canonical
+    // turns once the server responds.
+    const optimisticTurn: ChatTurn = {
+      turnIndex: -Date.now(),
+      role: "user",
+      content: text,
+      createdAt: new Date().toISOString(),
+    };
+    dispatch({ type: "CHAT_APPEND", turn: optimisticTurn });
     dispatch({ type: "EDIT_START" });
     try {
       const path = state.clarification ? "clarify-sync" : "edit-sync";
@@ -86,33 +101,55 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
   }
 
   return (
-    <div className="split-review">
+    <div className="flex flex-col gap-4">
       {state.error && (
-        <div className="banner error" role="alert">
-          {state.error} <button onClick={() => dispatch({ type: "CLEAR_ERROR" })}>Dismiss</button>
+        <div
+          className="flex items-center justify-between gap-3 px-4 py-3 bg-crimson/10 border border-crimson/30 rounded-xs"
+          role="alert"
+        >
+          <span className="font-sans text-sm text-crimson">{state.error}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => dispatch({ type: "CLEAR_ERROR" })}
+          >
+            Dismiss
+          </Button>
         </div>
       )}
+
       <GenerateBar
+        visitId={visitId}
         onGenerate={handleGenerate}
         generating={state.generating}
         hasReport={state.report != null}
       />
-      <div className="split-review-panes">
+
+      <AgentThinkingTrail active={state.generating} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 items-start">
         <ReportPanel
           report={state.report}
+          reportVersion={state.reportVersion}
           approved={state.approved}
           onApprove={handleApprove}
           onPatch={handlePatch}
           patching={state.patching}
           locked={locked}
+          doctorName={doctorName}
         />
-        <ReportChatPanel
-          turns={state.chat}
-          clarification={state.clarification}
-          editing={state.editing}
-          onSubmit={handleChatSubmit}
-          locked={locked}
-        />
+        {/* Sticky on large screens so the input stays reachable while
+            the doctor scrolls the (potentially long) report. */}
+        <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]">
+          <ReportChatPanel
+            turns={state.chat}
+            clarification={state.clarification}
+            editing={state.editing}
+            onSubmit={handleChatSubmit}
+            locked={locked}
+          />
+        </div>
       </div>
     </div>
   );

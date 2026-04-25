@@ -9,5 +9,6 @@ public record LoginResponse(
     UUID userId,
     String email,
     Role role,
-    String fullName
+    String fullName,
+    boolean devSeedAllowed
 ) {}

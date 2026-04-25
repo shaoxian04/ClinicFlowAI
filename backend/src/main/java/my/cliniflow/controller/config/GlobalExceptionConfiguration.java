@@ -84,6 +84,14 @@ public class GlobalExceptionConfiguration {
             .body(WebResult.error(ex.resultCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<WebResult<Void>> onFileTooLarge(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        log.warn("[REQUEST] file too large: {}", ex.getMessage());
+        return ResponseEntity.status(org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE)
+            .body(WebResult.error(ResultCode.BAD_REQUEST, "audio file exceeds size limit"));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<WebResult<Void>> onIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)

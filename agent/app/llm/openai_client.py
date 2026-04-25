@@ -20,9 +20,9 @@ class OpenAIClient:
         model: str | None = None,
         timeout: float | None = None,
     ) -> None:
-        self._api_key = api_key or settings.openai_api_key
-        self._base_url = (base_url or settings.openai_base_url).rstrip("/")
-        self._model = model or settings.openai_model
+        self._api_key = api_key or settings.glm_api_key
+        self._base_url = (base_url or settings.glm_base_url).rstrip("/")
+        self._model = model or settings.glm_model
         self._timeout = timeout or settings.llm_timeout_seconds
 
     def _headers(self) -> dict[str, str]:
@@ -48,40 +48,67 @@ class OpenAIClient:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]],
     ) -> ChatResponse:
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            payload = self._payload(messages, tools, stream=False)
-            r = await client.post(
+        """Stream the completion internally so the gateway never has to buffer
+        the full response before sending the first byte — avoids ILMU/proxy
+        504s on long clinical-note generations."""
+        # Per-chunk read timeout; total generation can exceed self._timeout.
+        chunk_timeout = httpx.Timeout(connect=10.0, read=self._timeout, write=10.0, pool=5.0)
+        text_parts: list[str] = []
+        finish_reason = ""
+        # tool-call accumulator keyed by index
+        tc_acc: dict[int, dict[str, Any]] = {}
+
+        async with httpx.AsyncClient(timeout=chunk_timeout) as client:
+            async with client.stream(
+                "POST",
                 f"{self._base_url}/chat/completions",
                 headers=self._headers(),
-                json=payload,
-            )
-            if r.status_code >= 400:
-                _log.error(
-                    "[LLM] %s %s -> HTTP %d body=%s payload_model=%s tools=%d messages=%d",
-                    "POST",
-                    f"{self._base_url}/chat/completions",
-                    r.status_code,
-                    r.text[:2000],
-                    payload.get("model"),
-                    len(tools),
-                    len(messages),
-                )
-            r.raise_for_status()
-            data = r.json()
-        choice = data["choices"][0]
-        msg = choice["message"]
-        text = msg.get("content") or ""
-        raw_calls = msg.get("tool_calls") or []
+                json=self._payload(messages, tools, stream=True),
+            ) as r:
+                if r.status_code >= 400:
+                    body = await r.aread()
+                    _log.error(
+                        "[LLM] POST %s/chat/completions -> HTTP %d body=%s model=%s tools=%d messages=%d",
+                        self._base_url, r.status_code, body[:2000].decode(errors="replace"),
+                        self._model, len(tools), len(messages),
+                    )
+                    r.raise_for_status()
+                async for line in r.aiter_lines():
+                    if not line or not line.startswith("data: "):
+                        continue
+                    raw = line[len("data: "):]
+                    if raw == "[DONE]":
+                        break
+                    try:
+                        obj = json.loads(raw)
+                    except json.JSONDecodeError:
+                        continue
+                    for ch in (obj.get("choices") or []):
+                        if ch.get("finish_reason"):
+                            finish_reason = ch["finish_reason"]
+                        delta = ch.get("delta") or {}
+                        if delta.get("content"):
+                            text_parts.append(delta["content"])
+                        for tc in (delta.get("tool_calls") or []):
+                            idx = tc.get("index", 0)
+                            if idx not in tc_acc:
+                                tc_acc[idx] = {"id": "", "name": "", "arguments": ""}
+                            if tc.get("id"):
+                                tc_acc[idx]["id"] = tc["id"]
+                            fn = tc.get("function") or {}
+                            if fn.get("name"):
+                                tc_acc[idx]["name"] += fn["name"]
+                            if fn.get("arguments"):
+                                tc_acc[idx]["arguments"] += fn["arguments"]
+
         calls: list[ToolCall] = []
-        for c in raw_calls:
-            fn = c["function"]
-            args: dict[str, Any]
+        for acc in tc_acc.values():
             try:
-                args = json.loads(fn["arguments"]) if fn.get("arguments") else {}
+                args: dict[str, Any] = json.loads(acc["arguments"]) if acc["arguments"] else {}
             except json.JSONDecodeError:
                 args = {}
-            calls.append(ToolCall(id=c["id"], name=fn["name"], arguments=args))
-        return ChatResponse(text=text, tool_calls=calls, finish_reason=choice.get("finish_reason") or "")
+            calls.append(ToolCall(id=acc["id"], name=acc["name"], arguments=args))
+        return ChatResponse(text="".join(text_parts), tool_calls=calls, finish_reason=finish_reason)
 
     async def chat_stream(
         self,
@@ -125,14 +152,10 @@ from langchain_openai import ChatOpenAI  # noqa: E402
 
 @lru_cache(maxsize=1)
 def get_chat_model() -> ChatOpenAI:
-    """
-    Singleton chat model. OpenAI-compatible — swap to Z.AI GLM by changing
-    OPENAI_BASE_URL / OPENAI_API_KEY / OPENAI_MODEL env vars.
-    """
     return ChatOpenAI(
-        base_url=settings.openai_base_url,
-        api_key=settings.openai_api_key,
-        model=settings.openai_model,
+        base_url=settings.glm_base_url,
+        api_key=settings.glm_api_key,
+        model=settings.glm_model,
         timeout=settings.llm_timeout_seconds,
         max_retries=0,
     )

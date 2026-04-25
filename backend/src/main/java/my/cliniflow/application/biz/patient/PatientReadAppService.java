@@ -1,7 +1,13 @@
 package my.cliniflow.application.biz.patient;
 
+import my.cliniflow.controller.biz.patient.response.PatientContextResponse;
+import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Labeled;
+import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Medication;
+import my.cliniflow.controller.biz.patient.response.PatientContextResponse.RecentVisit;
 import my.cliniflow.controller.biz.patient.response.PatientVisitDetailResponse;
 import my.cliniflow.controller.biz.patient.response.PatientVisitSummaryResponse;
+import my.cliniflow.infrastructure.client.AgentServiceClient;
+import my.cliniflow.infrastructure.client.AgentServiceClient.AgentPatientContext;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.domain.biz.patient.repository.PatientRepository;
 import my.cliniflow.domain.biz.user.model.UserModel;
@@ -15,6 +21,8 @@ import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicationRepository;
 import my.cliniflow.domain.biz.visit.repository.PostVisitSummaryRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +33,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class PatientReadAppService {
 
+    private static final Logger log = LoggerFactory.getLogger(PatientReadAppService.class);
     private static final int PREVIEW_LEN = 160;
 
     private final PatientRepository patients;
@@ -33,6 +42,7 @@ public class PatientReadAppService {
     private final MedicalReportRepository medicalReports;
     private final MedicationRepository meds;
     private final UserRepository users;
+    private final AgentServiceClient agent;
 
     public PatientReadAppService(
         PatientRepository patients,
@@ -40,7 +50,8 @@ public class PatientReadAppService {
         PostVisitSummaryRepository summaries,
         MedicalReportRepository medicalReports,
         MedicationRepository meds,
-        UserRepository users
+        UserRepository users,
+        AgentServiceClient agent
     ) {
         this.patients = patients;
         this.visits = visits;
@@ -48,6 +59,7 @@ public class PatientReadAppService {
         this.medicalReports = medicalReports;
         this.meds = meds;
         this.users = users;
+        this.agent = agent;
     }
 
     public List<PatientVisitSummaryResponse> listForUser(UUID userId) {
@@ -140,6 +152,52 @@ public class PatientReadAppService {
             null,
             doctorName
         );
+    }
+
+    public PatientContextResponse getContext(UUID patientId) {
+        log.info("[PATIENT] getContext patientId={}", patientId);
+        AgentPatientContext a = agent.getPatientContext(patientId);
+        return new PatientContextResponse(
+            mapLabeled(a.allergies()),
+            mapLabeled(a.conditions()),
+            mapMeds(a.medications()),
+            mapVisits(a.recentVisits())
+        );
+    }
+
+    private static List<Labeled> mapLabeled(List<String> names) {
+        if (names == null) return List.of();
+        return names.stream()
+            .filter(n -> n != null && !n.isBlank())
+            .map(n -> new Labeled(n.toLowerCase(), titleCase(n)))
+            .toList();
+    }
+
+    private static List<Medication> mapMeds(List<String> names) {
+        if (names == null) return List.of();
+        return names.stream()
+            .filter(n -> n != null && !n.isBlank())
+            .map(n -> new Medication(n.toLowerCase().replaceAll("\\s+", "-"), titleCase(n), ""))
+            .toList();
+    }
+
+    private static List<RecentVisit> mapVisits(List<AgentPatientContext.AgentRecentVisit> rv) {
+        if (rv == null) return List.of();
+        return rv.stream()
+            .map(v -> new RecentVisit(v.visitId(), v.visitedAt() != null ? v.visitedAt() : "", chooseDiagnosis(v)))
+            .toList();
+    }
+
+    private static String chooseDiagnosis(AgentPatientContext.AgentRecentVisit v) {
+        if (v.primaryDiagnosis() != null && !v.primaryDiagnosis().isBlank()) return v.primaryDiagnosis();
+        if (v.chiefComplaint() != null && !v.chiefComplaint().isBlank()) return v.chiefComplaint();
+        return "—";
+    }
+
+    private static String titleCase(String s) {
+        String trimmed = s.trim();
+        if (trimmed.isEmpty()) return trimmed;
+        return Character.toUpperCase(trimmed.charAt(0)) + trimmed.substring(1);
     }
 
     private static String truncate(String s, int n) {

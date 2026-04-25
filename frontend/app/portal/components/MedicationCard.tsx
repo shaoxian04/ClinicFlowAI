@@ -1,25 +1,25 @@
 "use client";
 
 import React from "react";
+import { Card } from "@/components/ui/Card";
+import { DataRow } from "@/components/ui/DataRow";
+import { Separator } from "@/components/ui/Separator";
 
-// Frequency code → human-readable expansion (EN + MS).
 const FREQ_EXPAND: Record<string, { en: string; ms: string }> = {
   TDS: { en: "three times a day", ms: "tiga kali sehari" },
   TID: { en: "three times a day", ms: "tiga kali sehari" },
-  BD:  { en: "twice a day",       ms: "dua kali sehari" },
-  BID: { en: "twice a day",       ms: "dua kali sehari" },
-  OD:  { en: "once a day",        ms: "sekali sehari" },
-  QD:  { en: "once a day",        ms: "sekali sehari" },
-  PRN: { en: "as needed",         ms: "bila perlu" },
-  QID: { en: "four times a day",  ms: "empat kali sehari" },
+  BD: { en: "twice a day", ms: "dua kali sehari" },
+  BID: { en: "twice a day", ms: "dua kali sehari" },
+  OD: { en: "once a day", ms: "sekali sehari" },
+  QD: { en: "once a day", ms: "sekali sehari" },
+  PRN: { en: "as needed", ms: "bila perlu" },
+  QID: { en: "four times a day", ms: "empat kali sehari" },
 };
 
-const COPY: Record<"en" | "ms", {
-  dose: string;
-  howOften: string;
-  duration: string;
-  instructions: string;
-}> = {
+const COPY: Record<
+  "en" | "ms",
+  { dose: string; howOften: string; duration: string; instructions: string }
+> = {
   en: {
     dose: "Dose",
     howOften: "How often",
@@ -43,13 +43,6 @@ type Props = {
   lang: "en" | "ms";
 };
 
-/**
- * Patient-facing medication card. Shows name, dose, frequency (with expansion
- * for known codes), and optional duration + instructions.
- *
- * Uses `.med-grid` CSS for 2-col layout on desktop (≥640 px), single column
- * on mobile. Introduced in Task 9.1.
- */
 export function MedicationCard({
   name,
   dosage,
@@ -59,8 +52,6 @@ export function MedicationCard({
   lang,
 }: Props): JSX.Element {
   const copy = COPY[lang];
-
-  // Expand known frequency codes; fall back to raw value.
   const freqUpper = frequency.trim().toUpperCase();
   const expansion = FREQ_EXPAND[freqUpper];
   const freqDisplay = expansion
@@ -68,30 +59,31 @@ export function MedicationCard({
     : frequency;
 
   return (
-    <div className="med-card">
-      <span className="med-name">{name}</span>
+    <Card variant="bone" className="space-y-3">
+      {/* Drug name */}
+      <p className="font-sans font-medium text-sm text-fog">{name}</p>
 
-      <span className="med-meta">
-        <span className="med-meta-label">{copy.dose}</span>
-        {dosage}
-      </span>
+      <Separator className="my-0" />
 
-      <span className="med-meta">
-        <span className="med-meta-label">{copy.howOften}</span>
-        {freqDisplay}
-      </span>
+      <div className="space-y-2">
+        <DataRow label={copy.dose} value={dosage} mono />
+        <DataRow label={copy.howOften} value={freqDisplay} mono />
 
-      {duration && duration.trim() !== "" && (
-        <p className="med-card-duration">
-          <strong>{copy.duration}:</strong> {duration}
-        </p>
-      )}
+        {duration && duration.trim() !== "" && (
+          <DataRow label={copy.duration} value={duration} mono />
+        )}
+      </div>
 
       {instructions && instructions.trim() !== "" && (
-        <p className="med-card-instructions">
-          <strong>{copy.instructions}:</strong> {instructions}
-        </p>
+        <div className="pt-1 border-t border-ink-rim">
+          <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-1">
+            {copy.instructions}
+          </p>
+          <p className="font-sans text-xs text-fog-dim leading-relaxed">
+            {instructions}
+          </p>
+        </div>
       )}
-    </div>
+    </Card>
   );
 }

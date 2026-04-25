@@ -12,6 +12,11 @@ export interface ReviewState {
   patching: Set<string>;
   clarification: Clarification | null;
   error: string | null;
+  // Monotonic counter bumped whenever the canonical report is replaced
+  // by the agent (generate/edit). Used as a React key on the form
+  // fieldset so uncontrolled inputs re-mount and their defaultValues
+  // reflect the newly-returned report.
+  reportVersion: number;
 }
 
 export const initialReviewState: ReviewState = {
@@ -23,6 +28,7 @@ export const initialReviewState: ReviewState = {
   patching: new Set(),
   clarification: null,
   error: null,
+  reportVersion: 0,
 };
 
 export type ReviewAction =
@@ -34,6 +40,7 @@ export type ReviewAction =
   | { type: "PATCH_DONE"; path: string; report: MedicalReport }
   | { type: "PATCH_FAIL"; path: string; message: string }
   | { type: "CHAT_SET"; turns: ChatTurn[] }
+  | { type: "CHAT_APPEND"; turn: ChatTurn }
   | { type: "APPROVE" }
   | { type: "ERROR"; message: string }
   | { type: "CLEAR_ERROR" };
@@ -48,6 +55,7 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
         generating: false,
         report: action.report ?? state.report,
         clarification: action.clarification,
+        reportVersion: action.report ? state.reportVersion + 1 : state.reportVersion,
       };
     case "EDIT_START":
       return { ...state, editing: true, error: null };
@@ -57,6 +65,7 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
         editing: false,
         report: action.report ?? state.report,
         clarification: action.clarification,
+        reportVersion: action.report ? state.reportVersion + 1 : state.reportVersion,
       };
     case "PATCH_START": {
       const next = new Set(state.patching);
@@ -75,6 +84,8 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
     }
     case "CHAT_SET":
       return { ...state, chat: action.turns };
+    case "CHAT_APPEND":
+      return { ...state, chat: [...state.chat, action.turn] };
     case "APPROVE":
       return { ...state, approved: true };
     case "ERROR":

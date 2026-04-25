@@ -7,6 +7,7 @@ export type AuthUser = {
     role: "PATIENT" | "DOCTOR" | "STAFF" | "ADMIN";
     fullName: string;
     consentGiven?: boolean;
+    devSeedAllowed?: boolean;
 };
 
 export function saveAuth(token: string, user: AuthUser): void {

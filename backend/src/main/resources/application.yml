@@ -1,6 +1,10 @@
 spring:
   application:
     name: cliniflow-backend
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 26MB
   datasource:
     url: ${SUPABASE_DB_URL:jdbc:postgresql://localhost:5432/cliniflow}
     username: ${SUPABASE_DB_USER:postgres}
@@ -61,9 +65,9 @@ resilience4j:
   timelimiter:
     instances:
       llm:
-        timeoutDuration: 8s
+        timeoutDuration: 300s
       stt:
-        timeoutDuration: 15s
+        timeoutDuration: 30s
 
 logging:
   pattern:

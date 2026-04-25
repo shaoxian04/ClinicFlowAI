@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+import asyncio
+import structlog
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from starlette.responses import JSONResponse
+from uuid import UUID
+
+from app.graph.driver import get_driver
+from app.graph.queries.patient_context import get_patient_context
+from app.graph.queries.seed_demo import seed_demo_bundle
+from app.graph.queries.visit_history import get_visit_history
+
+log = structlog.get_logger(__name__)
+router = APIRouter(prefix="/agents/patient-context", tags=["patient-context"])
+
+
+async def _probe_neo4j() -> bool:
+    """One-shot connectivity check. Returns True if `RETURN 1` succeeds."""
+    try:
+        driver = get_driver()
+        async with driver.session() as session:
+            result = await session.run("RETURN 1 AS ok")
+            row = await result.single()
+            return bool(row and row["ok"] == 1)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("neo4j probe failed: %s", exc)
+        return False
+
+
+@router.get("/healthz")
+async def healthz() -> JSONResponse:
+    ok = await _probe_neo4j()
+    return JSONResponse({"neo4j": "ok" if ok else "unavailable"}, status_code=200 if ok else 503)
+
+
+class SeedDemoPatient(BaseModel):
+    id: str
+    full_name: str
+    dob: str | None = None
+    gender: str | None = None
+
+
+class SeedDemoBulkRequest(BaseModel):
+    patients: list[SeedDemoPatient]
+
+
+@router.post("/seed-demo-bulk")
+async def seed_demo_bulk(req: SeedDemoBulkRequest) -> JSONResponse:
+    try:
+        n = await seed_demo_bundle([p.model_dump() for p in req.patients])
+    except Exception as exc:
+        log.error("seed_demo_bulk.failed", error=str(exc))
+        raise HTTPException(status_code=503, detail="seed failed: neo4j unavailable")
+    log.info("seed_demo_bulk.applied", count=n)
+    return JSONResponse({"seeded": n})
+
+
+@router.get("/{patient_id}")
+async def patient_context(patient_id: UUID) -> JSONResponse:
+    results = await asyncio.gather(
+        get_patient_context(patient_id),
+        get_visit_history(patient_id, limit=5),
+        return_exceptions=True,
+    )
+    if any(isinstance(r, Exception) for r in results):
+        errs = [r for r in results if isinstance(r, Exception)]
+        log.error("neo4j.patient_context_query_failed patient_id=%s errors=%s", patient_id, errs)
+        raise HTTPException(status_code=503, detail="patient graph unavailable")
+    ctx, visits = results
+    return JSONResponse({
+        "patient_id": str(patient_id),
+        "allergies":   list(ctx.allergies),
+        "conditions":  list(ctx.conditions),
+        "medications": list(ctx.medications),
+        "recent_visits": [
+            {
+                "visit_id":          v.visit_id,
+                "visited_at":        v.visited_at,
+                "primary_diagnosis": v.primary_diagnosis,
+                "chief_complaint":   v.chief_complaint,
+            }
+            for v in visits
+        ],
+    })

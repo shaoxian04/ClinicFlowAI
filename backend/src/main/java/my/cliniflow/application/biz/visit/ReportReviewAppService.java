@@ -11,8 +11,10 @@ import my.cliniflow.controller.biz.visit.response.ReportReviewResult;
 import my.cliniflow.domain.biz.visit.dto.MedicalReportDto;
 import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
+import my.cliniflow.domain.biz.visit.model.MedicationModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
+import my.cliniflow.domain.biz.visit.repository.MedicationRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.slf4j.Logger;
@@ -48,6 +50,7 @@ public class ReportReviewAppService {
 
     private final VisitRepository visits;
     private final MedicalReportRepository reports;
+    private final MedicationRepository meds;
     private final AgentServiceClient agent;
     private final ReportAggregatorService aggregator;
     private final ObjectMapper mapper;
@@ -56,6 +59,7 @@ public class ReportReviewAppService {
     public ReportReviewAppService(
         VisitRepository visits,
         MedicalReportRepository reports,
+        MedicationRepository meds,
         AgentServiceClient agent,
         ReportAggregatorService aggregator,
         ObjectMapper mapper,
@@ -63,6 +67,7 @@ public class ReportReviewAppService {
     ) {
         this.visits = visits;
         this.reports = reports;
+        this.meds = meds;
         this.agent = agent;
         this.aggregator = aggregator;
         this.mapper = mapper;
@@ -202,6 +207,28 @@ public class ReportReviewAppService {
         r.setFinalizedAt(now);
         r.setAiDraftHash(sha256(r.getSubjective() + "|" + r.getObjective() + "|" + r.getAssessment() + "|" + r.getPlan()));
         reports.save(r);
+
+        // Write medications extracted from the finalized report to the
+        // medications table so the patient portal can display them.
+        if (finalizedReport.plan() != null && finalizedReport.plan().medications() != null) {
+            meds.deleteByVisitId(visitId);
+            for (var med : finalizedReport.plan().medications()) {
+                if (med == null || med.drugName() == null || med.drugName().isBlank()) continue;
+                MedicationModel m = new MedicationModel();
+                m.setVisitId(visitId);
+                m.setName(med.drugName().trim());
+                m.setDosage(med.dose() == null ? "" : med.dose().trim());
+                m.setFrequency(med.frequency() == null ? "" : med.frequency().trim());
+                if (med.duration() != null && !med.duration().isBlank()) {
+                    String digits = med.duration().replaceAll("[^0-9]", "");
+                    if (!digits.isEmpty()) {
+                        try { m.setDurationDays(Integer.parseInt(digits)); } catch (NumberFormatException ignored) {}
+                    }
+                }
+                meds.save(m);
+            }
+            log.info("[REVIEW] saved {} medication(s) for visit={}", finalizedReport.plan().medications().size(), visitId);
+        }
 
         VisitModel v = visits.findById(visitId).orElseThrow();
         v.setStatus(VisitStatus.FINALIZED);

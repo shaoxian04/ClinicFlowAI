@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
 import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
+import { cn } from "@/design/cn";
 
 /**
  * Payload returned by POST /api/post-visit/:visitId/draft. Mirrors the patient
@@ -66,42 +67,52 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
   const toggleDisabled = !data;
 
   return (
-    <div className="post-visit-preview">
-      <div className="post-visit-preview-head">
-        <h3 style={{ margin: 0 }}>Patient preview</h3>
-        <div role="tablist" className="lang-toggle" aria-label="Language" style={{ margin: 0 }}>
-          <button
-            role="tab"
-            type="button"
-            aria-selected={lang === "en"}
-            onClick={() => setLang("en")}
-            disabled={toggleDisabled}
-          >
-            English
-          </button>
-          <button
-            role="tab"
-            type="button"
-            aria-selected={lang === "ms"}
-            onClick={() => setLang("ms")}
-            disabled={toggleDisabled}
-          >
-            Bahasa Melayu
-          </button>
+    <div className="flex flex-col gap-4">
+      {/* Header row: title + lang toggle */}
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="font-sans text-sm font-semibold text-fog uppercase tracking-wider m-0">
+          Patient preview
+        </h3>
+        <div
+          role="tablist"
+          className="inline-flex border border-ink-rim rounded-xs overflow-hidden"
+          aria-label="Language"
+        >
+          {(["en", "ms"] as const).map((l) => (
+            <button
+              key={l}
+              role="tab"
+              type="button"
+              aria-selected={lang === l}
+              onClick={() => setLang(l)}
+              disabled={toggleDisabled}
+              className={cn(
+                "px-3 py-1 text-xs font-sans transition-colors duration-150 border-r border-ink-rim last:border-r-0",
+                lang === l
+                  ? "bg-cyan text-obsidian font-medium"
+                  : "bg-ink-well text-fog-dim hover:bg-mica disabled:opacity-50 disabled:cursor-not-allowed"
+              )}
+            >
+              {l === "en" ? "English" : "Bahasa Melayu"}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Unavailable state: backend /draft endpoint returned 404. */}
       {unavailable && !data && (
         <>
-          <div className="banner post-visit-preview-ghost" role="status">
+          <div
+            className="px-4 py-3 bg-mica border border-ink-rim rounded-xs text-sm text-fog-dim font-sans"
+            role="status"
+          >
             Preview unavailable — backend pending. You may proceed to finalize without preview.
           </div>
           {!acknowledged && !locked && (
-            <div className="btn-row" style={{ marginTop: 14 }}>
+            <div className="flex gap-3 mt-2">
               <button
                 type="button"
-                className="btn btn-accent"
+                className="inline-flex items-center h-9 px-4 text-sm font-sans font-medium bg-cyan text-obsidian rounded-xs hover:bg-cyan/90 transition-colors duration-150 disabled:opacity-50"
                 onClick={onAcknowledge}
               >
                 Acknowledge anyway
@@ -109,7 +120,10 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
             </div>
           )}
           {acknowledged && (
-            <div className="banner banner-done" style={{ marginTop: 14 }}>
+            <div
+              className="px-4 py-3 bg-lime/10 border border-lime/30 rounded-xs text-sm text-lime font-sans"
+              role="status"
+            >
               Preview approved — finalize unlocked.
             </div>
           )}
@@ -118,57 +132,54 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
 
       {/* Empty state: nothing generated yet and no unavailable signal. */}
       {!unavailable && !data && (
-        <p className="empty" style={{ textAlign: "center", marginTop: 18 }}>
-          No preview generated yet. Click <strong>Generate patient preview</strong> in the Consultation tab.
+        <p className="text-center text-sm text-fog-dim font-sans mt-4">
+          No preview generated yet. Click <strong className="text-fog">Generate patient preview</strong> in the Consultation tab.
         </p>
       )}
 
       {/* Present the preview when data is available. */}
       {data && (
         <>
-          <section className="summary-card" data-delay="1" style={{ marginTop: 18 }}>
-            <span className="summary-quote" aria-hidden="true">&ldquo;</span>
-            <div className="summary-card-body">
-              {(lang === "en" ? data.summaryEn : data.summaryMs) ||
-                (lang === "en" ? "Summary is still being prepared…" : "Ringkasan sedang disediakan…")}
-            </div>
-          </section>
+          {/* Summary pull-quote */}
+          <blockquote className="font-display text-lg leading-relaxed text-fog border-l-2 border-coral pl-5 my-2">
+            {(lang === "en" ? data.summaryEn : data.summaryMs) ||
+              (lang === "en" ? "Summary is still being prepared…" : "Ringkasan sedang disediakan…")}
+          </blockquote>
 
-          <section className="card" data-delay="2" style={{ marginTop: 18 }}>
-            <div className="card-head">
-              <h2>{copy.medsHeading}</h2>
-              <span className="card-idx">{copy.itemsSuffix(data.medications.length)}</span>
+          {/* Medications */}
+          <div className="bg-mica border border-ink-rim rounded-xs p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-sans text-xs font-semibold text-fog-dim uppercase tracking-wider m-0">
+                {copy.medsHeading}
+              </h2>
+              <span className="font-mono text-xs text-fog-dim/60">
+                {copy.itemsSuffix(data.medications.length)}
+              </span>
             </div>
             {data.medications.length === 0 ? (
-              <p className="empty">{copy.noMeds}</p>
+              <p className="text-sm text-fog-dim font-sans">{copy.noMeds}</p>
             ) : (
-              <ul className="meds-list">
+              <ul className="flex flex-col gap-2 list-none m-0 p-0">
                 {data.medications.map((m, i) => (
-                  <li key={i}>
-                    <span className="med-name">{m.name}</span>
-                    <span className="med-meta">
-                      <span className="med-meta-label">{lang === "en" ? "Dose" : "Dos"}</span>
-                      {m.dosage}
-                    </span>
-                    <span className="med-meta">
-                      <span className="med-meta-label">{lang === "en" ? "How often" : "Kekerapan"}</span>
-                      {m.frequency}
+                  <li key={i} className="flex flex-col gap-0.5">
+                    <span className="font-sans text-sm font-medium text-fog">{m.name}</span>
+                    <span className="font-mono text-xs text-fog-dim">
+                      {m.dosage} · {m.frequency}
                     </span>
                   </li>
                 ))}
               </ul>
             )}
-          </section>
+          </div>
 
-          {/* Task 8.1: reuse the shared portal cards so the doctor preview
-              is visually identical to the patient view. */}
           <RedFlagsCard items={data.redFlags ?? []} lang={lang} />
           <FollowUpCard data={data.followUp ?? null} lang={lang} />
 
-          <div className="btn-row" style={{ marginTop: 18 }}>
+          {/* Action row */}
+          <div className="flex items-center gap-3 pt-2 flex-wrap">
             <button
               type="button"
-              className="btn"
+              className="inline-flex items-center h-9 px-4 text-sm font-sans border border-ink-rim bg-ink-well text-fog rounded-xs hover:bg-mica transition-colors duration-150 disabled:opacity-50"
               onClick={() => onRegenerate()}
               disabled={busy || locked}
             >
@@ -177,14 +188,17 @@ export function ReportPreview(props: ReportPreviewProps): JSX.Element {
             {!acknowledged ? (
               <button
                 type="button"
-                className="btn btn-accent"
+                className="inline-flex items-center h-9 px-4 text-sm font-sans font-medium bg-cyan text-obsidian rounded-xs hover:bg-cyan/90 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={onAcknowledge}
                 disabled={!data || acknowledged || locked}
               >
                 Looks right — ready to publish
               </button>
             ) : (
-              <span className="banner banner-done post-visit-preview-ack" role="status">
+              <span
+                className="inline-flex items-center gap-2 px-3 py-2 bg-lime/10 border border-lime/30 rounded-xs text-sm text-lime font-sans"
+                role="status"
+              >
                 Preview approved — finalize unlocked.
               </span>
             )}

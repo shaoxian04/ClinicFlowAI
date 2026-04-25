@@ -7,6 +7,7 @@ import my.cliniflow.controller.biz.visit.response.VisitSummaryResponse;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.domain.biz.patient.repository.PatientRepository;
 import my.cliniflow.domain.biz.visit.dto.MedicalReportDto;
+import my.cliniflow.domain.biz.visit.dto.PreVisitStructuredDto;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.PreVisitReportModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
@@ -60,7 +61,21 @@ public class VisitReadAppService {
             () -> new IllegalArgumentException("visit not found: " + visitId));
         MedicalReportModel r = reports.findByVisitId(visitId).orElse(null);
         PreVisitReportModel pv = v.getPreVisitReport();
-        Map<String, Object> structured = pv == null ? Map.of() : pv.getStructured();
+        Map<String, Object> rawStructured = pv == null ? null : pv.getStructured();
+        // Convert snake_case jsonb (as agent wrote it) → camelCase DTO for the frontend.
+        // @JsonAlias on PreVisitFieldsDto accepts snake_case input; Jackson writes
+        // camelCase on serialization. See PreVisitFieldsDto javadoc.
+        PreVisitStructuredDto structured;
+        if (rawStructured == null || rawStructured.isEmpty()) {
+            structured = new PreVisitStructuredDto(null, List.of(), false);
+        } else {
+            try {
+                structured = mapper.convertValue(rawStructured, PreVisitStructuredDto.class);
+            } catch (Exception e) {
+                log.warn("[DETAIL] could not convert preVisitStructured visit={} err={}", visitId, e.toString());
+                structured = new PreVisitStructuredDto(null, List.of(), false);
+            }
+        }
         String patientName = patients.findById(v.getPatientId()).map(PatientModel::getFullName).orElse("(unknown)");
 
         String previewApprovedAtStr = r != null && r.getPreviewApprovedAt() != null

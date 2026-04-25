@@ -81,7 +81,7 @@ async def turn_sync(req: TurnSyncRequest) -> JSONResponse:
                     parts.append(text)
     except ClarificationRequested:
         log.info("pre_visit.turn_sync clarification requested visit_id=%s", req.visit_id)
-    except Exception as exc:  # noqa: BLE001 — surface to caller as 5xx so backend logs body
+    except Exception as exc:  # noqa: BLE001
         log.exception("pre_visit.turn_sync failed visit_id=%s", req.visit_id)
         return JSONResponse(
             status_code=500,
@@ -92,10 +92,42 @@ async def turn_sync(req: TurnSyncRequest) -> JSONResponse:
     lowered = assistant_message.lower()
     done = any(s in lowered for s in _DONE_SENTINELS)
 
+    # Rebuild the conversation history for extraction. agent.step() already
+    # persisted the current user/assistant turn to Postgres, so the DB load
+    # normally includes them — trust it and avoid double-appending. Only seed
+    # the current turn manually if the load failed OR returned stale data that
+    # doesn't include the just-processed turn.
+    try:
+        turns = await AgentTurnRepository().load(req.visit_id, "pre_visit")
+        history_messages: list[dict[str, str]] = [
+            {"role": t.role, "content": t.content}
+            for t in turns
+            if t.role in ("user", "assistant")
+        ]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("pre_visit.turn_sync history load failed: %s", exc)
+        history_messages = []
+
+    # Idempotent seeding: if the DB already contains the current turn, these
+    # no-op; if it doesn't (DB failure or race), we seed so extraction has at
+    # least the current turn to work with.
+    if req.user_input and not any(
+        msg.get("role") == "user" and msg.get("content") == req.user_input
+        for msg in history_messages
+    ):
+        history_messages.append({"role": "user", "content": req.user_input})
+    if assistant_message and not any(
+        msg.get("role") == "assistant" and msg.get("content") == assistant_message
+        for msg in history_messages
+    ):
+        history_messages.append({"role": "assistant", "content": assistant_message})
+
+    slots = await agent.extract_slots(history_messages)
+
     return JSONResponse(
         TurnSyncResponse(
             assistant_message=assistant_message,
-            fields={},
+            fields=slots.model_dump(),
             done=done,
         ).model_dump()
     )

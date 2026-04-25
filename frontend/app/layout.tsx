@@ -1,19 +1,31 @@
 import type { Metadata } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import { Fraunces, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppHeader } from "./components/AppHeader";
+import { AuroraMesh } from "./components/AuroraMesh";
+import { CommandPaletteProvider } from "@/components/CommandPaletteProvider";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+  preload: false,
   axes: ["opsz", "SOFT"],
 });
 
-const outfit = Outfit({
+const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
+  preload: false,
+  weight: ["400", "500", "600"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -27,10 +39,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${outfit.variable}`}>
-      <body>
-        <AppHeader />
-        {children}
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${ibmPlexSans.variable} ${jetBrainsMono.variable}`}
+    >
+      <body className="noise-overlay">
+        <AuroraMesh />
+        <CommandPaletteProvider>
+          <AppHeader />
+          {children}
+        </CommandPaletteProvider>
       </body>
     </html>
   );

@@ -3,14 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { FileTextIcon as FileText } from "@/components/icons";
+
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import { PortalNav } from "../components/PortalNav";
-import { SkeletonGrid } from "../components/Skeleton";
-import { EmptyState } from "../components/EmptyState";
-import { Envelope } from "../components/Illustration";
-import { PageHeader } from "../components/PageHeader";
+import { cn } from "@/design/cn";
+import { fadeUp, staggerChildren } from "@/design/motion";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Separator } from "@/components/ui/Separator";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { VisitCard } from "./components/VisitCard";
+import { NoPortalVisitsIllustration } from "@/components/illustrations/empty/NoPortalVisitsIllustration";
 
 type VisitSummary = {
   visitId: string;
@@ -29,12 +35,21 @@ export default function PortalHome() {
 
   useEffect(() => {
     const user = getUser();
-    if (!user || user.role !== "PATIENT") { router.replace("/login"); return; }
+    if (!user || user.role !== "PATIENT") {
+      router.replace("/login");
+      return;
+    }
     const name = (user.email ?? "there").split("@")[0];
     setFirstName(name.charAt(0).toUpperCase() + name.slice(1));
     apiGet<VisitSummary[]>(`/patient/visits`)
-      .then((v) => { setVisits(v); setLoaded(true); })
-      .catch((e) => { setError(e.message); setLoaded(true); });
+      .then((v) => {
+        setVisits(v);
+        setLoaded(true);
+      })
+      .catch((e) => {
+        setError(e.message);
+        setLoaded(true);
+      });
   }, [router]);
 
   const totalMeds = visits.reduce((acc, v) => acc + (v.medicationCount || 0), 0);
@@ -45,94 +60,155 @@ export default function PortalHome() {
     .reverse()[0];
 
   return (
-    <>
-      <PortalNav active="home" />
-      <main className="shell shell-narrow portal-shell">
-        <PageHeader
-          eyebrow="Patient portal"
-          title={<>Welcome back, <em>{firstName}</em>.</>}
-          sub="Start a new pre-visit chat before your appointment, or re-read any of your past consultation summaries below."
-        />
+    <main className="max-w-2xl mx-auto px-6 py-10">
+      <motion.div
+        variants={staggerChildren}
+        initial="initial"
+        animate="animate"
+        className="flex flex-col"
+      >
+        {/* Page header */}
+        <motion.div variants={fadeUp} className="mb-10">
+          <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
+            Patient portal
+          </p>
+          <h1 className="font-display text-3xl md:text-4xl text-fog leading-tight">
+            Welcome back,{" "}
+            <em className="not-italic text-cyan">{firstName}</em>.
+          </h1>
+          <p className="font-sans text-sm text-fog-dim leading-relaxed mt-3">
+            Start a new pre-visit chat before your appointment, or re-read any
+            of your past consultation summaries below.
+          </p>
+        </motion.div>
 
-        {/* === Primary action === */}
-        <section className="portal-cta-card" data-delay="1">
-          <div className="portal-cta-text">
-            <span className="eyebrow" style={{ marginBottom: 8, display: "inline-flex" }}>
+        {/* Primary CTA */}
+        <motion.div variants={fadeUp}>
+          <Card variant="bone" className="mb-8">
+            <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
               Next visit coming up?
-            </span>
-            <h2 className="portal-cta-title">
-              Tell us how you&apos;re <em>feeling</em> — your doctor reads it first.
-            </h2>
-            <p className="portal-cta-body">
-              A short, friendly chat. Five minutes. Your doctor walks in already understanding what brought
-              you in, so the visit is for care, not questionnaires.
             </p>
-          </div>
-          <Link href="/previsit/new" className="btn btn-accent portal-cta-btn">
-            Start a new pre-visit chat →
-          </Link>
-        </section>
+            <h2 className="font-display text-xl text-fog leading-snug mb-2">
+              Tell us how you&apos;re{" "}
+              <em className="not-italic text-cyan">feeling</em> — your doctor
+              reads it first.
+            </h2>
+            <p className="font-sans text-sm text-fog-dim leading-relaxed mb-5">
+              A short, friendly chat. Five minutes. Your doctor walks in already
+              understanding what brought you in.
+            </p>
+            <Button asChild variant="primary" size="md">
+              <Link href="/previsit/new">Start a new pre-visit chat →</Link>
+            </Button>
+          </Card>
+        </motion.div>
 
-        {/* === Stats strip === */}
+        {/* Stats strip */}
         {loaded && !error && (
-          <div className="portal-stats" data-delay="2">
-            <div className="portal-stat">
-              <span className="portal-stat-num">{visits.length}</span>
-              <span className="portal-stat-label">
-                {visits.length === 1 ? "Past consultation" : "Past consultations"}
-              </span>
-            </div>
-            <div className="portal-stat">
-              <span className="portal-stat-num">{totalMeds}</span>
-              <span className="portal-stat-label">
-                {totalMeds === 1 ? "Medicine prescribed" : "Medicines prescribed"}
-              </span>
-            </div>
-            <div className="portal-stat">
-              <span className="portal-stat-num">
-                {latestDate ? new Date(latestDate).toLocaleDateString() : "—"}
-              </span>
-              <span className="portal-stat-label">Most recent visit</span>
-            </div>
-          </div>
+          <motion.div
+            variants={fadeUp}
+            className="grid grid-cols-3 gap-4 mb-10"
+          >
+            {[
+              {
+                value: visits.length,
+                label:
+                  visits.length === 1
+                    ? "Past consultation"
+                    : "Past consultations",
+              },
+              {
+                value: totalMeds,
+                label:
+                  totalMeds === 1 ? "Medicine prescribed" : "Medicines prescribed",
+              },
+              {
+                value: latestDate
+                  ? new Date(latestDate).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                    })
+                  : "—",
+                label: "Most recent visit",
+              },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="flex flex-col gap-1 p-4 bg-ink-well border border-ink-rim rounded-sm shadow-card"
+              >
+                <span className="font-display text-2xl text-fog leading-none">
+                  {stat.value}
+                </span>
+                <span className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest leading-tight">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </motion.div>
         )}
 
-        {/* === Past consultations === */}
-        <section className="portal-history" data-delay="3">
-          <div className="portal-history-head">
-            <h2 className="portal-history-title">Previous consultations</h2>
-            <span className="portal-history-count">
+        {/* Previous consultations */}
+        <motion.div variants={fadeUp}>
+          <div className="flex items-baseline justify-between mb-5">
+            <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-fog">
+              Previous consultations
+            </h2>
+            <span className="font-mono text-xs text-fog-dim/60">
               {loaded ? `${visits.length} total` : "Loading…"}
             </span>
           </div>
 
-          {!loaded && <SkeletonGrid count={3} />}
+          <Separator className="mb-5" />
 
+          {/* Skeletons */}
+          {!loaded && (
+            <div className="flex flex-col gap-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          )}
+
+          {/* Empty state */}
           {loaded && visits.length === 0 && !error && (
             <EmptyState
-              glyph={<Envelope />}
+              illustration={<NoPortalVisitsIllustration />}
+              icon={<FileText />}
               title="Nothing finalized yet"
-              body="When your doctor finishes and publishes a visit, it will appear here with a patient-friendly summary you can re-read any time."
+              description="When your doctor finishes and publishes a visit, it will appear here with a patient-friendly summary you can re-read any time."
             />
           )}
 
-          <div className="portal-history-list">
-            {visits.map((v, idx) => (
-              <div key={v.visitId} data-delay={String(Math.min(idx + 1, 5))}>
-                <VisitCard
-                  visitId={v.visitId}
-                  date={v.finalizedAt ?? ""}
-                  summaryPreview={v.summaryEnPreview}
-                  doctorName={v.doctorName}
-                  status="finalized"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
+          {/* Visit list */}
+          {loaded && visits.length > 0 && (
+            <motion.div
+              variants={staggerChildren}
+              initial="initial"
+              animate="animate"
+              className="flex flex-col gap-4"
+            >
+              {visits.map((v) => (
+                <motion.div key={v.visitId} variants={fadeUp}>
+                  <VisitCard
+                    visitId={v.visitId}
+                    date={v.finalizedAt ?? ""}
+                    summaryPreview={v.summaryEnPreview}
+                    doctorName={v.doctorName}
+                    status="finalized"
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </motion.div>
 
-        {error && <div className="banner banner-error">{error}</div>}
-      </main>
-    </>
+        {/* Error */}
+        {error && (
+          <div className="mt-4 px-4 py-3 border border-crimson/30 bg-crimson/5 rounded-sm">
+            <p className="font-sans text-sm text-crimson">{error}</p>
+          </div>
+        )}
+      </motion.div>
+    </main>
   );
 }

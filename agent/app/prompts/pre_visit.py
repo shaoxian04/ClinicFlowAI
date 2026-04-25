@@ -48,3 +48,28 @@ def build_pre_visit_system_prompt(patient_id: UUID | str | None, visit_id: UUID 
 # Resolves to a patient-less prompt (used only in tests that don't care about
 # identity). Runtime code paths go through build_pre_visit_system_prompt().
 PRE_VISIT_SYSTEM_PROMPT = build_pre_visit_system_prompt(None, None)
+
+SLOT_EXTRACTION_PROMPT = """\
+You are a clinical-data extractor. Given a JSON array of intake conversation turns
+between a pre-visit assistant and a patient, extract the confirmed facts into the
+schema below. Only include a fact if the patient EXPLICITLY confirmed or stated it
+in the conversation. Never infer or guess. Leave any unconfirmed slot as null or [].
+
+Return a single JSON object matching this schema exactly:
+{
+  "chief_complaint": string | null,
+  "symptom_duration": string | null,
+  "pain_severity": integer 0-10 | null,
+  "known_allergies": string[],
+  "current_medications": string[],
+  "relevant_history": string[]
+}
+
+Rules:
+- If the patient explicitly said "no allergies" or confirmed an empty record,
+  return known_allergies as [] (an empty, patient-confirmed list).
+- If the topic was never raised, also return [] but do not claim confirmation.
+- pain_severity must be an integer 0-10; if the patient said e.g. "moderate"
+  without a number, leave it null.
+- Return ONLY the JSON object. No prose, no markdown fences.
+"""

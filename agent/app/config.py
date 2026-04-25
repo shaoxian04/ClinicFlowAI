@@ -10,9 +10,14 @@ class Settings(BaseSettings):
 
     postgres_dsn: str = "postgresql://postgres:postgres@localhost:5432/cliniflow"
 
+    # OpenAI — used only for STT (Whisper)
     openai_base_url: str = "https://api.openai.com/v1"
     openai_api_key: str = "change-me"
-    openai_model: str = "gpt-4o-mini"
+
+    # GLM via ILMU — used for all LLM agent calls
+    glm_base_url: str = "https://api.ilmu.ai/v1"
+    glm_api_key: str = "change-me"
+    glm_model: str = "ilmu-glm-5.1"
 
     agent_service_token: str = "change-me"
 

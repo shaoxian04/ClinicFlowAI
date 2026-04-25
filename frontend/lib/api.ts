@@ -97,21 +97,22 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
     return envelope.data;
 }
 
-/**
- * POST multipart/form-data. The browser sets Content-Type (including the
- * multipart boundary) automatically when the body is a FormData — so we
- * must NOT set it manually. Response envelope shape matches apiPost.
- */
-export async function apiPostFormData<T>(path: string, form: FormData): Promise<T> {
+/** POST FormData (multipart). Do NOT set Content-Type — browser sets it with boundary. */
+export async function apiPostMultipart<T>(path: string, body: FormData): Promise<T> {
     const token = getToken();
     const res = await fetch(`${BASE}${path}`, {
         method: "POST",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: form,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body,
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+            const errBody: WebResult<unknown> = await res.json();
+            if (errBody.message) msg = errBody.message;
+        } catch { /* ignore parse failure */ }
+        throw new Error(msg);
+    }
     const envelope: WebResult<T> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);

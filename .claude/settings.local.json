@@ -4,7 +4,8 @@
       "Bash(python *)",
       "WebFetch(domain:github.com)",
       "Bash(gh api *)",
-      "mcp__claude_ai_Notion__notion-fetch"
+      "mcp__claude_ai_Notion__notion-fetch",
+      "Bash(xargs grep *)"
     ]
   }
 }

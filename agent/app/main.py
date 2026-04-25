@@ -10,7 +10,8 @@ from app.deps import require_service_token
 from app.graph.driver import close_driver
 from app.graph.schema import apply_schema
 from app.persistence import postgres
-from app.routes import pre_visit, report, rules
+from app.routes import patient_context as patient_context_routes
+from app.routes import pre_visit, report, rules, stt
 
 log = structlog.get_logger(__name__)
 
@@ -28,8 +29,10 @@ def _assert_no_placeholder_secrets() -> None:
     at boot, not three hops away at request time.
     """
     fatal: list[str] = []
+    if settings.glm_api_key in _PLACEHOLDER_VALUES:
+        fatal.append("GLM_API_KEY (would 401 on first LLM call)")
     if settings.openai_api_key in _PLACEHOLDER_VALUES:
-        fatal.append("OPENAI_API_KEY (would 401 on first LLM call)")
+        fatal.append("OPENAI_API_KEY (would 401 on first STT call)")
     # POSTGRES_DSN with the hardcoded localhost default never resolves inside
     # a container and produces the exact silent boot we just debugged.
     if "localhost" in settings.postgres_dsn and settings.postgres_dsn.endswith("/cliniflow"):
@@ -65,6 +68,15 @@ async def lifespan(app: FastAPI):
         await apply_schema()
     except Exception:
         log.exception("neo4j.schema_apply_failed")
+
+    try:
+        ok = await patient_context_routes._probe_neo4j()
+        if ok:
+            log.info("neo4j.probe_ok")
+        else:
+            log.error("neo4j.probe_failed — patient-context features will degrade")
+    except Exception:
+        log.exception("neo4j.probe_exception")
 
     # 3. Postgres pool open is FATAL. Every route reads/writes agent_turns.
     #    A boot that logs "pool_open_failed" but accepts traffic produces
@@ -120,5 +132,15 @@ app.include_router(
     rules.router,
     prefix="/agents/rules",
     tags=["rules"],
+    dependencies=[Depends(require_service_token)],
+)
+app.include_router(
+    patient_context_routes.router,
+    dependencies=[Depends(require_service_token)],
+)
+app.include_router(
+    stt.router,
+    prefix="/agents/stt",
+    tags=["stt"],
     dependencies=[Depends(require_service_token)],
 )

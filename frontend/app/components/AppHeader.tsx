@@ -2,48 +2,38 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { clearAuth, getUser, type AuthUser } from "../../lib/auth";
-import { RoleChip } from "./RoleChip";
+import { cn } from "@/design/cn";
 
 const HIDDEN_ON: RegExp[] = [/^\/$/, /^\/login$/];
 
-type AppHeaderProps = {
-  children?: ReactNode;
+const HOME_BY_ROLE: Record<string, string> = {
+  PATIENT: "/portal",
+  DOCTOR: "/doctor",
+  STAFF: "/staff",
+  ADMIN: "/admin",
 };
 
-export function AppHeader({ children }: AppHeaderProps) {
+const ROLE_LABELS: Record<string, string> = {
+  PATIENT: "Patient",
+  DOCTOR: "Doctor",
+  STAFF: "Staff",
+  ADMIN: "Admin",
+};
+
+export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [stuck, setStuck] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
     setUser(getUser());
   }, [pathname]);
 
-  useEffect(() => {
-    if (!mounted) return;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Sentinel sits above the sticky header. When it leaves the viewport
-        // the header has "stuck" to the top — toggle the shadow class then.
-        setStuck(!entry.isIntersecting);
-      },
-      { threshold: 0, rootMargin: "0px 0px 0px 0px" }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [mounted, user]);
-
-  if (!mounted) return null;
+  if (!mounted) return <div className="h-14" aria-hidden="true" />;
   if (HIDDEN_ON.some((re) => re.test(pathname ?? ""))) return null;
   if (!user) return null;
 
@@ -52,32 +42,55 @@ export function AppHeader({ children }: AppHeaderProps) {
     router.replace("/login");
   }
 
-  const HOME_BY_ROLE: Record<string, string> = {
-    PATIENT: "/portal",
-    DOCTOR: "/doctor",
-    STAFF: "/staff",
-    ADMIN: "/admin",
-  };
   const home = HOME_BY_ROLE[user.role] ?? "/";
+  const roleLabel = ROLE_LABELS[user.role] ?? user.role;
 
   return (
     <>
-      <div ref={sentinelRef} className="app-header-sentinel" aria-hidden="true" />
-      <header className={`app-header${stuck ? " is-stuck" : ""}`}>
-        <div className="app-header-row">
-          <Link href={home} className="app-header-brand">
-            Clini<em>Flow</em>
+      <header
+        className={cn(
+          "fixed top-0 w-full z-50 h-14",
+          "bg-ink-well/95 backdrop-blur-sm border-b border-ink-rim",
+          "flex items-center"
+        )}
+      >
+        <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-between gap-6">
+          {/* Wordmark */}
+          <Link
+            href={home}
+            className="font-display text-lg text-fog tracking-tight hover:text-cyan transition-colors duration-150"
+          >
+            CliniFlow
           </Link>
-          <div className="app-header-right">
-            <RoleChip role={user.role} />
-            <span className="app-header-email">{user.email}</span>
-            <button className="app-header-signout" onClick={onSignOut}>
+
+          {/* Right nav */}
+          <nav className="flex items-center gap-5">
+            <span className="font-mono text-xs text-fog-dim/60 tracking-widest uppercase">
+              {roleLabel}
+            </span>
+            <span className="text-ink-rim select-none" aria-hidden="true">|</span>
+            <span className="font-sans text-sm text-fog-dim truncate max-w-[180px]">
+              {user.email}
+            </span>
+            <span
+              className="hidden md:inline-flex items-center gap-1 font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest"
+              aria-hidden="true"
+              title="Open command palette"
+            >
+              <kbd className="px-1.5 py-0.5 rounded-xs border border-ink-rim bg-obsidian/50 text-fog-dim/70">⌘K</kbd>
+              <span className="opacity-70">palette</span>
+            </span>
+            <button
+              onClick={onSignOut}
+              className="font-sans text-sm text-fog-dim hover:text-cyan transition-colors duration-150 cursor-pointer"
+            >
               Sign out
             </button>
-          </div>
+          </nav>
         </div>
-        {children ? <div className="app-header-subnav">{children}</div> : null}
       </header>
+      {/* Spacer so content isn't hidden behind fixed header */}
+      <div className="h-14" aria-hidden="true" />
     </>
   );
 }

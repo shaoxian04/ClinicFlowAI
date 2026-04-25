@@ -50,3 +50,9 @@ Implementation of the Hermes self-evolving agent concept (https://github.com/nou
 5. Current transcript / text input
 
 Do NOT import the Hermes codebase — adopt the feedback-loop pattern and skill-schema idea, but implement against our Neo4j `AdaptiveRule` nodes and our LangGraph flow.
+
+## Patient-context routes (implemented)
+
+- `GET /agents/patient-context/healthz` — Neo4j connectivity probe; returns 503 when Neo4j is down.
+- `GET /agents/patient-context/{id}` — aggregated patient context (allergies, conditions, medications, recent visits); consumed by Spring Boot's `AgentServiceClient.getPatientContext()`.
+- `POST /agents/patient-context/seed-demo-bulk` — dev-only idempotent bulk demo seeding; guarded in Spring Boot by `cliniflow.dev.seed-demo-enabled` flag.
