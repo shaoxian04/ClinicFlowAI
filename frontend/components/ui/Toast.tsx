@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as RadixToast from "@radix-ui/react-toast";
-import { X } from "lucide-react";
+import { XIcon as X } from "@/components/icons";
 import { cn } from "@/design/cn";
 import type { ToastVariant } from "./useToast";
 

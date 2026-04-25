@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { FileText } from "lucide-react";
+import { FileTextIcon as FileText } from "@/components/icons";
 
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Separator } from "@/components/ui/Separator";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { VisitCard } from "./components/VisitCard";
+import { NoPortalVisitsIllustration } from "@/components/illustrations/empty/NoPortalVisitsIllustration";
 
 type VisitSummary = {
   visitId: string;
@@ -171,6 +172,7 @@ export default function PortalHome() {
           {/* Empty state */}
           {loaded && visits.length === 0 && !error && (
             <EmptyState
+              illustration={<NoPortalVisitsIllustration />}
               icon={<FileText />}
               title="Nothing finalized yet"
               description="When your doctor finishes and publishes a visit, it will appear here with a patient-friendly summary you can re-read any time."

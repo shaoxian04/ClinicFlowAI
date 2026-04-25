@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Separator } from "@/components/ui/Separator";
 import { SignatureStamp } from "@/components/ui/SignatureStamp";
+import { NoReportYetIllustration } from "@/components/illustrations/empty/NoReportYetIllustration";
 
 export interface ReportPanelProps {
   report: MedicalReport | null;
@@ -44,7 +45,10 @@ export function ReportPanel({ report, reportVersion = 0, approved, onApprove, on
         <div className="flex items-center justify-between mb-2">
           <span className="font-sans font-medium text-sm text-fog uppercase tracking-wider">Report</span>
         </div>
-        <p className="font-sans text-sm text-fog-dim">Report will appear here once generated.</p>
+        <div className="flex flex-col items-center py-4">
+          <NoReportYetIllustration />
+          <p className="font-sans text-sm text-fog-dim mt-2">Report will appear here once generated.</p>
+        </div>
       </section>
     );
   }

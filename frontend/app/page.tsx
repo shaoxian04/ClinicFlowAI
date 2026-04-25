@@ -6,7 +6,9 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
 import { cn } from "@/design/cn";
-import { fadeUp, staggerChildren } from "@/design/motion";
+import { fadeUp, staggerChildren, auroraPulse } from "@/design/motion";
+import { HeroFlow } from "@/components/illustrations/HeroFlow";
+import { ProcessDiagram } from "@/components/illustrations/ProcessDiagram";
 
 /* ─── scroll-progress bar ─────────────────────────────────────────────── */
 function ScrollProgressBar() {
@@ -113,59 +115,81 @@ export default function Home() {
       <ScrollProgressBar />
 
       {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-6 pt-24 pb-20">
-        <motion.div
-          variants={staggerChildren}
-          initial="initial"
-          animate="animate"
-          className="flex flex-col"
-        >
-          <motion.div variants={fadeUp}>
-            <Eyebrow>CliniFlow AI · For Malaysian clinics</Eyebrow>
+      <section className="max-w-5xl mx-auto px-6 pt-24 pb-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          {/* Left column — content */}
+          <motion.div
+            variants={staggerChildren}
+            initial="initial"
+            animate="animate"
+            className="flex flex-col"
+          >
+            <motion.div variants={fadeUp}>
+              <Eyebrow>CliniFlow AI · For Malaysian clinics</Eyebrow>
+            </motion.div>
+
+            <motion.h1
+              variants={fadeUp}
+              className="font-display text-4xl md:text-5xl text-fog leading-[1.08] tracking-tight mt-2"
+            >
+              More minutes with your doctor.{" "}
+              <em className="not-italic bg-gradient-aurora bg-clip-text text-transparent">Fewer on paperwork.</em>
+            </motion.h1>
+
+            <motion.p
+              variants={fadeUp}
+              className="text-lg text-fog-dim font-sans leading-relaxed mt-6"
+            >
+              CliniFlow helps your clinic run a calmer visit — capturing the
+              conversation so your doctor can focus on you, then sending you home
+              with a clear bilingual summary.
+            </motion.p>
+
+            <motion.div
+              variants={fadeUp}
+              className="flex items-center gap-4 mt-8 flex-wrap"
+            >
+              <motion.div
+                variants={auroraPulse}
+                initial="initial"
+                animate="animate"
+                className="rounded-sm"
+              >
+                <Button asChild size="lg" variant="primary">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+              </motion.div>
+              <Button asChild size="lg" variant="ghost">
+                <a href="#flow">See how it works</a>
+              </Button>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="flex gap-3 mt-6 flex-wrap">
+              <div className="bg-ink-well/30 backdrop-blur-md border border-ink-rim/40 rounded-sm px-4 py-3 flex gap-3 flex-wrap">
+                {["Private by design", "Doctor-reviewed", "Bilingual summaries"].map(
+                  (label) => (
+                    <span
+                      key={label}
+                      className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest"
+                    >
+                      {label}
+                    </span>
+                  )
+                )}
+              </div>
+            </motion.div>
           </motion.div>
 
-          <motion.h1
-            variants={fadeUp}
-            className="font-display text-4xl md:text-5xl text-fog leading-[1.08] tracking-tight mt-2"
-          >
-            More minutes with your doctor.{" "}
-            <em className="not-italic text-cyan">Fewer on paperwork.</em>
-          </motion.h1>
-
-          <motion.p
-            variants={fadeUp}
-            className="text-lg text-fog-dim font-sans leading-relaxed mt-6"
-          >
-            CliniFlow helps your clinic run a calmer visit — capturing the
-            conversation so your doctor can focus on you, then sending you home
-            with a clear bilingual summary.
-          </motion.p>
-
+          {/* Right column — illustration */}
           <motion.div
             variants={fadeUp}
-            className="flex items-center gap-4 mt-8 flex-wrap"
+            initial="initial"
+            animate="animate"
+            className="hidden md:flex items-center justify-center"
           >
-            <Button asChild size="lg" variant="primary">
-              <Link href="/login">Sign in</Link>
-            </Button>
-            <Button asChild size="lg" variant="ghost">
-              <a href="#flow">See how it works</a>
-            </Button>
+            <HeroFlow className="w-full max-w-[400px] mx-auto h-auto" />
           </motion.div>
-
-          <motion.div variants={fadeUp} className="flex gap-3 mt-6 flex-wrap">
-            {["Private by design", "Doctor-reviewed", "Bilingual summaries"].map(
-              (label) => (
-                <span
-                  key={label}
-                  className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest border border-ink-rim px-2.5 py-1 rounded-xs"
-                >
-                  {label}
-                </span>
-              )
-            )}
-          </motion.div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ── HOW A VISIT WORKS ─────────────────────────────────────────── */}
@@ -181,6 +205,8 @@ export default function Home() {
           >
             From the first symptom to a summary you can actually read.
           </motion.h2>
+
+          <ProcessDiagram className="mb-12" />
 
           <motion.div
             variants={staggerChildren}

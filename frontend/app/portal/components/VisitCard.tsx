@@ -11,12 +11,6 @@ export type VisitCardProps = {
   status: "finalized" | "draft" | "pending";
 };
 
-function extractTag(preview: string | undefined): string {
-  if (!preview?.trim()) return "General visit";
-  const words = preview.trim().split(/\s+/);
-  return words.slice(0, 3).join(" ");
-}
-
 function doctorBadge(name: string | null | undefined): string {
   if (!name) return "—";
   const clean = name.replace(/^Dr\.?\s*/i, "").trim();
@@ -44,7 +38,6 @@ export function VisitCard({
   doctorName,
   status,
 }: VisitCardProps) {
-  const tag = extractTag(summaryPreview);
   const badge = doctorBadge(doctorName);
   const displayDate = date
     ? new Date(date).toLocaleDateString("en-GB", {
@@ -60,7 +53,7 @@ export function VisitCard({
       className="block group"
     >
       <Card
-        variant="paper"
+        variant="glass"
         className={cn(
           "transition-shadow duration-150 group-hover:shadow-elevated",
           "relative"
@@ -84,11 +77,6 @@ export function VisitCard({
             </span>
             <Badge variant={STATUS_BADGE[status]}>{status}</Badge>
           </div>
-
-          {/* Tag */}
-          <p className="font-mono text-xs text-cyan/70 uppercase tracking-widest">
-            {tag}
-          </p>
 
           {/* Preview */}
           <p className="font-sans text-sm text-fog-dim leading-relaxed line-clamp-2">

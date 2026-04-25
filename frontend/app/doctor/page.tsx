@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/Separator";
 import { AnimatedStatTile } from "@/components/ui/AnimatedStatTile";
 import DoctorNav from "./components/DoctorNav";
 import VisitRow from "./components/VisitRow";
+import { NoVisitsIllustration } from "@/components/illustrations/empty/NoVisitsIllustration";
 
 type VisitSummary = {
   visitId: string;
@@ -178,8 +179,8 @@ export default function DoctorDashboard() {
           {/* KPI strip */}
           {!loading && (
             <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3 mb-8 max-w-md">
-              <AnimatedStatTile label="Awaiting review" value={awaitingCount} sparklineData={awaitingSparkline} />
-              <AnimatedStatTile label="Today" value={todayCount} sparklineData={todaySparkline} />
+              <AnimatedStatTile label="Awaiting review" value={awaitingCount} sparklineData={awaitingSparkline} className="bg-ink-well/50 backdrop-blur-xl border border-ink-rim/60 shadow-glass" />
+              <AnimatedStatTile label="Today" value={todayCount} sparklineData={todaySparkline} className="bg-ink-well/50 backdrop-blur-xl border border-ink-rim/60 shadow-glass" />
               <AnimatedStatTile label="Finalized" value={finalizedCount} sparklineData={finalizedSparkline} />
             </motion.div>
           )}
@@ -195,6 +196,7 @@ export default function DoctorDashboard() {
           {!loading && !error && visits.length === 0 && (
             <motion.div variants={fadeUp}>
               <EmptyState
+                illustration={<NoVisitsIllustration />}
                 title="No visits yet"
                 description="Once a patient completes a pre-visit intake, it will appear here ready for you to review and sign."
               />

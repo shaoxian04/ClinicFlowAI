@@ -339,11 +339,35 @@ export function ReportPreview({
               )}
 
               {(report.plan.redFlags ?? []).length > 0 && (
-                <div className="border-l-2 border-l-crimson pl-4 bg-crimson/5 py-2 rounded-xs">
-                  <p className="font-mono text-[10px] text-crimson uppercase tracking-widest mb-1.5">Seek urgent care if:</p>
-                  <ul className="flex flex-col gap-0.5">
+                <div className="rounded-xs border border-ink-rim bg-obsidian/40 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-3.5 h-3.5 text-amber flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 9v4" />
+                      <path d="M12 17h.01" />
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    </svg>
+                    <p className="font-sans font-medium text-sm text-fog uppercase tracking-wide">
+                      Return precautions
+                    </p>
+                  </div>
+                  <p className="font-sans text-xs text-fog-dim mb-2.5 italic">
+                    Please return to clinic or seek medical attention if any of the following occur:
+                  </p>
+                  <ul className="flex flex-col gap-1.5 pl-1">
                     {(report.plan.redFlags ?? []).map((x, i) => (
-                      <li key={i} className="font-sans text-sm text-crimson/80">{x}</li>
+                      <li key={i} className="flex gap-2 font-sans text-sm text-fog leading-relaxed">
+                        <span className="text-amber flex-shrink-0 select-none" aria-hidden="true">•</span>
+                        <span>{x}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -376,9 +400,9 @@ export function ReportPreview({
         </div>
       )}
 
-      {/* ============================ PUBLISH ACTION ============================ */}
-      {!finalized && approved && (
-        <div className="flex items-center gap-3">
+      {/* ============================ ACTIONS ============================ */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {!finalized && approved && (
           <Button
             type="button"
             variant="primary"
@@ -387,28 +411,15 @@ export function ReportPreview({
           >
             {busy ? "Publishing…" : "Publish to patient"}
           </Button>
-          {err && <span className="font-sans text-sm text-crimson">{err}</span>}
-        </div>
-      )}
-
-      {/* ============================ REPORT ACTIONS ============================ */}
-      <div className="flex items-center gap-2">
+        )}
         <Button
           type="button"
           variant="secondary"
-          size="sm"
           onClick={() => {}}
         >
-          Save
+          Download PDF
         </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => {}}
-        >
-          Download
-        </Button>
+        {err && <span className="font-sans text-sm text-crimson">{err}</span>}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as RadixSelect from "@radix-ui/react-select";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDownIcon as ChevronDown, CheckIcon as Check } from "@/components/icons";
 import { cn } from "@/design/cn";
 
 export const Select = RadixSelect.Root;

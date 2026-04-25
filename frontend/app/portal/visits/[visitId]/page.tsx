@@ -15,6 +15,7 @@ import { MedicationCard } from "@/app/portal/components/MedicationCard";
 import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
 import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
 import { LangCrossfade } from "@/components/ui/LangCrossfade";
+import { NoMedicationsIllustration } from "@/components/illustrations/empty/NoMedicationsIllustration";
 
 type Detail = {
   visitId: string;
@@ -252,9 +253,12 @@ export default function PortalVisitDetail() {
                 </div>
 
                 {medCount === 0 ? (
-                  <p className="font-sans text-sm text-fog-dim italic">
-                    {medsCopy.empty}
-                  </p>
+                  <div className="flex flex-col items-center py-4">
+                    <NoMedicationsIllustration className="w-28 h-28" />
+                    <p className="font-sans text-sm text-fog-dim italic mt-2">
+                      {medsCopy.empty}
+                    </p>
+                  </div>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {detail.medications.map((m, i) => (

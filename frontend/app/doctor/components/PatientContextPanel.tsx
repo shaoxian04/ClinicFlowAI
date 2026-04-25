@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Separator } from "@/components/ui/Separator";
 import { Button } from "@/components/ui/Button";
+import { NoPatientContextIllustration } from "@/components/illustrations/empty/NoPatientContextIllustration";
 
 type RecentVisit = { visitId: string; date: string; diagnosis: string };
 
@@ -157,11 +158,14 @@ function PanelBody({ state }: { state: FetchState }) {
 
   if (state.kind === "unavailable" || state.kind === "error") {
     return (
-      <p className="font-sans text-xs text-fog/40 leading-relaxed">
-        {state.kind === "unavailable"
-          ? "Context unavailable — patient record not yet integrated with graph-KB."
-          : `Context unavailable — ${state.message}.`}
-      </p>
+      <div className="flex flex-col items-center gap-2 py-2">
+        <NoPatientContextIllustration className="w-24 h-24" />
+        <p className="font-sans text-xs text-fog/40 leading-relaxed text-center">
+          {state.kind === "unavailable"
+            ? "Context unavailable — patient record not yet integrated with graph-KB."
+            : `Context unavailable — ${state.message}.`}
+        </p>
+      </div>
     );
   }
 

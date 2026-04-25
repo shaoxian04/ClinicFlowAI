@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as RadixDialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { XIcon as X } from "@/components/icons";
 import { cn } from "@/design/cn";
 
 export const Dialog = RadixDialog.Root;

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as RadixCheckbox from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
+import { CheckIcon as Check } from "@/components/icons";
 import { cn } from "@/design/cn";
 
 export interface CheckboxProps
