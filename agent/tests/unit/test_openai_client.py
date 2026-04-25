@@ -9,7 +9,7 @@ from app.llm.openai_client import OpenAIClient
 @pytest.mark.asyncio
 async def test_chat_non_streaming_returns_text(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    client = OpenAIClient(api_key="sk-test", model="gpt-4o-mini")
+    client = OpenAIClient(api_key="sk-test", base_url="https://api.openai.com/v1", model="gpt-4o-mini")
     body = {
         "id": "x",
         "object": "chat.completion",
@@ -32,7 +32,7 @@ async def test_chat_non_streaming_returns_text(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_chat_parses_tool_calls():
-    client = OpenAIClient(api_key="sk-test", model="gpt-4o-mini")
+    client = OpenAIClient(api_key="sk-test", base_url="https://api.openai.com/v1", model="gpt-4o-mini")
     body = {
         "id": "x",
         "object": "chat.completion",
@@ -66,7 +66,7 @@ async def test_chat_parses_tool_calls():
 
 @pytest.mark.asyncio
 async def test_chat_stream_yields_content_and_tool_deltas():
-    client = OpenAIClient(api_key="sk-test", model="gpt-4o-mini")
+    client = OpenAIClient(api_key="sk-test", base_url="https://api.openai.com/v1", model="gpt-4o-mini")
     sse_body = (
         b'data: {"choices":[{"delta":{"content":"hel"},"index":0}]}\n\n'
         b'data: {"choices":[{"delta":{"content":"lo"},"index":0}]}\n\n'

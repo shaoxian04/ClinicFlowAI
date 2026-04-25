@@ -56,6 +56,30 @@ async def wired(pg, monkeypatch):
     await postgres.close_pool()
 
 
+def _to_sse_stream(fixture: dict) -> bytes:
+    # OpenAIClient.chat() reads SSE; convert a non-streaming completion fixture
+    # into a single delta chunk + [DONE] sentinel.
+    msg = fixture["choices"][0]["message"]
+    finish = fixture["choices"][0].get("finish_reason", "stop")
+    delta_chunk = {
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"content": msg.get("content", "")},
+                "finish_reason": None,
+            }
+        ]
+    }
+    final_chunk = {
+        "choices": [{"index": 0, "delta": {}, "finish_reason": finish}]
+    }
+    return (
+        f"data: {json.dumps(delta_chunk)}\n\n"
+        f"data: {json.dumps(final_chunk)}\n\n"
+        f"data: [DONE]\n\n"
+    ).encode()
+
+
 @pytest.mark.asyncio
 async def test_report_agent_wiremock_happy_path(wired):
     vid = uuid.uuid4()
@@ -67,10 +91,15 @@ async def test_report_agent_wiremock_happy_path(wired):
     fixture = json.loads(
         (Path(__file__).parent / "wiremock" / "openai_generate.json").read_text()
     )
+    sse_body = _to_sse_stream(fixture)
 
     with respx.mock(base_url="https://api.openai.com/v1") as mock:
         mock.post("/chat/completions").mock(
-            return_value=httpx.Response(200, json=fixture)
+            return_value=httpx.Response(
+                200,
+                content=sse_body,
+                headers={"content-type": "text/event-stream"},
+            )
         )
 
         llm = OpenAIClient(
