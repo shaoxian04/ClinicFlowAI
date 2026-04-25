@@ -58,3 +58,15 @@ export const stampSettle: Variants = {
     },
   },
 };
+
+export const auroraPulse: Variants = {
+  initial: { boxShadow: "0 0 20px -5px rgba(34,225,215,0.2)" },
+  animate: {
+    boxShadow: [
+      "0 0 20px -5px rgba(34,225,215,0.2)",
+      "0 0 40px -5px rgba(34,225,215,0.5)",
+      "0 0 20px -5px rgba(34,225,215,0.2)",
+    ],
+    transition: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+  },
+};

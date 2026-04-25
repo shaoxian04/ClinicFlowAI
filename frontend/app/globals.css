@@ -11,6 +11,9 @@
     --fog-dim: #93A0B5;
     --cyan: #22E1D7;
     --cyan-soft: rgba(34,225,215,0.15);
+    --violet: #8B5CF6;
+    --magenta: #FF5C9C;
+    --aurora-cyan: #22E1D7;
     --coral: #FF7759;
     --lime: #B8FF5C;
     --amber: #F7B23B;
@@ -129,6 +132,45 @@
   .shimmer-pill {
     animation: none;
     background: rgba(34, 225, 215, 0.08);
+  }
+}
+
+/* Aurora gradient mesh — fixed atmospheric background */
+.aurora-mesh {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.aurora-mesh::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse 600px 600px at 15% 20%, rgba(34,225,215,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 85% 15%, rgba(139,92,246,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 450px 450px at 10% 85%, rgba(255,92,156,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 400px at 80% 80%, rgba(247,178,59,0.06) 0%, transparent 70%);
+  filter: blur(80px);
+}
+
+@supports not (filter: blur(80px)) {
+  .aurora-mesh::before {
+    filter: none;
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-mesh::before {
+    background:
+      radial-gradient(ellipse 600px 600px at 15% 20%, rgba(34,225,215,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 500px at 85% 15%, rgba(139,92,246,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 450px 450px at 10% 85%, rgba(255,92,156,0.03) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 400px at 80% 80%, rgba(247,178,59,0.02) 0%, transparent 70%);
+    filter: none;
   }
 }
 

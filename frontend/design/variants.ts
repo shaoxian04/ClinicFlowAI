@@ -30,6 +30,9 @@ export const cardVariants = cva("rounded-sm p-6", {
       paper: "bg-ink-well border border-ink-rim shadow-card",
       slate: "bg-obsidian text-fog border border-ink-rim",
       bone: "bg-mica border border-ink-rim",
+      glass:
+        "bg-ink-well/50 backdrop-blur-xl border border-ink-rim/60 shadow-glass",
+      glow: "bg-ink-well/50 backdrop-blur-xl border border-ink-rim/60 shadow-glass shadow-glow-aurora",
     },
   },
   defaultVariants: {
