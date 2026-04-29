@@ -9,32 +9,17 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "citext";
 
--- Section B — Enums
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'profile_update_source') THEN
-        CREATE TYPE profile_update_source AS ENUM (
-            'REGISTRATION', 'PRE_VISIT_CHAT', 'PORTAL', 'DOCTOR_VISIT', 'MIGRATED'
-        );
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'pregnancy_status') THEN
-        CREATE TYPE pregnancy_status AS ENUM (
-            'NOT_APPLICABLE', 'NOT_PREGNANT', 'PREGNANT', 'POSTPARTUM_LACTATING', 'UNKNOWN'
-        );
-    END IF;
-END$$;
-
--- Section C — Extend users
+-- Section B — Extend users
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS phone                   varchar(32),
     ADD COLUMN IF NOT EXISTS preferred_language      varchar(8) DEFAULT 'en'
-        CHECK (preferred_language IN ('en','ms','zh')),
+        CHECK (preferred_language IS NULL OR preferred_language IN ('en','ms','zh')),
     ADD COLUMN IF NOT EXISTS must_change_password    boolean NOT NULL DEFAULT false,
     ADD COLUMN IF NOT EXISTS last_login_at           timestamptz,
     ADD COLUMN IF NOT EXISTS failed_login_attempts   int     NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS locked_until            timestamptz;
 
--- Section D — Extend patients
+-- Section C — Extend patients
 ALTER TABLE patients
     ADD COLUMN IF NOT EXISTS preferred_language     varchar(8)
         CHECK (preferred_language IS NULL OR preferred_language IN ('en','ms','zh')),
@@ -46,7 +31,8 @@ ALTER TABLE patients
 CREATE INDEX IF NOT EXISTS patients_national_id_fingerprint_idx
     ON patients(national_id_fingerprint);
 
--- Section E — patient_clinical_profiles
+-- Section D — patient_clinical_profiles
+-- Source columns use varchar(32) with CHECK constraints (matches V1 pattern for role).
 CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
     id                              uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id                      uuid          NOT NULL UNIQUE
@@ -54,24 +40,38 @@ CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
     weight_kg                       numeric(5,2)
         CHECK (weight_kg IS NULL OR (weight_kg > 0 AND weight_kg < 500)),
     weight_kg_updated_at            timestamptz,
-    weight_kg_source                profile_update_source,
+    weight_kg_source                varchar(32)
+        CHECK (weight_kg_source IS NULL OR weight_kg_source IN
+            ('REGISTRATION','PRE_VISIT_CHAT','PORTAL','DOCTOR_VISIT','MIGRATED')),
     height_cm                       numeric(5,2)
         CHECK (height_cm IS NULL OR (height_cm > 30 AND height_cm < 280)),
     height_cm_updated_at            timestamptz,
-    height_cm_source                profile_update_source,
+    height_cm_source                varchar(32)
+        CHECK (height_cm_source IS NULL OR height_cm_source IN
+            ('REGISTRATION','PRE_VISIT_CHAT','PORTAL','DOCTOR_VISIT','MIGRATED')),
     drug_allergies                  jsonb         NOT NULL DEFAULT '[]'::jsonb,
     drug_allergies_updated_at       timestamptz,
-    drug_allergies_source           profile_update_source,
+    drug_allergies_source           varchar(32)
+        CHECK (drug_allergies_source IS NULL OR drug_allergies_source IN
+            ('REGISTRATION','PRE_VISIT_CHAT','PORTAL','DOCTOR_VISIT','MIGRATED')),
     chronic_conditions              jsonb         NOT NULL DEFAULT '[]'::jsonb,
     chronic_conditions_updated_at   timestamptz,
-    chronic_conditions_source       profile_update_source,
+    chronic_conditions_source       varchar(32)
+        CHECK (chronic_conditions_source IS NULL OR chronic_conditions_source IN
+            ('REGISTRATION','PRE_VISIT_CHAT','PORTAL','DOCTOR_VISIT','MIGRATED')),
     regular_medications             jsonb         NOT NULL DEFAULT '[]'::jsonb,
     regular_medications_updated_at  timestamptz,
-    regular_medications_source      profile_update_source,
-    pregnancy_status                pregnancy_status,
+    regular_medications_source      varchar(32)
+        CHECK (regular_medications_source IS NULL OR regular_medications_source IN
+            ('REGISTRATION','PRE_VISIT_CHAT','PORTAL','DOCTOR_VISIT','MIGRATED')),
+    pregnancy_status                varchar(32)
+        CHECK (pregnancy_status IS NULL OR pregnancy_status IN
+            ('NOT_APPLICABLE','NOT_PREGNANT','PREGNANT','POSTPARTUM_LACTATING','UNKNOWN')),
     pregnancy_edd                   date,
     pregnancy_updated_at            timestamptz,
-    pregnancy_source                profile_update_source,
+    pregnancy_source                varchar(32)
+        CHECK (pregnancy_source IS NULL OR pregnancy_source IN
+            ('REGISTRATION','PRE_VISIT_CHAT','PORTAL','DOCTOR_VISIT','MIGRATED')),
     completeness_state              varchar(16)   NOT NULL DEFAULT 'INCOMPLETE'
         CHECK (completeness_state IN ('INCOMPLETE','PARTIAL','COMPLETE')),
     gmt_create                      timestamptz   NOT NULL DEFAULT now(),
@@ -89,7 +89,7 @@ CREATE TRIGGER patient_clinical_profiles_touch_modified
     BEFORE UPDATE ON patient_clinical_profiles
     FOR EACH ROW EXECUTE FUNCTION touch_gmt_modified();
 
--- Section F — doctors
+-- Section E — doctors
 CREATE TABLE IF NOT EXISTS doctors (
     id                       uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id                  uuid         NOT NULL UNIQUE
@@ -107,7 +107,7 @@ CREATE TRIGGER doctors_touch_modified
     BEFORE UPDATE ON doctors
     FOR EACH ROW EXECUTE FUNCTION touch_gmt_modified();
 
--- Section G — staff_profiles
+-- Section F — staff_profiles
 CREATE TABLE IF NOT EXISTS staff_profiles (
     id           uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id      uuid         NOT NULL UNIQUE
@@ -122,7 +122,7 @@ CREATE TRIGGER staff_profiles_touch_modified
     BEFORE UPDATE ON staff_profiles
     FOR EACH ROW EXECUTE FUNCTION touch_gmt_modified();
 
--- Section H — neo4j_projection_outbox
+-- Section G — neo4j_projection_outbox
 CREATE TABLE IF NOT EXISTS neo4j_projection_outbox (
     id              bigserial      PRIMARY KEY,
     aggregate_id    uuid           NOT NULL,
