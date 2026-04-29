@@ -5,11 +5,15 @@ import my.cliniflow.application.biz.user.UserWriteAppService;
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.admin.request.CreateUserRequest;
+import my.cliniflow.domain.biz.user.model.UserModel;
+import my.cliniflow.domain.biz.user.repository.UserRepository;
 import my.cliniflow.infrastructure.security.JwtService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,8 +23,27 @@ import java.util.UUID;
 public class AdminUserController {
 
     private final UserWriteAppService userWrite;
+    private final UserRepository users;
 
-    public AdminUserController(UserWriteAppService userWrite) { this.userWrite = userWrite; }
+    public AdminUserController(UserWriteAppService userWrite, UserRepository users) {
+        this.userWrite = userWrite;
+        this.users = users;
+    }
+
+    @GetMapping
+    public WebResult<Map<String, Object>> list() {
+        List<Map<String, Object>> rows = users.findAll().stream()
+                .map(u -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", u.getId().toString());
+                    m.put("email", u.getEmail());
+                    m.put("name", u.getFullName());
+                    m.put("role", u.getRole().name());
+                    return m;
+                })
+                .toList();
+        return WebResult.ok(Map.of("users", rows));
+    }
 
     @PostMapping
     public WebResult<Map<String, Object>> create(@Valid @RequestBody CreateUserRequest req,

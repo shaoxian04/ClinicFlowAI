@@ -128,6 +128,13 @@ export default function LoginPage() {
               </Button>
             </form>
 
+            <p className="mt-3 text-center text-xs text-fog-dim">
+              New patient?{" "}
+              <Link href="/auth/register" className="text-blue-600 underline">
+                Create an account
+              </Link>
+            </p>
+
             <Separator className="mt-5 mb-4" />
 
             {/* Demo credentials */}
