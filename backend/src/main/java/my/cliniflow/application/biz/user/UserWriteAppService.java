@@ -57,7 +57,7 @@ public class UserWriteAppService {
         u.setActive(true);
         u.setMustChangePassword(false);
         u.setConsentGivenAt(OffsetDateTime.now());
-        users.save(u);
+        users.saveAndFlush(u);
         audit.append("CREATE", "USER", u.getId().toString(), u.getId(), Role.PATIENT.name());
         return u.getId();
     }
@@ -82,7 +82,7 @@ public class UserWriteAppService {
         u.setPhone(phone);
         u.setActive(true);
         u.setMustChangePassword(true);
-        users.save(u);
+        users.saveAndFlush(u);
 
         StaffProfileModel s = new StaffProfileModel();
         s.setUserId(u.getId());
@@ -118,7 +118,7 @@ public class UserWriteAppService {
         u.setPhone(phone);
         u.setActive(true);
         u.setMustChangePassword(true);
-        users.save(u);
+        users.saveAndFlush(u);
 
         DoctorProfileModel d = new DoctorProfileModel();
         d.setUserId(u.getId());
@@ -148,7 +148,7 @@ public class UserWriteAppService {
         u.setPhone(phone);
         u.setActive(true);
         u.setMustChangePassword(true);
-        users.save(u);
+        users.saveAndFlush(u);
         audit.append("CREATE", "USER", u.getId().toString(), actorUserId, actorRole);
         return u.getId();
     }

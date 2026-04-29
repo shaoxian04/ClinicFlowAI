@@ -108,7 +108,7 @@ public class PatientWriteAppService {
             p.setConsentGivenAt(OffsetDateTime.now());
             p.setConsentVersion(in.consentVersion());
         }
-        patients.save(p);
+        patients.saveAndFlush(p);
 
         // Optional clinical baseline
         if (in.clinicalBaseline() != null && !in.clinicalBaseline().isEmpty()) {
