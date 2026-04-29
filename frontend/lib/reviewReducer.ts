@@ -37,7 +37,7 @@ export type ReviewAction =
   | { type: "EDIT_START" }
   | { type: "EDIT_DONE"; report: MedicalReport | null; clarification: Clarification | null; status: string }
   | { type: "PATCH_START"; path: string }
-  | { type: "PATCH_DONE"; path: string; report: MedicalReport }
+  | { type: "PATCH_DONE"; path: string; report: MedicalReport | null | undefined }
   | { type: "PATCH_FAIL"; path: string; message: string }
   | { type: "CHAT_SET"; turns: ChatTurn[] }
   | { type: "CHAT_APPEND"; turn: ChatTurn }
@@ -75,7 +75,9 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
     case "PATCH_DONE": {
       const next = new Set(state.patching);
       next.delete(action.path);
-      return { ...state, patching: next, report: action.report };
+      // Fall back to existing report when the server response is missing the
+      // updated draft — preserves the visible report instead of blanking it.
+      return { ...state, patching: next, report: action.report ?? state.report };
     }
     case "PATCH_FAIL": {
       const next = new Set(state.patching);

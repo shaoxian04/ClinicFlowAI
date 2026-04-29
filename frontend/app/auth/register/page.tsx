@@ -138,7 +138,7 @@ export default function RegisterPage() {
             <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
               className="mt-1" required />
             <span>
-              I agree to CliniFlow's{" "}
+              I agree to CliniFlow&apos;s{" "}
               <Link href="/privacy" className="text-blue-600 underline">privacy notice</Link>
               {" "}and consent to my health data being processed under PDPA.
             </span>
