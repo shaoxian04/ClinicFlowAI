@@ -3,26 +3,99 @@
 -- Triggers and plpgsql functions are omitted; extensions not supported in H2.
 
 CREATE TABLE IF NOT EXISTS users (
-    id             UUID         NOT NULL PRIMARY KEY,
-    email          VARCHAR(255) NOT NULL UNIQUE,
-    password_hash  VARCHAR(255) NOT NULL,
-    role           VARCHAR(32)  NOT NULL,
-    full_name      VARCHAR(255) NOT NULL,
-    is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    gmt_create     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    gmt_modified   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    id                     UUID         NOT NULL PRIMARY KEY,
+    email                  VARCHAR(255) NOT NULL UNIQUE,
+    password_hash          VARCHAR(255) NOT NULL,
+    role                   VARCHAR(32)  NOT NULL,
+    full_name              VARCHAR(255) NOT NULL,
+    is_active              BOOLEAN      NOT NULL DEFAULT TRUE,
+    phone                  VARCHAR(32),
+    preferred_language     VARCHAR(8),
+    must_change_password   BOOLEAN      NOT NULL DEFAULT FALSE,
+    last_login_at          TIMESTAMP WITH TIME ZONE,
+    failed_login_attempts  INTEGER      NOT NULL DEFAULT 0,
+    locked_until           TIMESTAMP WITH TIME ZONE,
+    consent_given_at       TIMESTAMP WITH TIME ZONE,
+    gmt_create             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS patients (
-    id               UUID         NOT NULL PRIMARY KEY,
-    user_id          UUID         REFERENCES users(id),
-    full_name        VARCHAR(255) NOT NULL,
-    date_of_birth    DATE,
-    gender           VARCHAR(16),
-    phone            VARCHAR(32),
-    email            VARCHAR(255),
-    gmt_create       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    gmt_modified     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    id                       UUID         NOT NULL PRIMARY KEY,
+    user_id                  UUID         REFERENCES users(id),
+    national_id_ciphertext   VARBINARY,
+    national_id_fingerprint  VARCHAR(64)  UNIQUE,
+    full_name                VARCHAR(255) NOT NULL,
+    date_of_birth            DATE,
+    gender                   VARCHAR(16),
+    phone                    VARCHAR(32),
+    email                    VARCHAR(255),
+    preferred_language       VARCHAR(8),
+    registration_source      VARCHAR(16) NOT NULL DEFAULT 'STAFF_LED',
+    consent_given_at         TIMESTAMP WITH TIME ZONE,
+    consent_version          VARCHAR(16),
+    gmt_create               TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS doctors (
+    id                       UUID         NOT NULL PRIMARY KEY,
+    user_id                  UUID         NOT NULL UNIQUE REFERENCES users(id),
+    mmc_number               VARCHAR(32)  NOT NULL UNIQUE,
+    specialty                VARCHAR(64)  NOT NULL,
+    signature_image_url      VARCHAR(512),
+    is_accepting_patients    BOOLEAN      NOT NULL DEFAULT TRUE,
+    gmt_create               TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS staff_profiles (
+    id           UUID         NOT NULL PRIMARY KEY,
+    user_id      UUID         NOT NULL UNIQUE REFERENCES users(id),
+    employee_id  VARCHAR(32)  UNIQUE,
+    notes        VARCHAR(255),
+    gmt_create   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
+    id                              UUID NOT NULL PRIMARY KEY,
+    patient_id                      UUID NOT NULL UNIQUE REFERENCES patients(id) ON DELETE CASCADE,
+    weight_kg                       DECIMAL(5,2),
+    weight_kg_updated_at            TIMESTAMP WITH TIME ZONE,
+    weight_kg_source                VARCHAR(32),
+    height_cm                       DECIMAL(5,2),
+    height_cm_updated_at            TIMESTAMP WITH TIME ZONE,
+    height_cm_source                VARCHAR(32),
+    drug_allergies                  CLOB NOT NULL DEFAULT '[]',
+    drug_allergies_updated_at       TIMESTAMP WITH TIME ZONE,
+    drug_allergies_source           VARCHAR(32),
+    chronic_conditions              CLOB NOT NULL DEFAULT '[]',
+    chronic_conditions_updated_at   TIMESTAMP WITH TIME ZONE,
+    chronic_conditions_source       VARCHAR(32),
+    regular_medications             CLOB NOT NULL DEFAULT '[]',
+    regular_medications_updated_at  TIMESTAMP WITH TIME ZONE,
+    regular_medications_source      VARCHAR(32),
+    pregnancy_status                VARCHAR(32),
+    pregnancy_edd                   DATE,
+    pregnancy_updated_at            TIMESTAMP WITH TIME ZONE,
+    pregnancy_source                VARCHAR(32),
+    completeness_state              VARCHAR(16) NOT NULL DEFAULT 'INCOMPLETE',
+    gmt_create                      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified                    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS neo4j_projection_outbox (
+    id              BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    aggregate_id    UUID         NOT NULL,
+    operation       VARCHAR(64)  NOT NULL,
+    payload         CLOB         NOT NULL,
+    status          VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    attempts        INTEGER      NOT NULL DEFAULT 0,
+    next_attempt_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_error      CLOB,
+    enqueued_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    completed_at    TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE IF NOT EXISTS visits (
