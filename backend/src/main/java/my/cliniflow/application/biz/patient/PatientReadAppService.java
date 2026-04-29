@@ -86,6 +86,14 @@ public class PatientReadAppService {
         return clinicalProfiles.findByPatientId(patientId);
     }
 
+    public java.util.Optional<PatientModel> findByUserId(UUID userId) {
+        return patients.findByUserId(userId);
+    }
+
+    public List<PatientModel> searchByName(String fragment) {
+        return patients.findTop10ByFullNameContainingIgnoreCaseOrderByFullNameAsc(fragment);
+    }
+
     public List<PatientVisitSummaryResponse> listForUser(UUID userId) {
         PatientModel p = patients.findByUserId(userId).orElse(null);
         if (p == null) return List.of();

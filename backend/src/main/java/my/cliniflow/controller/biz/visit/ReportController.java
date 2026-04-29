@@ -10,9 +10,9 @@ import my.cliniflow.controller.biz.visit.request.ReportEditSyncRequest;
 import my.cliniflow.controller.biz.visit.request.ReportGenerateSyncRequest;
 import my.cliniflow.controller.biz.visit.response.ApproveResponse;
 import my.cliniflow.controller.biz.visit.response.ChatTurnsResponse;
+import my.cliniflow.controller.biz.visit.response.DraftPatchResponse;
 import my.cliniflow.controller.biz.visit.response.FinalizeResponse;
 import my.cliniflow.controller.biz.visit.response.ReportReviewResult;
-import my.cliniflow.domain.biz.visit.dto.MedicalReportDto;
 import my.cliniflow.infrastructure.security.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,12 +61,12 @@ public class ReportController {
     }
 
     @PatchMapping("/draft")
-    public WebResult<MedicalReportDto> patchDraft(
+    public WebResult<DraftPatchResponse> patchDraft(
         @PathVariable UUID visitId,
         @Valid @RequestBody ReportDraftPatchRequest req
     ) {
         log.info("[REVIEW] PATCH /draft visit={} path={}", visitId, req.path());
-        return WebResult.ok(svc.patchDraft(visitId, req.path(), req.value()));
+        return WebResult.ok(new DraftPatchResponse(svc.patchDraft(visitId, req.path(), req.value())));
     }
 
     @GetMapping("/chat")
