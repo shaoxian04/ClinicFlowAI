@@ -156,9 +156,12 @@ export default function Home() {
                 className="rounded-sm"
               >
                 <Button asChild size="lg" variant="primary">
-                  <Link href="/login">Sign in</Link>
+                  <Link href="/auth/register">Create patient account</Link>
                 </Button>
               </motion.div>
+              <Button asChild size="lg" variant="ghost">
+                <Link href="/login">Sign in</Link>
+              </Button>
               <Button asChild size="lg" variant="ghost">
                 <a href="#flow">See how it works</a>
               </Button>
@@ -341,6 +344,7 @@ export default function Home() {
               </p>
               <ul className="flex flex-col gap-2">
                 {[
+                  { href: "/auth/register", label: "Create patient account" },
                   { href: "/login", label: "Sign in" },
                   { href: "/previsit/new", label: "Pre-visit intake" },
                   { href: "/portal", label: "Patient portal" },

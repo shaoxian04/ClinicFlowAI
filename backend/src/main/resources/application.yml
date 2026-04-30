@@ -1,6 +1,11 @@
 spring:
   application:
     name: cliniflow-backend
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USER:neo4j}
+      password: ${NEO4J_PASSWORD:neo4jpass}
   servlet:
     multipart:
       max-file-size: 25MB
@@ -50,6 +55,10 @@ cliniflow:
   dev:
     seeded-doctor-id: 00000000-0000-0000-0000-000000000001
     seeded-patient-id: 00000000-0000-0000-0000-000000000010
+  neo4j:
+    outbox:
+      poll-ms: 5000
+      initial-delay-ms: 10000
 
 resilience4j:
   circuitbreaker:
