@@ -40,17 +40,17 @@ public class ScheduleTemplateEntity {
     private LocalDate effectiveFrom;
 
     @Column(name = "slot_minutes", nullable = false)
-    private short slotMinutes;
+    private Short slotMinutes;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "weekly_hours", columnDefinition = "CLOB", nullable = false)
+    @Column(name = "weekly_hours", columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> weeklyHours;
 
     @Column(name = "cancel_lead_hours", nullable = false)
-    private short cancelLeadHours = 2;
+    private Short cancelLeadHours;
 
     @Column(name = "generation_horizon_days", nullable = false)
-    private short generationHorizonDays = 28;
+    private Short generationHorizonDays;
 
     @Column(name = "gmt_create", nullable = false, insertable = false, updatable = false)
     private OffsetDateTime gmtCreate;
@@ -70,17 +70,17 @@ public class ScheduleTemplateEntity {
     public LocalDate getEffectiveFrom() { return effectiveFrom; }
     public void setEffectiveFrom(LocalDate v) { this.effectiveFrom = v; }
 
-    public short getSlotMinutes() { return slotMinutes; }
-    public void setSlotMinutes(short v) { this.slotMinutes = v; }
+    public Short getSlotMinutes() { return slotMinutes; }
+    public void setSlotMinutes(Short v) { this.slotMinutes = v; }
 
     public Map<String, Object> getWeeklyHours() { return weeklyHours; }
     public void setWeeklyHours(Map<String, Object> v) { this.weeklyHours = v; }
 
-    public short getCancelLeadHours() { return cancelLeadHours; }
-    public void setCancelLeadHours(short v) { this.cancelLeadHours = v; }
+    public Short getCancelLeadHours() { return cancelLeadHours; }
+    public void setCancelLeadHours(Short v) { this.cancelLeadHours = v; }
 
-    public short getGenerationHorizonDays() { return generationHorizonDays; }
-    public void setGenerationHorizonDays(short v) { this.generationHorizonDays = v; }
+    public Short getGenerationHorizonDays() { return generationHorizonDays; }
+    public void setGenerationHorizonDays(Short v) { this.generationHorizonDays = v; }
 
     public OffsetDateTime getGmtCreate() { return gmtCreate; }
     public OffsetDateTime getGmtModified() { return gmtModified; }
