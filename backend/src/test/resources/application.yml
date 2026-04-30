@@ -27,6 +27,8 @@ cliniflow:
   dev:
     seeded-doctor-id: 00000000-0000-0000-0000-000000000001
     seeded-patient-id: 00000000-0000-0000-0000-000000000010
+  neo4j:
+    probe-on-startup: false
 
 resilience4j:
   circuitbreaker:

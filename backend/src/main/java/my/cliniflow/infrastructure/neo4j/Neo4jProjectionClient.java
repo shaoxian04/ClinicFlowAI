@@ -3,10 +3,12 @@ package my.cliniflow.infrastructure.neo4j;
 import my.cliniflow.domain.biz.patient.model.PatientClinicalProfileModel;
 import my.cliniflow.domain.biz.patient.repository.PatientClinicalProfileRepository;
 import my.cliniflow.infrastructure.outbox.Neo4jProjectionOperation;
+import jakarta.annotation.PostConstruct;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -30,10 +32,27 @@ public class Neo4jProjectionClient {
 
     private final Driver driver;
     private final PatientClinicalProfileRepository profiles;
+    private final boolean probeEnabled;
 
-    public Neo4jProjectionClient(Driver driver, PatientClinicalProfileRepository profiles) {
+    public Neo4jProjectionClient(Driver driver,
+                                  PatientClinicalProfileRepository profiles,
+                                  @Value("${cliniflow.neo4j.probe-on-startup:true}") boolean probeEnabled) {
         this.driver = driver;
         this.profiles = profiles;
+        this.probeEnabled = probeEnabled;
+    }
+
+    /** Surface DNS / auth / routing problems at boot, not on the first outbox row. */
+    @PostConstruct
+    void probe() {
+        if (!probeEnabled) return;
+        try (Session s = driver.session()) {
+            s.run("RETURN 1").consume();
+            log.info("neo4j.probe ok — projection client connected");
+        } catch (RuntimeException ex) {
+            log.error("neo4j.probe failed — registration outbox will accumulate FAILED rows until fixed: {}",
+                    ex.toString(), ex);
+        }
     }
 
     public void handle(Neo4jProjectionOperation op,
@@ -64,8 +83,13 @@ public class Neo4jProjectionClient {
         params.put("dob", payload.get("dateOfBirth"));
         params.put("gender", payload.get("gender"));
         params.put("preferredLanguage", payload.get("preferredLanguage"));
+        long t0 = System.currentTimeMillis();
         try (Session s = driver.session()) {
-            s.executeWrite(tx -> tx.run(cypher, params).consume());
+            var summary = s.executeWrite(tx -> tx.run(cypher, params).consume());
+            log.debug("neo4j.cypher op=PATIENT_UPSERT id={} nodesCreated={} propsSet={} cypherMs={}",
+                    patientId, summary.counters().nodesCreated(),
+                    summary.counters().propertiesSet(),
+                    System.currentTimeMillis() - t0);
         }
     }
 
@@ -82,8 +106,13 @@ public class Neo4jProjectionClient {
         params.put("fullName", payload.get("fullName"));
         params.put("specialty", payload.get("specialty"));
         params.put("mmcNumber", payload.get("mmcNumber"));
+        long t0 = System.currentTimeMillis();
         try (Session s = driver.session()) {
-            s.executeWrite(tx -> tx.run(cypher, params).consume());
+            var summary = s.executeWrite(tx -> tx.run(cypher, params).consume());
+            log.debug("neo4j.cypher op=DOCTOR_UPSERT id={} nodesCreated={} propsSet={} cypherMs={}",
+                    doctorId, summary.counters().nodesCreated(),
+                    summary.counters().propertiesSet(),
+                    System.currentTimeMillis() - t0);
         }
     }
 
@@ -95,12 +124,14 @@ public class Neo4jProjectionClient {
     private void projectClinicalProfile(UUID patientId) {
         PatientClinicalProfileModel prof = profiles.findByPatientId(patientId).orElse(null);
         if (prof == null) {
-            log.debug("neo4j.projection.profile_missing patientId={}", patientId);
+            log.info("neo4j.projection.profile_missing patientId={} (skipping projection)", patientId);
             return;
         }
         List<String> allergies = extractNames(prof.getDrugAllergies());
         List<String> conditions = extractNames(prof.getChronicConditions());
         List<Map<String, Object>> medications = extractMedications(prof.getRegularMedications());
+        log.debug("neo4j.projection.profile patientId={} allergies={} conditions={} medications={}",
+                patientId, allergies.size(), conditions.size(), medications.size());
 
         String cypher = """
                 MERGE (p:Patient {id: $id})
@@ -127,8 +158,15 @@ public class Neo4jProjectionClient {
         params.put("allergies", allergies);
         params.put("conditions", conditions);
         params.put("medications", medications);
+        long t0 = System.currentTimeMillis();
         try (Session s = driver.session()) {
-            s.executeWrite(tx -> tx.run(cypher, params).consume());
+            var summary = s.executeWrite(tx -> tx.run(cypher, params).consume());
+            log.debug("neo4j.cypher op=PROFILE_PROJECT id={} nodesCreated={} relsCreated={} relsDeleted={} propsSet={} cypherMs={}",
+                    patientId, summary.counters().nodesCreated(),
+                    summary.counters().relationshipsCreated(),
+                    summary.counters().relationshipsDeleted(),
+                    summary.counters().propertiesSet(),
+                    System.currentTimeMillis() - t0);
         }
     }
 
