@@ -98,6 +98,8 @@ class ScheduleTemplateEntityIT {
         e.setDoctorId(DOCTOR_ID);
         e.setEffectiveFrom(effectiveFrom);
         e.setSlotMinutes((short) 15);
+        e.setCancelLeadHours((short) 2);
+        e.setGenerationHorizonDays((short) 28);
         e.setWeeklyHours(Map.of(
             "MON", List.of(List.of("09:00", "12:00")),
             "WED", List.of(List.of("14:00", "17:00"))
