@@ -47,18 +47,25 @@ public record WeeklyHours(Map<DayOfWeek, List<TimeWindow>> hours) {
         DayOfWeek.SUNDAY,    "SUN"
     );
 
-    @SuppressWarnings("unchecked")
     public static WeeklyHours fromJson(Map<String, Object> json) {
         EnumMap<DayOfWeek, List<TimeWindow>> out = new EnumMap<>(DayOfWeek.class);
         for (var entry : json.entrySet()) {
             String key = entry.getKey();
-            DayOfWeek dow = DOW_ALIASES.containsKey(key)
-                ? DOW_ALIASES.get(key)
-                : DayOfWeek.valueOf(key);
-            List<List<String>> windows = (List<List<String>>) entry.getValue();
-            List<TimeWindow> parsed = new ArrayList<>(windows.size());
-            for (List<String> ws : windows) {
-                parsed.add(new TimeWindow(LocalTime.parse(ws.get(0)), LocalTime.parse(ws.get(1))));
+            DayOfWeek dow = DOW_ALIASES.get(key);
+            if (dow == null) {
+                throw new IllegalArgumentException("unknown day key: " + key + " (expected MON..SUN)");
+            }
+            if (!(entry.getValue() instanceof List<?> rawWindows)) {
+                throw new IllegalArgumentException("windows for " + key + " must be a list");
+            }
+            List<TimeWindow> parsed = new ArrayList<>(rawWindows.size());
+            for (Object rw : rawWindows) {
+                if (!(rw instanceof List<?> ws) || ws.size() != 2) {
+                    throw new IllegalArgumentException("each window must be [start, end] for " + key);
+                }
+                parsed.add(new TimeWindow(
+                    LocalTime.parse(ws.get(0).toString()),
+                    LocalTime.parse(ws.get(1).toString())));
             }
             out.put(dow, List.copyOf(parsed));
         }
