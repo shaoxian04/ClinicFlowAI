@@ -49,6 +49,12 @@ public class PatientModel {
     @Column(name = "consent_version", length = 16)
     private String consentVersion;
 
+    @Column(name = "whatsapp_consent_at")
+    private OffsetDateTime whatsappConsentAt;
+
+    @Column(name = "whatsapp_consent_version", length = 16)
+    private String whatsappConsentVersion;
+
     @Column(name = "gmt_create", nullable = false, updatable = false, insertable = false)
     private OffsetDateTime gmtCreate;
 
@@ -81,6 +87,10 @@ public class PatientModel {
     public void setConsentGivenAt(OffsetDateTime v) { this.consentGivenAt = v; }
     public String getConsentVersion() { return consentVersion; }
     public void setConsentVersion(String v) { this.consentVersion = v; }
+    public OffsetDateTime getWhatsappConsentAt() { return whatsappConsentAt; }
+    public void setWhatsappConsentAt(OffsetDateTime v) { this.whatsappConsentAt = v; }
+    public String getWhatsappConsentVersion() { return whatsappConsentVersion; }
+    public void setWhatsappConsentVersion(String v) { this.whatsappConsentVersion = v; }
     public OffsetDateTime getGmtCreate() { return gmtCreate; }
     public OffsetDateTime getGmtModified() { return gmtModified; }
 }
