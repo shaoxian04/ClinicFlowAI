@@ -170,3 +170,87 @@ CREATE TABLE IF NOT EXISTS audit_log (
     ip_address     VARCHAR(64),
     metadata       CLOB         NOT NULL DEFAULT '{}'
 );
+
+-- =====================================================================
+-- V11: Schedule + Appointment tables (H2-translated)
+--
+-- Differences from V11__schedule_and_notifications.sql (Postgres):
+--   1. jsonb -> CLOB  (Hibernate @JdbcTypeCode(SqlTypes.JSON) handles both)
+--   2. Partial unique indexes (WHERE …) omitted — H2 does not support
+--      predicate-based partial uniques. Production Postgres enforces
+--      uq_appointments_active_slot and uq_appointments_active_visit.
+--   3. Triggers / plpgsql omitted (not supported in H2).
+--   4. ALTER TABLE patients … ADD COLUMN omitted — columns already
+--      present in the base table definition above if needed, or added here.
+-- =====================================================================
+
+ALTER TABLE patients
+    ADD COLUMN IF NOT EXISTS whatsapp_consent_at      TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE patients
+    ADD COLUMN IF NOT EXISTS whatsapp_consent_version VARCHAR(16) NULL;
+
+CREATE TABLE IF NOT EXISTS schedule_template (
+    id                       UUID         NOT NULL PRIMARY KEY,
+    doctor_id                UUID         NOT NULL REFERENCES doctors(id),
+    effective_from           DATE         NOT NULL,
+    slot_minutes             SMALLINT     NOT NULL CHECK (slot_minutes IN (10,15,20,30)),
+    weekly_hours             CLOB         NOT NULL,
+    cancel_lead_hours        SMALLINT     NOT NULL DEFAULT 2,
+    generation_horizon_days  SMALLINT     NOT NULL DEFAULT 28,
+    gmt_create               TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_schedule_template_doctor_eff UNIQUE (doctor_id, effective_from)
+);
+
+CREATE TABLE IF NOT EXISTS appointment_slots (
+    id           UUID         NOT NULL PRIMARY KEY,
+    doctor_id    UUID         NOT NULL REFERENCES doctors(id),
+    start_at     TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_at       TIMESTAMP WITH TIME ZONE NOT NULL,
+    status       VARCHAR(16)  NOT NULL
+                  CHECK (status IN ('AVAILABLE','BOOKED','BLOCKED','CLOSED')),
+    gmt_create   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT slot_window_valid CHECK (end_at > start_at),
+    CONSTRAINT uq_slots_doctor_start UNIQUE (doctor_id, start_at)
+    -- NOTE: Partial unique index (WHERE status='AVAILABLE') from Postgres V11
+    -- is omitted here — H2 does not support predicate partial uniques.
+);
+
+CREATE TABLE IF NOT EXISTS appointments (
+    id               UUID         NOT NULL PRIMARY KEY,
+    slot_id          UUID         NOT NULL REFERENCES appointment_slots(id),
+    patient_id       UUID         NOT NULL REFERENCES patients(id),
+    visit_id         UUID         NOT NULL REFERENCES visits(id),
+    appointment_type VARCHAR(16)  NOT NULL
+                      CHECK (appointment_type IN ('NEW_SYMPTOM','FOLLOW_UP')),
+    parent_visit_id  UUID         NULL REFERENCES visits(id),
+    status           VARCHAR(16)  NOT NULL
+                      CHECK (status IN ('BOOKED','CANCELLED','COMPLETED','NO_SHOW')),
+    cancel_reason    VARCHAR(64)  NULL,
+    cancelled_at     TIMESTAMP WITH TIME ZONE NULL,
+    cancelled_by     UUID         NULL REFERENCES users(id),
+    gmt_create       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    -- NOTE: Partial unique indexes uq_appointments_active_slot and
+    -- uq_appointments_active_visit (WHERE status='BOOKED') from Postgres V11
+    -- are omitted — H2 does not support predicate partial uniques.
+    -- Production Postgres enforces one active booking per slot/visit.
+);
+
+CREATE TABLE IF NOT EXISTS schedule_day_overrides (
+    id            UUID         NOT NULL PRIMARY KEY,
+    doctor_id     UUID         NOT NULL REFERENCES doctors(id),
+    override_date DATE         NOT NULL,
+    override_type VARCHAR(16)  NOT NULL
+                   CHECK (override_type IN ('DAY_CLOSED','WINDOW_BLOCKED')),
+    window_start  TIME         NULL,
+    window_end    TIME         NULL,
+    reason        VARCHAR(255) NULL,
+    created_by    UUID         NOT NULL REFERENCES users(id),
+    gmt_create    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT window_required_when_blocked
+        CHECK (override_type <> 'WINDOW_BLOCKED'
+               OR (window_start IS NOT NULL AND window_end IS NOT NULL
+                   AND window_end > window_start))
+);
