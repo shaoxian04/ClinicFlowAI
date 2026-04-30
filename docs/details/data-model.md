@@ -27,3 +27,7 @@ Relationships:
 - `(AdaptiveRule)-[:IN_CONTEXT_OF]->(Condition)`
 
 Every edge is tagged with relation type, confidence (`EXTRACTED` = 1.0, `INFERRED` = 0.0–1.0), and source location. No vector DB — reasoning is graph-based, not RAG.
+
+## Demo seeding — destructive, dev-only
+
+`agent/app/graph/queries/seed_demo.py` (invoked via `POST /agents/patient-context/seed-demo-bulk`) runs an unconditional Cypher MERGE that adds `Penicillin` + `Peanuts` allergies, `Type 2 Diabetes`, and `Metformin 500mg` edges to **every patient passed in**. It does not delete or replace existing edges, so running it against a populated graph silently contaminates real patient charts with these demo values. Backend gate: `cliniflow.dev.seed-demo-enabled` flag (off by default). Treat the seeder as destructive — never enable in any environment that has real patients.
