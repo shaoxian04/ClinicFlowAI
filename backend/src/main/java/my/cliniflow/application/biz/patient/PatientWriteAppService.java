@@ -111,11 +111,13 @@ public class PatientWriteAppService {
         patients.saveAndFlush(p);
 
         // Optional clinical baseline
+        boolean baselineApplied = false;
         if (in.clinicalBaseline() != null && !in.clinicalBaseline().isEmpty()) {
             applyClinicalBaseline(p.getId(), in.clinicalBaseline(), "REGISTRATION");
+            baselineApplied = true;
         }
 
-        // Outbox enqueue for Neo4j projection
+        // Outbox enqueue for Neo4j projection — node first, then edges if a baseline was set.
         Map<String, Object> payload = new HashMap<>();
         payload.put("patientId", p.getId().toString());
         payload.put("fullName", p.getFullName());
@@ -123,6 +125,13 @@ public class PatientWriteAppService {
         payload.put("dateOfBirth", p.getDateOfBirth() == null ? null : p.getDateOfBirth().toString());
         payload.put("preferredLanguage", p.getPreferredLanguage());
         outbox.enqueue(p.getId(), Neo4jProjectionOperation.PATIENT_UPSERT, payload);
+
+        if (baselineApplied) {
+            Map<String, Object> profilePayload = new HashMap<>();
+            profilePayload.put("patientId", p.getId().toString());
+            profilePayload.put("source", "REGISTRATION");
+            outbox.enqueue(p.getId(), Neo4jProjectionOperation.PATIENT_PROFILE_UPSERT, profilePayload);
+        }
 
         audit.append("CREATE", "PATIENT", p.getId().toString(),
                 actorUserId, actorRole == null ? "PATIENT" : actorRole);
