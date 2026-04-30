@@ -59,6 +59,18 @@ cliniflow:
     outbox:
       poll-ms: 5000
       initial-delay-ms: 10000
+  scheduling:
+    timezone: Asia/Kuala_Lumpur
+    horizon-extender-cron: "0 0 2 * * *"
+  whatsapp:
+    provider: ${WHATSAPP_PROVIDER:stub}    # stub | twilio
+    drainer-fixed-delay-ms: 30000
+    reaper-stuck-after-minutes: 2
+    max-attempts: 5
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      from-whatsapp: ${TWILIO_FROM_WHATSAPP:whatsapp:+14155238886}
 
 resilience4j:
   circuitbreaker:
