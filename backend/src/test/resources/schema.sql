@@ -254,3 +254,49 @@ CREATE TABLE IF NOT EXISTS schedule_day_overrides (
                OR (window_start IS NOT NULL AND window_end IS NOT NULL
                    AND window_end > window_start))
 );
+
+-- =====================================================================
+-- V11 (continued): Notification tables (H2-translated)
+--
+-- Differences from V11__schedule_and_notifications.sql (Postgres):
+--   1. jsonb -> CLOB  (Hibernate @JdbcTypeCode(SqlTypes.JSON) handles both)
+--   2. Partial unique index (WHERE status IN …) on notification_outbox omitted
+--      — H2 does not support predicate partial uniques.
+--   3. Triggers omitted (not supported in H2).
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS notification_outbox (
+    id                   UUID         NOT NULL PRIMARY KEY,
+    event_type           VARCHAR(48)  NOT NULL,
+    channel              VARCHAR(16)  NOT NULL
+                          CHECK (channel IN ('WHATSAPP')),
+    template_id          VARCHAR(64)  NOT NULL,
+    recipient_patient_id UUID         NOT NULL REFERENCES patients(id),
+    payload              CLOB         NOT NULL,
+    idempotency_key      VARCHAR(128) NOT NULL,
+    status               VARCHAR(24)  NOT NULL
+                          CHECK (status IN
+                            ('PENDING','SENDING','SENT','FAILED','SKIPPED_NO_CONSENT')),
+    attempts             SMALLINT     NOT NULL DEFAULT 0,
+    next_attempt_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_error           CLOB         NULL,
+    sent_at              TIMESTAMP WITH TIME ZONE NULL,
+    gmt_create           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_outbox_idempotency UNIQUE (idempotency_key)
+);
+
+CREATE TABLE IF NOT EXISTS whatsapp_message_log (
+    id                UUID         NOT NULL PRIMARY KEY,
+    outbox_id         UUID         NOT NULL REFERENCES notification_outbox(id),
+    twilio_sid        VARCHAR(64)  NULL,
+    to_phone_hash     VARCHAR(64)  NOT NULL,
+    template_id       VARCHAR(64)  NOT NULL,
+    rendered_locale   VARCHAR(8)   NOT NULL,
+    delivery_status   VARCHAR(24)  NOT NULL
+                       CHECK (delivery_status IN
+                         ('QUEUED','SENT','DELIVERED','READ','FAILED','UNDELIVERED')),
+    twilio_error_code VARCHAR(16)  NULL,
+    gmt_create        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
