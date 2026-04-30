@@ -17,7 +17,8 @@ ALTER TABLE users
     ADD COLUMN IF NOT EXISTS must_change_password    boolean NOT NULL DEFAULT false,
     ADD COLUMN IF NOT EXISTS last_login_at           timestamptz,
     ADD COLUMN IF NOT EXISTS failed_login_attempts   int     NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS locked_until            timestamptz;
+    ADD COLUMN IF NOT EXISTS locked_until            timestamptz,
+    ADD COLUMN IF NOT EXISTS consent_given_at        timestamptz;  -- backfill of V4 if missed
 
 -- Section C — Extend patients
 ALTER TABLE patients

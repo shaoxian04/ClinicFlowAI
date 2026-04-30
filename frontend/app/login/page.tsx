@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/Separator";
 import { cn } from "@/design/cn";
 import { fadeUp, staggerChildren } from "@/design/motion";
 
-type LoginResponse = AuthUser & { token: string };
+type LoginResponse = AuthUser & { token: string; mustChangePassword?: boolean };
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,8 +29,12 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const data = await apiPost<LoginResponse>("/auth/login", { email, password });
-      const { token, ...user } = data;
+      const { token, mustChangePassword, ...user } = data;
       saveAuth(token, user);
+      if (mustChangePassword) {
+        router.replace("/auth/change-password");
+        return;
+      }
       if (user.role === "PATIENT") router.replace("/portal");
       else if (user.role === "DOCTOR") router.replace("/doctor");
       else if (user.role === "STAFF") router.replace("/staff");

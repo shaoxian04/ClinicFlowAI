@@ -37,6 +37,7 @@ public class AuthController {
             return WebResult.error(ResultCode.UNAUTHORIZED, "invalid credentials");
         }
         String token = jwt.issue(u.getId(), u.getEmail(), u.getRole());
-        return WebResult.ok(new LoginResponse(token, u.getId(), u.getEmail(), u.getRole(), u.getFullName(), seed.isEnabled()));
+        return WebResult.ok(new LoginResponse(token, u.getId(), u.getEmail(), u.getRole(),
+            u.getFullName(), seed.isEnabled(), u.isMustChangePassword()));
     }
 }
