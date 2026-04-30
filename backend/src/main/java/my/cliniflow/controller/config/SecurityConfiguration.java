@@ -20,7 +20,8 @@ public class SecurityConfiguration {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // Cost 12 per spec §5.3 (was default 10).
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -31,7 +32,11 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/actuator/prometheus").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
+                // public auth endpoints (login, register, forced-password-change is authed)
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register/patient").permitAll()
+                // forced-password-change requires JWT (mustChangePassword still true)
+                .requestMatchers("/api/auth/**").authenticated()
                 .anyRequest().authenticated()
             )
             .httpBasic(basic -> basic.disable())

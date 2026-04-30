@@ -29,6 +29,27 @@ public class UserModel {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    @Column(length = 32)
+    private String phone;
+
+    @Column(name = "preferred_language", length = 8)
+    private String preferredLanguage;
+
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword = false;
+
+    @Column(name = "last_login_at")
+    private OffsetDateTime lastLoginAt;
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private OffsetDateTime lockedUntil;
+
+    @Column(name = "consent_given_at")
+    private OffsetDateTime consentGivenAt;
+
     @Column(name = "gmt_create", nullable = false, updatable = false)
     private OffsetDateTime gmtCreate;
 
@@ -57,6 +78,20 @@ public class UserModel {
     public void setFullName(String fullName) { this.fullName = fullName; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getPreferredLanguage() { return preferredLanguage; }
+    public void setPreferredLanguage(String preferredLanguage) { this.preferredLanguage = preferredLanguage; }
+    public boolean isMustChangePassword() { return mustChangePassword; }
+    public void setMustChangePassword(boolean v) { this.mustChangePassword = v; }
+    public OffsetDateTime getLastLoginAt() { return lastLoginAt; }
+    public void setLastLoginAt(OffsetDateTime v) { this.lastLoginAt = v; }
+    public int getFailedLoginAttempts() { return failedLoginAttempts; }
+    public void setFailedLoginAttempts(int n) { this.failedLoginAttempts = n; }
+    public OffsetDateTime getLockedUntil() { return lockedUntil; }
+    public void setLockedUntil(OffsetDateTime v) { this.lockedUntil = v; }
+    public OffsetDateTime getConsentGivenAt() { return consentGivenAt; }
+    public void setConsentGivenAt(OffsetDateTime v) { this.consentGivenAt = v; }
     public OffsetDateTime getGmtCreate() { return gmtCreate; }
     public void setGmtCreate(OffsetDateTime v) { this.gmtCreate = v; }
     public OffsetDateTime getGmtModified() { return gmtModified; }

@@ -10,5 +10,6 @@ public record LoginResponse(
     String email,
     Role role,
     String fullName,
-    boolean devSeedAllowed
+    boolean devSeedAllowed,
+    boolean mustChangePassword
 ) {}

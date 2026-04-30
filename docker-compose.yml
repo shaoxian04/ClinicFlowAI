@@ -55,6 +55,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AGENT_SERVICE_URL: ${AGENT_SERVICE_URL}
       AGENT_SERVICE_TOKEN: ${AGENT_SERVICE_TOKEN}
+      NEO4J_URI: ${NEO4J_URI}
+      NEO4J_USER: ${NEO4J_USER}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
     depends_on:
       - agent
     expose:

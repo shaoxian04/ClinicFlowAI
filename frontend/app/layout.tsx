@@ -43,7 +43,7 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${ibmPlexSans.variable} ${jetBrainsMono.variable}`}
     >
-      <body className="noise-overlay">
+      <body className="noise-overlay" suppressHydrationWarning>
         <AuroraMesh />
         <CommandPaletteProvider>
           <AppHeader />

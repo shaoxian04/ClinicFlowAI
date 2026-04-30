@@ -1,5 +1,6 @@
 package my.cliniflow.application.biz.patient;
 
+import my.cliniflow.controller.base.ResourceNotFoundException;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Labeled;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Medication;
@@ -8,7 +9,10 @@ import my.cliniflow.controller.biz.patient.response.PatientVisitDetailResponse;
 import my.cliniflow.controller.biz.patient.response.PatientVisitSummaryResponse;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import my.cliniflow.infrastructure.client.AgentServiceClient.AgentPatientContext;
+import my.cliniflow.infrastructure.crypto.NationalIdEncryptor;
+import my.cliniflow.domain.biz.patient.model.PatientClinicalProfileModel;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
+import my.cliniflow.domain.biz.patient.repository.PatientClinicalProfileRepository;
 import my.cliniflow.domain.biz.patient.repository.PatientRepository;
 import my.cliniflow.domain.biz.user.model.UserModel;
 import my.cliniflow.domain.biz.user.repository.UserRepository;
@@ -43,6 +47,8 @@ public class PatientReadAppService {
     private final MedicationRepository meds;
     private final UserRepository users;
     private final AgentServiceClient agent;
+    private final PatientClinicalProfileRepository clinicalProfiles;
+    private final NationalIdEncryptor nidEncryptor;
 
     public PatientReadAppService(
         PatientRepository patients,
@@ -51,7 +57,9 @@ public class PatientReadAppService {
         MedicalReportRepository medicalReports,
         MedicationRepository meds,
         UserRepository users,
-        AgentServiceClient agent
+        AgentServiceClient agent,
+        PatientClinicalProfileRepository clinicalProfiles,
+        NationalIdEncryptor nidEncryptor
     ) {
         this.patients = patients;
         this.visits = visits;
@@ -60,6 +68,30 @@ public class PatientReadAppService {
         this.meds = meds;
         this.users = users;
         this.agent = agent;
+        this.clinicalProfiles = clinicalProfiles;
+        this.nidEncryptor = nidEncryptor;
+    }
+
+    public PatientModel getById(UUID id) {
+        return patients.findById(id).orElseThrow(
+            () -> new ResourceNotFoundException("PATIENT", id));
+    }
+
+    public java.util.Optional<PatientModel> findByNationalId(String nationalIdRaw) {
+        if (nationalIdRaw == null || nationalIdRaw.isBlank()) return java.util.Optional.empty();
+        return patients.findByNationalIdFingerprint(nidEncryptor.fingerprint(nationalIdRaw));
+    }
+
+    public java.util.Optional<PatientClinicalProfileModel> getClinicalProfile(UUID patientId) {
+        return clinicalProfiles.findByPatientId(patientId);
+    }
+
+    public java.util.Optional<PatientModel> findByUserId(UUID userId) {
+        return patients.findByUserId(userId);
+    }
+
+    public List<PatientModel> searchByName(String fragment) {
+        return patients.findTop10ByFullNameContainingIgnoreCaseOrderByFullNameAsc(fragment);
     }
 
     public List<PatientVisitSummaryResponse> listForUser(UUID userId) {
