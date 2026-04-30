@@ -1,18 +1,29 @@
 package my.cliniflow.infrastructure.repository.schedule;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Spring Data JPA repository for {@link AppointmentSlotEntity}.
  */
 public interface AppointmentSlotJpaRepository extends JpaRepository<AppointmentSlotEntity, UUID> {
+
+    /**
+     * Acquires a pessimistic write lock on the slot with the given id.
+     * Used by the booking transaction to prevent concurrent double-bookings.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM AppointmentSlotEntity s WHERE s.id = :id")
+    Optional<AppointmentSlotEntity> findByIdForUpdate(@Param("id") UUID id);
 
     /**
      * Returns all slots for a doctor within a half-open time window
