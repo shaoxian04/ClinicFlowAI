@@ -30,7 +30,8 @@ public class ScheduleTemplateRepositoryImpl implements ScheduleTemplateRepositor
         if (m.getId() == null) {
             e = new ScheduleTemplateEntity();
         } else {
-            e = jpa.findById(m.getId()).orElseGet(ScheduleTemplateEntity::new);
+            e = jpa.findById(m.getId()).orElseThrow(() ->
+                new IllegalStateException("schedule template not found for update: " + m.getId()));
         }
 
         e.setDoctorId(m.getDoctorId());

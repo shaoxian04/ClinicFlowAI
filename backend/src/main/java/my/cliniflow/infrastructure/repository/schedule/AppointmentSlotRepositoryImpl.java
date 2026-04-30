@@ -33,7 +33,8 @@ public class AppointmentSlotRepositoryImpl implements AppointmentSlotRepository 
         if (m.getId() == null) {
             e = new AppointmentSlotEntity();
         } else {
-            e = jpa.findById(m.getId()).orElseGet(AppointmentSlotEntity::new);
+            e = jpa.findById(m.getId()).orElseThrow(() ->
+                new IllegalStateException("appointment slot not found for update: " + m.getId()));
         }
 
         e.setDoctorId(m.getDoctorId());

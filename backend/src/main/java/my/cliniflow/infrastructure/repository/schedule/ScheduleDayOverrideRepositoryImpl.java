@@ -30,7 +30,8 @@ public class ScheduleDayOverrideRepositoryImpl implements ScheduleDayOverrideRep
         if (m.getId() == null) {
             e = new ScheduleDayOverrideEntity();
         } else {
-            e = jpa.findById(m.getId()).orElseGet(ScheduleDayOverrideEntity::new);
+            e = jpa.findById(m.getId()).orElseThrow(() ->
+                new IllegalStateException("schedule day override not found for update: " + m.getId()));
         }
 
         e.setDoctorId(m.getDoctorId());

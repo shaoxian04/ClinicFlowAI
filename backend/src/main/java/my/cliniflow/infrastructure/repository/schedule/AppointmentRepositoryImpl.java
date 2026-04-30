@@ -31,7 +31,8 @@ public class AppointmentRepositoryImpl implements AppointmentRepository {
         if (m.getId() == null) {
             e = new AppointmentEntity();
         } else {
-            e = jpa.findById(m.getId()).orElseGet(AppointmentEntity::new);
+            e = jpa.findById(m.getId()).orElseThrow(() ->
+                new IllegalStateException("appointment not found for update: " + m.getId()));
         }
 
         e.setSlotId(m.getSlotId());
@@ -56,12 +57,12 @@ public class AppointmentRepositoryImpl implements AppointmentRepository {
 
     @Override
     public Optional<AppointmentModel> findActiveByVisitId(UUID visitId) {
-        return jpa.findFirstByVisitIdAndStatus(visitId, "BOOKED").map(this::toModel);
+        return jpa.findFirstByVisitIdAndStatus(visitId, AppointmentStatus.BOOKED.name()).map(this::toModel);
     }
 
     @Override
     public Optional<AppointmentModel> findActiveBySlotId(UUID slotId) {
-        return jpa.findFirstBySlotIdAndStatus(slotId, "BOOKED").map(this::toModel);
+        return jpa.findFirstBySlotIdAndStatus(slotId, AppointmentStatus.BOOKED.name()).map(this::toModel);
     }
 
     @Override
