@@ -1,9 +1,12 @@
 package my.cliniflow.infrastructure.audit;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -14,8 +17,12 @@ import java.util.UUID;
 public class AuditWriter {
 
     private final JdbcTemplate jdbc;
+    private final ObjectMapper mapper;
 
-    public AuditWriter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public AuditWriter(JdbcTemplate jdbc, ObjectMapper mapper) {
+        this.jdbc = jdbc;
+        this.mapper = mapper;
+    }
 
     public void append(String action,
                        String resourceType,
@@ -34,7 +41,7 @@ public class AuditWriter {
                        String resourceId,
                        UUID actorUserId,
                        String actorRole,
-                       java.util.Map<String, ?> metadata) {
+                       Map<String, ?> metadata) {
         String json = metadata == null || metadata.isEmpty()
             ? "{}"
             : toJson(metadata);
@@ -45,11 +52,11 @@ public class AuditWriter {
         );
     }
 
-    private static String toJson(java.util.Map<String, ?> m) {
+    private String toJson(Map<String, ?> m) {
         try {
-            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(m);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new IllegalStateException("audit metadata not serializable", e);
+            return mapper.writeValueAsString(m);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("audit metadata not serializable, keys=" + m.keySet(), e);
         }
     }
 }
