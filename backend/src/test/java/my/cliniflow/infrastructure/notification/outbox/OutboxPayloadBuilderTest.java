@@ -1,6 +1,7 @@
 package my.cliniflow.infrastructure.notification.outbox;
 
 import my.cliniflow.domain.biz.patient.model.PatientModel;
+import my.cliniflow.domain.biz.user.repository.UserRepository;
 import my.cliniflow.infrastructure.notification.whatsapp.WhatsAppPayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,14 +10,19 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class OutboxPayloadBuilderTest {
 
     OutboxPayloadBuilder builder;
+    UserRepository users;
 
     @BeforeEach
     void setUp() {
-        builder = new OutboxPayloadBuilder("https://app.cliniflow.local");
+        users = mock(UserRepository.class);
+        when(users.findById(org.mockito.ArgumentMatchers.any())).thenReturn(java.util.Optional.empty());
+        builder = new OutboxPayloadBuilder("https://app.cliniflow.local", users);
     }
 
     @Test
