@@ -43,6 +43,18 @@ _CONSTRAINTS: list[str] = [
 
     "CREATE CONSTRAINT adaptive_rule_id_unique IF NOT EXISTS "
     "FOR (r:AdaptiveRule) REQUIRE r.id IS UNIQUE",
+
+    "CREATE CONSTRAINT drug_name_unique IF NOT EXISTS "
+    "FOR (d:Drug) REQUIRE d.name IS UNIQUE",
+
+    "CREATE CONSTRAINT drugclass_name_unique IF NOT EXISTS "
+    "FOR (c:DrugClass) REQUIRE c.name IS UNIQUE",
+
+    "CREATE CONSTRAINT pregcat_code_unique IF NOT EXISTS "
+    "FOR (p:PregnancyCategory) REQUIRE p.code IS UNIQUE",
+
+    "CREATE CONSTRAINT doserule_id_unique IF NOT EXISTS "
+    "FOR (r:DoseRule) REQUIRE r.id IS UNIQUE",
 ]
 
 # Secondary indexes for common lookups.
