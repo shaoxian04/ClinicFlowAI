@@ -51,15 +51,18 @@ The Python agent service is **never** exposed through Nginx. Only Spring Boot ma
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/api/visits/{visitId}/findings` | Active findings for the visit, ordered by severity then `gmt_create`. Doctor must own the visit. Audit: `EVALUATOR_LIST_FINDINGS`. |
-| `POST` | `/api/visits/{visitId}/findings/{findingId}/acknowledge` | Body `{reason?}` (max 255 chars). Idempotent. Audit: `EVALUATOR_ACKNOWLEDGE`. Publishes `EvaluatorFindingAcknowledgedDomainEvent`. |
-| `POST` | `/api/visits/{visitId}/re-evaluate` | Calls the agent's `/agents/evaluator/re-evaluate` then returns the new active set. Audit: `EVALUATOR_REEVALUATE`. |
+| `GET` | `/api/visits/{visitId}/findings` | Active findings for the visit, ordered by severity then `gmt_create`. Doctor must own the visit. Audit: `READ` / `evaluator_finding`. |
+| `POST` | `/api/visits/{visitId}/findings/{findingId}/acknowledge` | Body `{reason?}` (max 255 chars). Idempotent. Audit: `UPDATE` / `evaluator_finding_ack`. Publishes `EvaluatorFindingAcknowledgedDomainEvent`. |
+| `POST` | `/api/visits/{visitId}/re-evaluate` | Calls the agent's `/agents/evaluator/re-evaluate` then returns the new active set. Audit: `READ` / `evaluator_reevaluate`. |
 
-### Spring Boot (existing route — new behavior)
+> **Audit action enum.** `audit_log.action` is `varchar(16)` constrained to `READ, CREATE, UPDATE, DELETE, LOGIN, EXPORT`. Evaluator-specific intent is encoded in `resource_type` (e.g. `evaluator_finding_ack`, `visit_finalize_blocked`), not in `action`. Don't reintroduce `EVALUATOR_*` action strings — the CHECK constraint will reject them.
+
+### Spring Boot (existing routes — new behavior)
 
 | Method | Path | Change |
 |---|---|---|
-| `POST` | `/api/visits/{visitId}/report/finalize` | Now returns 409 with `{code, message, findingIds}` when unacknowledged CRITICAL findings exist. Audit on block: `EVALUATOR_FINALIZE_BLOCKED`. |
+| `POST` | `/api/visits/{visitId}/report/approve` | Returns 409 when unacknowledged CRITICAL findings exist. The frontend's override-with-reason dialog acknowledges each finding before retrying, so the gate becomes a no-op in the happy path; it remains as defense-in-depth against direct API callers. |
+| `POST` | `/api/visits/{visitId}/report/finalize` | Returns 409 with `{code, message, findingIds}` when unacknowledged CRITICAL findings exist. Audit on block: `UPDATE` / `visit_finalize_blocked`. |
 
 ### Agent (internal)
 
