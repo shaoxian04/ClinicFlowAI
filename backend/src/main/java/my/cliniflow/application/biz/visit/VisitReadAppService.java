@@ -2,20 +2,25 @@ package my.cliniflow.application.biz.visit;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import my.cliniflow.controller.biz.visit.converter.EvaluatorFindingModel2DTOConverter;
+import my.cliniflow.controller.biz.visit.response.EvaluatorFindingDTO;
 import my.cliniflow.controller.biz.visit.response.VisitDetailResponse;
 import my.cliniflow.controller.biz.visit.response.VisitSummaryResponse;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.domain.biz.patient.repository.PatientRepository;
+import my.cliniflow.domain.biz.user.enums.Role;
 import my.cliniflow.domain.biz.visit.dto.MedicalReportDto;
 import my.cliniflow.domain.biz.visit.dto.PreVisitStructuredDto;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.PreVisitReportModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
+import my.cliniflow.domain.biz.visit.repository.EvaluatorFindingRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
 import my.cliniflow.controller.base.BusinessException;
 import my.cliniflow.controller.base.ResourceNotFoundException;
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
+import my.cliniflow.infrastructure.audit.AuditWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,13 +41,22 @@ public class VisitReadAppService {
     private final MedicalReportRepository reports;
     private final PatientRepository patients;
     private final ObjectMapper mapper;
+    private final EvaluatorFindingRepository findingRepo;
+    private final EvaluatorFindingModel2DTOConverter findingConverter;
+    private final AuditWriter auditWriter;
 
     public VisitReadAppService(VisitRepository visits, MedicalReportRepository reports,
-                               PatientRepository patients, ObjectMapper mapper) {
+                               PatientRepository patients, ObjectMapper mapper,
+                               EvaluatorFindingRepository findingRepo,
+                               EvaluatorFindingModel2DTOConverter findingConverter,
+                               AuditWriter auditWriter) {
         this.visits = visits;
         this.reports = reports;
         this.patients = patients;
         this.mapper = mapper;
+        this.findingRepo = findingRepo;
+        this.findingConverter = findingConverter;
+        this.auditWriter = auditWriter;
     }
 
     public List<VisitSummaryResponse> listForDoctor(UUID doctorId) {
@@ -108,6 +122,18 @@ public class VisitReadAppService {
             log.warn("[DETAIL] could not parse report_draft visit={} err={}", visitId, e.toString());
             return null;
         }
+    }
+
+    public List<EvaluatorFindingDTO> listFindings(UUID visitId, UUID requesterUserId, Role role) {
+        VisitModel visit = visits.findById(visitId).orElseThrow(
+            () -> new ResourceNotFoundException("visit not found: " + visitId));
+        if (role == Role.DOCTOR && !visit.getDoctorId().equals(requesterUserId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "not your visit");
+        }
+        auditWriter.append("EVALUATOR_LIST_FINDINGS", "visit", visitId.toString(), requesterUserId, role.name());
+        return findingRepo.findActiveByVisitId(visitId).stream()
+            .map(findingConverter::convert)
+            .toList();
     }
 
     public void assertOwnedBy(UUID visitId, UUID patientId) {
