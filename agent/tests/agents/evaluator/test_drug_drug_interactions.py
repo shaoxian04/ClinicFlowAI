@@ -2,10 +2,16 @@
 drug knowledge graph seeded (apply_drug_knowledge runs at startup)."""
 from __future__ import annotations
 
+import os
 import pytest
 from uuid import uuid4
 
 from app.graph.queries.drug_drug_interaction import check_drug_drug_interactions
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("NEO4J_URI") and not os.getenv("RUN_NEO4J_TESTS"),
+    reason="requires a seeded Neo4j (set NEO4J_URI or RUN_NEO4J_TESTS=1)",
+)
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,11 @@
+import os
 import pytest
 from app.graph.queries.dose_range import fetch_dose_rules
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("NEO4J_URI") and not os.getenv("RUN_NEO4J_TESTS"),
+    reason="requires a seeded Neo4j (set NEO4J_URI or RUN_NEO4J_TESTS=1)",
+)
 
 
 @pytest.mark.asyncio

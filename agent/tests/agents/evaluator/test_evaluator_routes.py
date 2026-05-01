@@ -22,7 +22,7 @@ def test_get_findings_returns_serialized_rows():
     }]
 
     with patch("app.routes.evaluator.list_active_findings", AsyncMock(return_value=fake_rows)):
-        resp = client.get(f"/agents/evaluator/findings/{visit_id}", headers={"X-Service-Token": "stub"})
+        resp = client.get(f"/agents/evaluator/findings/{visit_id}", headers={"X-Service-Token": "change-me"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["findings"][0]["category"] == "DDI"

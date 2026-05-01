@@ -25,7 +25,7 @@ async def test_finalize_blocked_by_unacked_critical():
         resp = client.post(
             "/agents/report/finalize",
             json={"visit_id": visit_id},
-            headers={"X-Service-Token": "stub"},
+            headers={"X-Service-Token": "change-me"},
         )
     assert resp.status_code == 409
     body = resp.json()

@@ -1,3 +1,4 @@
+import os
 import pytest
 from uuid import uuid4
 from app.schemas.evaluator import Finding
@@ -5,6 +6,11 @@ from app.persistence.evaluator_findings import (
     insert_findings,
     list_active_findings,
     supersede_active,
+)
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("DATABASE_URL") and not os.getenv("POSTGRES_DSN"),
+    reason="requires a real Postgres (set DATABASE_URL or POSTGRES_DSN)",
 )
 
 

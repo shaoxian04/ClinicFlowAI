@@ -1,5 +1,11 @@
+import os
 import pytest
 from app.graph.queries.pregnancy_safety import fetch_pregnancy_categories
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("NEO4J_URI") and not os.getenv("RUN_NEO4J_TESTS"),
+    reason="requires a seeded Neo4j (set NEO4J_URI or RUN_NEO4J_TESTS=1)",
+)
 
 
 @pytest.mark.asyncio
