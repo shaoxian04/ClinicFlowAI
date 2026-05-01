@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-export type AdminNavTab = "overview" | "users" | "analytics" | "audit";
+export type AdminNavTab = "overview" | "users" | "analytics" | "audit" | "schedule-template";
 
 type Tab = { key: AdminNavTab; label: string; href: string };
 
@@ -11,6 +11,7 @@ const TABS: Tab[] = [
     { key: "users", label: "Users", href: "/admin/users" },
     { key: "analytics", label: "Analytics", href: "/admin/analytics" },
     { key: "audit", label: "Audit", href: "/admin/audit" },
+    { key: "schedule-template", label: "Schedule template", href: "/admin/schedule-template" },
 ];
 
 type Props = { active: AdminNavTab };
