@@ -8,7 +8,7 @@ Polyglot multi-service architecture, monorepo layout.
 |-------|-----------|------|
 | Frontend | **Next.js** (React) | Web-responsive UI for all 4 roles |
 | Backend | **Spring Boot 3.x (Java 21)** + **Spring Security** | API gateway, authn/authz, RBAC, patient-record CRUD, DDD bounded contexts, orchestrates agent calls |
-| Agent service | **Python + FastAPI + LangGraph** | Pre-visit / Visit / Post-visit agents, GLM orchestration, graph-KB queries, adaptive rule engine |
+| Agent service | **Python + FastAPI + LangGraph** | Pre-visit / Visit / Post-visit / **Evaluator** agents, GLM orchestration, graph-KB queries, adaptive rule engine. The Evaluator agent runs six validators (allergy, DDI, pregnancy, dose, hallucination, completeness) against every SOAP draft. |
 | Relational DB | **Supabase** (managed Postgres) | Users, patients, visits, reports, medications, audit log |
 | Graph DB | **Neo4j** | Patient knowledge graph: symptoms, diagnoses, medications, allergies, conditions, adaptive rules |
 | LLM | **Z.AI GLM 5.1** | Called from Python agent via OpenAI-compatible endpoint (custom `base_url`) |
@@ -43,3 +43,5 @@ Four contexts, per SAD §2.1: **Pre-Visit**, **Visit**, **Post-Visit**, **Manage
 - **Doctor-in-the-loop**: every AI-generated clinical note passes through explicit doctor review-and-confirm before finalization. UI must visibly distinguish AI draft vs. human-confirmed content. This is a hard safety invariant, not a UX preference.
 - **PDPA audit log**: append-only table in Postgres, separate from business tables. Every read and every mutation of patient data writes a row. Never delete or update rows in this table from application code.
 - **Graceful degradation**: GLM down → manual entry template; STT down → text input path; Neo4j down → Postgres-only context (reduced agent quality, still functional). Design failure modes explicitly, don't let exceptions surface to users.
+- **Evaluator validators isolate failures.** Each validator (DRUG_ALLERGY, DDI, PREGNANCY, DOSE, HALLUCINATION, COMPLETENESS) runs in a `try/except` inside the orchestrator; a failure produces a `validators_unavailable` entry in the SSE event without aborting the others. The doctor still sees the partial result. Never wrap the whole orchestrator in a single try/except — granularity is the safety property.
+- **Per-validator persistence atomicity.** Findings are written inside a Postgres advisory lock keyed on `visit_id` so a re-evaluation is atomic with the supersede of the prior set. Don't add a code path that inserts findings outside this lock.

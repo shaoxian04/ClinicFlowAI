@@ -86,3 +86,5 @@ Read the relevant file on demand — don't preload everything.
 Feature specs and plans (read on-demand for those features):
 - **`docs/superpowers/specs/2026-05-01-evaluator-and-drug-validation-design.md`** — Full design for the evaluator agent + drug validation (DDI, allergy, dose, pregnancy, hallucination, completeness validators).
 - **`docs/superpowers/plans/2026-05-01-evaluator-and-drug-validation.md`** — Phase-by-phase implementation plan for the evaluator feature.
+
+> The evaluator agent is the fourth Python agent (alongside Pre-Visit / Visit / Post-Visit). Read `docs/details/agent-design.md` §Evaluator Agent before touching anything under `agent/app/agents/evaluator/`, `agent/app/graph/queries/`, or any Spring file under `application/biz/visit/` or `domain/biz/visit/` whose name starts with `EvaluatorFinding`. The drug knowledge graph schema lives in `docs/details/data-model.md` §Neo4j drug knowledge graph.
