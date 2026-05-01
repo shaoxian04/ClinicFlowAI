@@ -129,3 +129,34 @@ export async function upsertScheduleTemplate(req: {
 export async function getDoctorToday(): Promise<Appointment[]> {
     return apiGet<Appointment[]>(`/doctor/appointments/today`);
 }
+
+// ---------------------------------------------------------------------------
+// Doctor dashboard
+// ---------------------------------------------------------------------------
+
+export type DoctorKpis = {
+    awaitingReview: number;
+    bookedToday: number;
+    finalizedThisWeek: number;
+    avgTimeToFinalizeMinutes: number | null;
+};
+export type TrendPoint = { date: string; count: number };
+export type TrendDelta = { current: number; prior: number; deltaPct: number };
+export type ConditionMixSlice = { label: string; count: number; pct: number };
+export type RecentlyFinalized = {
+    visitId: string;
+    patientName: string;
+    chiefComplaint: string;
+    finalizedAt: string;
+};
+export type DoctorDashboard = {
+    kpis: DoctorKpis;
+    visitsTrend: TrendPoint[];
+    trendDelta: TrendDelta;
+    conditionMix: ConditionMixSlice[];
+    recentlyFinalized: RecentlyFinalized[];
+};
+
+export async function getDoctorDashboard(): Promise<DoctorDashboard> {
+    return apiGet<DoctorDashboard>("/doctor/dashboard");
+}
