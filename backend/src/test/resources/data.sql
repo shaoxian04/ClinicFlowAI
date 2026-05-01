@@ -35,3 +35,12 @@ MERGE INTO users (id, email, password_hash, role, full_name, is_active) KEY(id) 
      'staff@demo.local',
      '$2a$10$AdJhIOYNdcRG/jSVWK.V7u6300yExmv1Z5/.AcFRYZwS9nfyHIZai',
      'STAFF', 'Staff Demo', TRUE);
+
+-- Seed ADMIN user for ScheduleTemplateController integration tests (Task 4.3).
+-- user_id = 00000000-0000-0000-0000-000000000004
+-- password = "password" (bcrypt cost 10)
+MERGE INTO users (id, email, password_hash, role, full_name, is_active) KEY(id) VALUES
+    ('00000000-0000-0000-0000-000000000004',
+     'admin@demo.local',
+     '$2a$10$AdJhIOYNdcRG/jSVWK.V7u6300yExmv1Z5/.AcFRYZwS9nfyHIZai',
+     'ADMIN', 'Admin Demo', TRUE);
