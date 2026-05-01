@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -43,6 +44,7 @@ public class DevDataSeeder implements ApplicationRunner {
     private final ScheduleTemplateUpdateDomainService templateUpdateSvc;
     private final SlotGenerateDomainService slotGenSvc;
     private final ScheduleTemplateRepository templateRepo;
+    private final TransactionTemplate tx;
 
     public DevDataSeeder(UserRepository userRepo,
                          PatientRepository patientRepo,
@@ -50,7 +52,8 @@ public class DevDataSeeder implements ApplicationRunner {
                          JdbcTemplate jdbc,
                          ScheduleTemplateUpdateDomainService templateUpdateSvc,
                          SlotGenerateDomainService slotGenSvc,
-                         ScheduleTemplateRepository templateRepo) {
+                         ScheduleTemplateRepository templateRepo,
+                         TransactionTemplate tx) {
         this.userRepo = userRepo;
         this.patientRepo = patientRepo;
         this.encoder = encoder;
@@ -58,6 +61,7 @@ public class DevDataSeeder implements ApplicationRunner {
         this.templateUpdateSvc = templateUpdateSvc;
         this.slotGenSvc = slotGenSvc;
         this.templateRepo = templateRepo;
+        this.tx = tx;
     }
 
     @Override
@@ -126,26 +130,30 @@ public class DevDataSeeder implements ApplicationRunner {
      * regenerating, so already-BOOKED slots are preserved.
      */
     private void seedScheduleTemplateAndSlots() {
-        if (templateRepo.findCurrentForDoctor(DOCTORS_PK).isPresent()) {
-            // Template exists → still regenerate slots so the calendar is always full
-            var existing = templateRepo.findCurrentForDoctor(DOCTORS_PK).orElseThrow();
-            slotGenSvc.generate(existing, OffsetDateTime.now());
-            return;
-        }
-        WeeklyHours wh = WeeklyHours.fromJson(Map.of(
-            "MON", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
-            "TUE", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
-            "WED", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
-            "THU", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
-            "FRI", List.of(List.of("09:00", "12:00"))
-        ));
-        var saved = templateUpdateSvc.upsert(
-            DOCTORS_PK,
-            LocalDate.now(),
-            (short) 30,
-            wh,
-            (short) 2,
-            (short) 14);
-        slotGenSvc.generate(saved, OffsetDateTime.now());
+        // Both branches issue @Modifying JPQL deletes (slotGenSvc.deleteFutureAvailable),
+        // so the work must run inside a Spring transaction. ApplicationRunner.run is
+        // not transactional by itself.
+        tx.executeWithoutResult(status -> {
+            if (templateRepo.findCurrentForDoctor(DOCTORS_PK).isPresent()) {
+                var existing = templateRepo.findCurrentForDoctor(DOCTORS_PK).orElseThrow();
+                slotGenSvc.generate(existing, OffsetDateTime.now());
+                return;
+            }
+            WeeklyHours wh = WeeklyHours.fromJson(Map.of(
+                "MON", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
+                "TUE", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
+                "WED", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
+                "THU", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
+                "FRI", List.of(List.of("09:00", "12:00"))
+            ));
+            var saved = templateUpdateSvc.upsert(
+                DOCTORS_PK,
+                LocalDate.now(),
+                (short) 30,
+                wh,
+                (short) 2,
+                (short) 14);
+            slotGenSvc.generate(saved, OffsetDateTime.now());
+        });
     }
 }
