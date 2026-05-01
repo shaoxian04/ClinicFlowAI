@@ -67,14 +67,16 @@ export function useEvaluatorFindings(visitId: string) {
     [visitId, refetch],
   );
 
-  const reEvaluate = useCallback(async () => {
+  const reEvaluate = useCallback(async (): Promise<Finding[] | null> => {
     setState((s) => ({ ...s, loading: true }));
     try {
       const data = await apiPost<Finding[]>(`/visits/${visitId}/re-evaluate`, {});
       setState({ findings: data, availability: "AVAILABLE", loading: false });
+      return data;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setState((s) => ({ ...s, loading: false, availability: "UNAVAILABLE", error: msg }));
+      return null;
     }
   }, [visitId]);
 

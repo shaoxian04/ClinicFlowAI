@@ -14,7 +14,6 @@ import { SplitReview } from "./components/review/SplitReview";
 import { ReportPreview } from "./components/ReportPreview";
 import { PreVisitSummary } from "./components/PreVisitSummary";
 import { useEvaluatorFindings } from "./components/safety/useEvaluatorFindings";
-import { AISafetyReviewPanel } from "./components/safety/AISafetyReviewPanel";
 import DoctorNav from "@/app/doctor/components/DoctorNav";
 import type { MedicalReport } from "@/lib/types/report";
 import type { PreVisitFields } from "@/lib/types/preVisit";
@@ -106,6 +105,10 @@ export default function VisitDetailPage() {
     />
   );
 
+  const unackedCriticalFindings = evaluator.findings.filter(
+    (f) => f.severity === "CRITICAL" && !f.acknowledgedAt,
+  );
+
   const consultationPanel = (
     <SplitReview
       visitId={visitId}
@@ -117,6 +120,13 @@ export default function VisitDetailPage() {
         window.location.hash = "#preview";
       }}
       onDraftChanged={evaluator.reEvaluate}
+      unackedCriticalFindings={unackedCriticalFindings}
+      onAcknowledgeFinding={evaluator.acknowledge}
+      evaluatorFindings={evaluator.findings}
+      evaluatorAvailability={evaluator.availability}
+      evaluatorLoading={evaluator.loading}
+      evaluatorError={evaluator.error}
+      onReEvaluate={evaluator.reEvaluate}
     />
   );
 
@@ -136,6 +146,8 @@ export default function VisitDetailPage() {
       onPublished={refetch}
       findings={evaluator.findings}
       onFindingsRefetch={evaluator.refetch}
+      onAcknowledgeFinding={evaluator.acknowledge}
+      onReEvaluate={evaluator.reEvaluate}
     />
   );
 
@@ -193,17 +205,7 @@ export default function VisitDetailPage() {
                   </div>
                 ),
                 visit: (
-                  <div className="space-y-4">
-                    <AISafetyReviewPanel
-                      findings={evaluator.findings}
-                      availability={evaluator.availability}
-                      loading={evaluator.loading}
-                      error={evaluator.error}
-                      onAcknowledge={evaluator.acknowledge}
-                      onReEvaluate={evaluator.reEvaluate}
-                    />
-                    {consultationPanel}
-                  </div>
+                  <div>{consultationPanel}</div>
                 ),
                 preview: (
                   <div>{reportPreviewPanel}</div>

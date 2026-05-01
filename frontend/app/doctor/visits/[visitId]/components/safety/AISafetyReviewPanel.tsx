@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { FindingCard } from "./FindingCard";
 import { SafetyStatusRow } from "./SafetyStatusRow";
 import { SafetyUnavailableBanner } from "./SafetyUnavailableBanner";
+import { EvaluatorProgressBar } from "./EvaluatorProgressBar";
 import type { Availability, Category, Finding } from "./types";
 
 const ALL_CATEGORIES: Category[] = [
@@ -29,7 +30,7 @@ export function AISafetyReviewPanel({
   loading: boolean;
   error?: string;
   onAcknowledge: (id: string, reason?: string) => Promise<void>;
-  onReEvaluate: () => Promise<void>;
+  onReEvaluate: () => Promise<Finding[] | null> | Promise<void>;
 }) {
   const unackedCriticalCount = useMemo(
     () => findings.filter((f) => f.severity === "CRITICAL" && !f.acknowledgedAt).length,
@@ -76,6 +77,7 @@ export function AISafetyReviewPanel({
           </Button>
         </div>
       </div>
+      <EvaluatorProgressBar active={loading} />
       <SafetyStatusRow findings={findings} validatorsRun={ALL_CATEGORIES} />
       {expanded && hasFindings && (
         <div className="space-y-2">

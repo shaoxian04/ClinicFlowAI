@@ -8,6 +8,31 @@ export type WebResult<T> = {
     data: T | null;
 };
 
+const HTTP_FALLBACK: Record<number, string> = {
+    400: "The request was invalid. Please check the data and try again.",
+    401: "Your session has expired. Please sign in again.",
+    403: "You don't have permission to perform this action.",
+    404: "The requested resource was not found.",
+    409: "This action conflicts with the current state of the visit. It may already be finalized or in another stage.",
+    413: "The uploaded file is too large.",
+    422: "Some required information is missing or invalid.",
+    429: "Too many requests. Please wait a moment and try again.",
+    500: "The server encountered an unexpected error. Please try again.",
+    502: "The server is temporarily unreachable. Please try again.",
+    503: "The service is temporarily unavailable. Please try again.",
+    504: "The server took too long to respond. Please try again.",
+};
+
+async function readErrorMessage(res: Response): Promise<string> {
+    try {
+        const errBody: WebResult<unknown> = await res.json();
+        if (errBody?.message) return errBody.message;
+    } catch {
+        /* ignore parse failure */
+    }
+    return HTTP_FALLBACK[res.status] ?? `Request failed (HTTP ${res.status}).`;
+}
+
 export async function apiDelete<T>(path: string, body?: unknown): Promise<T | void> {
     const token = getToken();
     const res = await fetch(`${BASE}${path}`, {
@@ -18,7 +43,7 @@ export async function apiDelete<T>(path: string, body?: unknown): Promise<T | vo
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<T> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
@@ -36,7 +61,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
         },
         body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<T> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
@@ -56,7 +81,7 @@ export async function apiPostVoid(path: string, body?: unknown): Promise<void> {
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<unknown> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
@@ -68,7 +93,7 @@ export async function apiGet<T>(path: string): Promise<T> {
     const res = await fetch(`${BASE}${path}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<T> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
@@ -88,14 +113,7 @@ export async function apiPutVoid(path: string, body: unknown): Promise<void> {
         },
         body: JSON.stringify(body),
     });
-    if (!res.ok) {
-        let msg = `HTTP ${res.status}`;
-        try {
-            const errBody: WebResult<unknown> = await res.json();
-            if (errBody.message) msg = errBody.message;
-        } catch { /* ignore parse failure */ }
-        throw new Error(msg);
-    }
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<unknown> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
@@ -112,7 +130,7 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
         },
         body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<T> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
@@ -131,7 +149,7 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
         },
         body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<T> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
@@ -148,14 +166,7 @@ export async function apiPostMultipart<T>(path: string, body: FormData): Promise
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body,
     });
-    if (!res.ok) {
-        let msg = `HTTP ${res.status}`;
-        try {
-            const errBody: WebResult<unknown> = await res.json();
-            if (errBody.message) msg = errBody.message;
-        } catch { /* ignore parse failure */ }
-        throw new Error(msg);
-    }
+    if (!res.ok) throw new Error(await readErrorMessage(res));
     const envelope: WebResult<T> = await res.json();
     if (envelope.code !== 0) {
         throw new Error(envelope.message || `code ${envelope.code}`);
