@@ -67,7 +67,7 @@ cliniflow:
     timezone: Asia/Kuala_Lumpur
     horizon-extender-cron: "0 0 2 * * *"
   whatsapp:
-    provider: ${WHATSAPP_PROVIDER:stub}    # stub | twilio
+    provider: ${WHATSAPP_PROVIDER:stub}    # stub | twilio | meta-cloud
     drainer-fixed-delay-ms: 30000
     reaper-stuck-after-minutes: 2
     max-attempts: 5
@@ -75,6 +75,28 @@ cliniflow:
       account-sid: ${TWILIO_ACCOUNT_SID:}
       auth-token: ${TWILIO_AUTH_TOKEN:}
       from-whatsapp: ${TWILIO_FROM_WHATSAPP:whatsapp:+14155238886}
+    meta-cloud:
+      phone-number-id: ${META_PHONE_NUMBER_ID:}
+      access-token: ${META_ACCESS_TOKEN:}
+      api-version: ${META_API_VERSION:v21.0}
+      default-template-name: ${META_DEFAULT_TEMPLATE_NAME:hello_world}
+      default-template-language: ${META_DEFAULT_TEMPLATE_LANGUAGE:en_US}
+      # Internal templateId -> Meta-approved template name. Unmapped ids fall
+      # back to default-template-name (hello_world is safe pre-approval).
+      template-names: >
+        {
+          appointment_confirmation_v1: '${META_TEMPLATE_APPOINTMENT_CONFIRMATION:cliniflow_appointment_confirmation_v1}',
+          appointment_cancelled_v1:    '${META_TEMPLATE_APPOINTMENT_CANCELLED:cliniflow_appointment_cancelled_v1}',
+          soap_meds_summary_v1:        '${META_TEMPLATE_SOAP_MEDS_SUMMARY:cliniflow_soap_meds_summary_v1}',
+          soap_followup_reminder_v1:   '${META_TEMPLATE_SOAP_FOLLOWUP_REMINDER:cliniflow_soap_followup_reminder_v1}'
+        }
+      # Internal locale -> Meta language code.
+      language-codes: >
+        {
+          en: 'en_US',
+          ms: 'ms',
+          zh: 'zh_CN'
+        }
 
 resilience4j:
   circuitbreaker:
