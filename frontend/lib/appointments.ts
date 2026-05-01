@@ -130,6 +130,11 @@ export async function getDoctorToday(): Promise<Appointment[]> {
     return apiGet<Appointment[]>(`/doctor/appointments/today`);
 }
 
+/** Doctor's appointments for a [from, to] inclusive ISO-date range (YYYY-MM-DD). */
+export async function getDoctorAppointmentsRange(from: string, to: string): Promise<Appointment[]> {
+    return apiGet<Appointment[]>(`/doctor/appointments/range?from=${from}&to=${to}`);
+}
+
 // ---------------------------------------------------------------------------
 // Doctor dashboard
 // ---------------------------------------------------------------------------
