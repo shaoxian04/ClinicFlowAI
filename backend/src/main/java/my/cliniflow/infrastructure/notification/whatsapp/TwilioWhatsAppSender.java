@@ -40,7 +40,8 @@ public class TwilioWhatsAppSender implements WhatsAppSender {
         21614, // 'To' is not a valid mobile number
         63016, // Failed to send freeform message because you are outside the allowed window
         63018, // Permission denied
-        63032  // Channel disabled
+        63032, // Channel disabled
+        63038  // Account exceeded daily messages limit (trial accounts)
     );
 
     private final String accountSid;
