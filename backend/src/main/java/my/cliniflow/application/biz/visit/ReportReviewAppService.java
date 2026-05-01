@@ -13,6 +13,7 @@ import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.MedicationModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
+import my.cliniflow.domain.biz.visit.repository.EvaluatorFindingRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicationRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
@@ -55,6 +56,7 @@ public class ReportReviewAppService {
     private final ReportAggregatorService aggregator;
     private final ObjectMapper mapper;
     private final JdbcTemplate jdbc;
+    private final EvaluatorFindingRepository findings;
 
     public ReportReviewAppService(
         VisitRepository visits,
@@ -63,7 +65,8 @@ public class ReportReviewAppService {
         AgentServiceClient agent,
         ReportAggregatorService aggregator,
         ObjectMapper mapper,
-        JdbcTemplate jdbc
+        JdbcTemplate jdbc,
+        EvaluatorFindingRepository findings
     ) {
         this.visits = visits;
         this.reports = reports;
@@ -72,6 +75,7 @@ public class ReportReviewAppService {
         this.aggregator = aggregator;
         this.mapper = mapper;
         this.jdbc = jdbc;
+        this.findings = findings;
     }
 
     // ───── /generate-sync ─────────────────────────────────────────────────────
@@ -149,6 +153,23 @@ public class ReportReviewAppService {
             log.info("[REVIEW] approve rejected — no report_draft visit={}", visitId);
             throw new ConflictException("no report draft to approve — generate the report first");
         }
+
+        // Doctor-in-the-loop safety gate: any unacknowledged CRITICAL finding
+        // (DDI, allergy, dose, pregnancy) must be acknowledged before the doctor
+        // can approve the draft. Mirrors the finalize gate in SoapWriteAppService;
+        // catches the case where a doctor would otherwise click Approve while
+        // critical findings are still flagged in the AI Safety Review panel.
+        long unackedCritical = findings.countUnacknowledgedCritical(visitId);
+        if (unackedCritical > 0) {
+            log.info("[REVIEW] approve blocked — {} unacknowledged critical finding(s) visit={}",
+                unackedCritical, visitId);
+            throw new ConflictException(
+                unackedCritical + " unacknowledged critical safety finding"
+                    + (unackedCritical > 1 ? "s" : "")
+                    + " must be reviewed in the AI Safety panel before approving."
+            );
+        }
+
         MedicalReportDto dto = mapper.convertValue(draft, MedicalReportDto.class);
 
         MedicalReportModel r = reports.findByVisitId(visitId).orElseGet(() -> {

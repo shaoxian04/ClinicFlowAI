@@ -2,14 +2,18 @@ package my.cliniflow.application.biz.visit;
 
 import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 import my.cliniflow.domain.biz.visit.event.SoapFinalizedDomainEvent;
+import my.cliniflow.domain.biz.visit.exception.UnacknowledgedCriticalFindingsException;
+import my.cliniflow.domain.biz.visit.model.EvaluatorFindingModel;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.PreVisitReportModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
 import my.cliniflow.controller.base.ConflictException;
 import my.cliniflow.controller.base.ResourceNotFoundException;
+import my.cliniflow.domain.biz.visit.repository.EvaluatorFindingRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicationRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
+import my.cliniflow.infrastructure.audit.AuditWriter;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,15 +40,21 @@ public class SoapWriteAppService {
     private final AgentServiceClient agent;
     private final MedicationRepository medications;
     private final ApplicationEventPublisher events;
+    private final EvaluatorFindingRepository findingRepo;
+    private final AuditWriter auditWriter;
 
     public SoapWriteAppService(VisitRepository visits, MedicalReportRepository reports,
                                AgentServiceClient agent, MedicationRepository medications,
-                               ApplicationEventPublisher events) {
+                               ApplicationEventPublisher events,
+                               EvaluatorFindingRepository findingRepo,
+                               AuditWriter auditWriter) {
         this.visits = visits;
         this.reports = reports;
         this.agent = agent;
         this.medications = medications;
         this.events = events;
+        this.findingRepo = findingRepo;
+        this.auditWriter = auditWriter;
     }
 
     @Transactional
@@ -94,6 +105,14 @@ public class SoapWriteAppService {
 
     @Transactional
     public MedicalReportModel finalize(UUID visitId, UUID doctorUserId, String subjective, String objective, String assessment, String plan) {
+        if (findingRepo.countUnacknowledgedCritical(visitId) > 0) {
+            List<UUID> blockers = findingRepo.findActiveByVisitId(visitId).stream()
+                .filter(EvaluatorFindingModel::isUnacknowledgedCritical)
+                .map(EvaluatorFindingModel::getId)
+                .toList();
+            auditWriter.append("UPDATE", "visit_finalize_blocked", visitId.toString(), doctorUserId, "DOCTOR");
+            throw new UnacknowledgedCriticalFindingsException(blockers);
+        }
         MedicalReportModel r = reports.findByVisitId(visitId).orElseThrow(
             () -> new ResourceNotFoundException("medical report for visit", visitId));
         if (r.isFinalized()) return r;

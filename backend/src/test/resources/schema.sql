@@ -172,6 +172,25 @@ CREATE TABLE IF NOT EXISTS audit_log (
     metadata       CLOB         NOT NULL DEFAULT '{}'
 );
 
+-- Evaluator findings — H2 mirror of the Postgres evaluator_findings table.
+-- jsonb→CLOB; the partial-uniqueness/PDPA append-only triggers are
+-- production-only (omitted here).
+CREATE TABLE IF NOT EXISTS evaluator_findings (
+    id                      UUID                     NOT NULL PRIMARY KEY,
+    visit_id                UUID                     NOT NULL REFERENCES visits(id),
+    category                VARCHAR(32)              NOT NULL,
+    severity                VARCHAR(16)              NOT NULL,
+    field_path              VARCHAR(255),
+    message                 CLOB                     NOT NULL,
+    details                 CLOB                     NOT NULL DEFAULT '{}',
+    acknowledged_at         TIMESTAMP WITH TIME ZONE,
+    acknowledged_by         UUID,
+    acknowledgement_reason  VARCHAR(255),
+    superseded_at           TIMESTAMP WITH TIME ZONE,
+    gmt_create              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified            TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 -- =====================================================================
 -- V11: Schedule + Appointment tables (H2-translated)
 --

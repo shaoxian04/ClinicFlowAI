@@ -25,5 +25,11 @@ class Settings(BaseSettings):
     llm_max_steps: int = 10
     stt_timeout_seconds: float = 15.0
 
+    evaluator_ddi_active_med_lookback_days: int = 90
+    evaluator_timeout_total_seconds: int = 15
+    evaluator_timeout_cypher_seconds: int = 3
+    evaluator_timeout_llm_seconds: int = 8
+    evaluator_enabled: bool = True
+
 
 settings = Settings()

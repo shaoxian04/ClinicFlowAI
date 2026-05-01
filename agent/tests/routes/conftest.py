@@ -71,6 +71,23 @@ async def wired_pool(pg):
           created_at TIMESTAMPTZ DEFAULT now(),
           UNIQUE (visit_id, agent_type, turn_index)
         );
+        -- Required by /agents/report/finalize, which now calls
+        -- has_unacked_critical(visit_id) before generating the summary.
+        CREATE TABLE IF NOT EXISTS evaluator_findings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          visit_id UUID NOT NULL REFERENCES visits(id),
+          category VARCHAR(32) NOT NULL,
+          severity VARCHAR(16) NOT NULL,
+          field_path VARCHAR(255),
+          message TEXT NOT NULL,
+          details JSONB NOT NULL DEFAULT '{}'::jsonb,
+          acknowledged_at TIMESTAMPTZ,
+          acknowledged_by UUID,
+          acknowledgement_reason VARCHAR(255),
+          superseded_at TIMESTAMPTZ,
+          gmt_create TIMESTAMPTZ NOT NULL DEFAULT now(),
+          gmt_modified TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
         """)
     yield
     await _pg_mod.close_pool()

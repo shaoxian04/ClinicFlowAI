@@ -13,6 +13,7 @@ import { PatientContextPanel } from "@/app/doctor/components/PatientContextPanel
 import { SplitReview } from "./components/review/SplitReview";
 import { ReportPreview } from "./components/ReportPreview";
 import { PreVisitSummary } from "./components/PreVisitSummary";
+import { useEvaluatorFindings } from "./components/safety/useEvaluatorFindings";
 import DoctorNav from "@/app/doctor/components/DoctorNav";
 import type { MedicalReport } from "@/lib/types/report";
 import type { PreVisitFields } from "@/lib/types/preVisit";
@@ -56,6 +57,7 @@ export default function VisitDetailPage() {
   const router = useRouter();
   const params = useParams<{ visitId: string }>();
   const visitId = params.visitId;
+  const evaluator = useEvaluatorFindings(visitId);
   const [detail, setDetail] = useState<VisitDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activePhase, setActivePhase] = useState<PhaseKey>("pre");
@@ -103,6 +105,10 @@ export default function VisitDetailPage() {
     />
   );
 
+  const unackedCriticalFindings = evaluator.findings.filter(
+    (f) => f.severity === "CRITICAL" && !f.acknowledgedAt,
+  );
+
   const consultationPanel = (
     <SplitReview
       visitId={visitId}
@@ -113,6 +119,14 @@ export default function VisitDetailPage() {
         refetch();
         window.location.hash = "#preview";
       }}
+      onDraftChanged={evaluator.reEvaluate}
+      unackedCriticalFindings={unackedCriticalFindings}
+      onAcknowledgeFinding={evaluator.acknowledge}
+      evaluatorFindings={evaluator.findings}
+      evaluatorAvailability={evaluator.availability}
+      evaluatorLoading={evaluator.loading}
+      evaluatorError={evaluator.error}
+      onReEvaluate={evaluator.reEvaluate}
     />
   );
 
@@ -130,6 +144,10 @@ export default function VisitDetailPage() {
       approved={detail.soap?.previewApprovedAt != null}
       finalizedAt={detail.finalizedAt}
       onPublished={refetch}
+      findings={evaluator.findings}
+      onFindingsRefetch={evaluator.refetch}
+      onAcknowledgeFinding={evaluator.acknowledge}
+      onReEvaluate={evaluator.reEvaluate}
     />
   );
 

@@ -60,6 +60,37 @@ These rules are universal — pre-visit, visit, post-visit, report-clarification
 
 Do NOT import the Hermes codebase — adopt the feedback-loop pattern and skill-schema idea, but implement against our Neo4j `AdaptiveRule` nodes and our LangGraph flow.
 
+## Evaluator Agent (added 2026-05-01)
+
+After the report drafter completes a SOAP draft, the **EvaluatorAgent** runs a parallel
+suite of safety validators and persists findings against the visit. The doctor sees
+findings in the AI Safety Review panel and must acknowledge any CRITICAL findings
+before finalizing the report (soft-block).
+
+**Five validators run in parallel (Phase 1 — fast Cypher / pure-Python):**
+
+1. **DRUG_ALLERGY** — Cypher against patient's `:Allergy` nodes; existing `check_drug_interactions` reused. CRITICAL on hit.
+2. **DDI** — Cypher across direct drug↔drug, drug↔class, class↔class `:INTERACTS_WITH` edges in the drug knowledge graph. Severity mapped from edge property: MAJOR→CRITICAL, MODERATE→HIGH, MINOR→LOW.
+3. **PREGNANCY** — Cypher against `:PregnancyCategory` edge; orchestrator skips entirely when `patient.pregnancy_status` is NOT_PREGNANT/UNKNOWN/NULL. Privacy invariant: this Cypher never sees patient pregnancy state.
+4. **DOSE** — Cypher against `:DoseRule` nodes filtered by patient age + weight + drug route. Orchestrator parses dose+frequency strings and emits over_max_dose / over_max_daily / under_min_dose / no_rule findings.
+5. **COMPLETENESS** — pure-Python check on the draft for missing required fields.
+
+**One validator runs sequentially (Phase 2 — LLM):**
+
+6. **HALLUCINATION** — single LLM call asks "for every clinical claim in the draft, classify as SUPPORTED / CONTEXTUAL / INFERRED / UNSUPPORTED". Returns HIGH findings for UNSUPPORTED claims.
+
+**Failure isolation:** every validator is wrapped in a per-validator try/except. A single validator failure marks that validator unavailable but does not tank the run.
+
+**Persistence:** findings are written to `evaluator_findings` (Postgres) inside a single transaction with an advisory lock keyed on `visit_id`. Re-evaluation supersedes prior findings (sets `superseded_at`) and inserts new ones. The Java `acknowledge` flow updates `acknowledged_at/by/reason` directly via `EvaluatorFindingRepository`.
+
+**SSE stream:** the `/agents/report/generate`, `/edit`, `/clarify` routes emit a single terminal event after the drafter completes:
+- `evaluator.done { findings, validators_run, validators_unavailable }`
+- `evaluator.error { reason }` (validator agent failed)
+
+**Finalize gate:** `/agents/report/finalize` returns 409 with `{error: "unacknowledged_critical_findings", finding_ids: [...]}` if any CRITICAL is unacked at finalize time. Spring Boot `SoapWriteAppService.finalize` enforces the same guard before transitioning to FINALIZED.
+
+**See:** `docs/superpowers/specs/2026-05-01-evaluator-and-drug-validation-design.md` for the full design.
+
 ## Patient-context routes (implemented)
 
 - `GET /agents/patient-context/healthz` — Neo4j connectivity probe; returns 503 when Neo4j is down.

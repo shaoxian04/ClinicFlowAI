@@ -44,3 +44,34 @@
 - `POST /agents/rules/feedback`
 
 The Python agent service is **never** exposed through Nginx. Only Spring Boot may reach it.
+
+## Evaluator routes (added 2026-05-01)
+
+### Spring Boot (frontend-facing)
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api/visits/{visitId}/findings` | Active findings for the visit, ordered by severity then `gmt_create`. Doctor must own the visit. Audit: `EVALUATOR_LIST_FINDINGS`. |
+| `POST` | `/api/visits/{visitId}/findings/{findingId}/acknowledge` | Body `{reason?}` (max 255 chars). Idempotent. Audit: `EVALUATOR_ACKNOWLEDGE`. Publishes `EvaluatorFindingAcknowledgedDomainEvent`. |
+| `POST` | `/api/visits/{visitId}/re-evaluate` | Calls the agent's `/agents/evaluator/re-evaluate` then returns the new active set. Audit: `EVALUATOR_REEVALUATE`. |
+
+### Spring Boot (existing route — new behavior)
+
+| Method | Path | Change |
+|---|---|---|
+| `POST` | `/api/visits/{visitId}/report/finalize` | Now returns 409 with `{code, message, findingIds}` when unacknowledged CRITICAL findings exist. Audit on block: `EVALUATOR_FINALIZE_BLOCKED`. |
+
+### Agent (internal)
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/agents/evaluator/findings/{visit_id}` | Same active-findings query as Spring Boot but without ownership checks (service-to-service). |
+| `POST` | `/agents/evaluator/re-evaluate` | Body `{visit_id, patient_id, doctor_id}`. Runs `EvaluatorAgent.evaluate` synchronously and returns the new findings. |
+
+### Agent (existing routes — new SSE event)
+
+| Route | New event |
+|---|---|
+| `POST /agents/report/generate` | After drafter completes: `event: evaluator.done` followed by JSON `{findings, validators_run, validators_unavailable}`, OR `event: evaluator.error` with `{reason}` |
+| `POST /agents/report/edit` | Same |
+| `POST /agents/report/clarify` | Same |

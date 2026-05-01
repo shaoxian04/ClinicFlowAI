@@ -39,3 +39,57 @@ Every edge is tagged with relation type, confidence (`EXTRACTED` = 1.0, `INFERRE
 ## Demo seeding — destructive, dev-only
 
 `agent/app/graph/queries/seed_demo.py` (invoked via `POST /agents/patient-context/seed-demo-bulk`) runs an unconditional Cypher MERGE that adds `Penicillin` + `Peanuts` allergies, `Type 2 Diabetes`, and `Metformin 500mg` edges to **every patient passed in**. It does not delete or replace existing edges, so running it against a populated graph silently contaminates real patient charts with these demo values. Backend gate: `cliniflow.dev.seed-demo-enabled` flag (off by default). Treat the seeder as destructive — never enable in any environment that has real patients.
+
+## Evaluator findings (added 2026-05-01)
+
+### Postgres — `evaluator_findings`
+
+```sql
+CREATE TABLE evaluator_findings (
+    id                      uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
+    visit_id                uuid         NOT NULL REFERENCES visits(id) ON DELETE CASCADE,
+    category                varchar(32)  NOT NULL CHECK (category IN
+                              ('DRUG_ALLERGY','DDI','PREGNANCY','DOSE','HALLUCINATION','COMPLETENESS')),
+    severity                varchar(16)  NOT NULL CHECK (severity IN
+                              ('CRITICAL','HIGH','MEDIUM','LOW')),
+    field_path              varchar(255),
+    message                 text         NOT NULL,
+    details                 jsonb        NOT NULL DEFAULT '{}'::jsonb,
+    acknowledged_at         timestamptz,
+    acknowledged_by         uuid         REFERENCES users(id) ON DELETE SET NULL,
+    acknowledgement_reason  varchar(255),
+    superseded_at           timestamptz,
+    gmt_create              timestamptz  NOT NULL DEFAULT now(),
+    gmt_modified            timestamptz  NOT NULL DEFAULT now()
+);
+CREATE INDEX evaluator_findings_visit_idx ON evaluator_findings(visit_id) WHERE superseded_at IS NULL;
+CREATE INDEX evaluator_findings_unack_critical_idx ON evaluator_findings(visit_id)
+    WHERE severity = 'CRITICAL' AND acknowledged_at IS NULL AND superseded_at IS NULL;
+```
+
+### Postgres — `patients` additions
+
+```sql
+ALTER TABLE patients
+  ADD COLUMN pregnancy_status varchar(16)         -- NOT_PREGNANT|PREGNANT|LACTATING|UNKNOWN
+  ADD COLUMN pregnancy_trimester smallint         -- 1, 2, 3, NULL
+  ADD COLUMN weight_kg numeric(5,2)
+  ADD COLUMN height_cm numeric(5,2);
+```
+
+### Neo4j — drug knowledge graph
+
+Nodes:
+- `:Drug {name, rxnorm_code?, atc_code?}` — name is unique
+- `:DrugClass {name}` — name is unique
+- `:PregnancyCategory {code, description}` — code is unique
+- `:DoseRule {id, route, min_age_years, max_age_years, min_weight_kg, max_weight_kg, min_dose_mg, max_dose_mg, max_daily_mg, frequency_pattern}` — id is unique
+
+Edges:
+- `(:Drug)-[:BELONGS_TO]->(:DrugClass)` — class membership
+- `(:Drug)-[:INTERACTS_WITH {severity, mechanism, source}]-(:Drug)` — direct DDI (undirected)
+- `(:Drug|:DrugClass)-[:INTERACTS_WITH {severity, mechanism, source}]-(:Drug|:DrugClass)` — class-level
+- `(:Drug)-[:PREGNANCY_CATEGORY {lactation_safe, advisory}]->(:PregnancyCategory)`
+- `(:Drug)-[:HAS_DOSE_RULE]->(:DoseRule)`
+
+Seed: `agent/app/graph/seed/drug_knowledge.json` (39 drugs, 9 DDIs, 6 dose rules — Malaysian primary-care cohort).

@@ -56,6 +56,7 @@ Read these before touching agent or clinical-data code:
 - **PDPA audit log** is append-only. Never delete or update rows in application code. Every CREATE / UPDATE / DELETE of per-patient data must write a row.
 - **Server-side identity.** Every controller that acts on per-patient data must derive `patient_id` from the JWT principal (`PatientReadAppService.findByUserId(claims.userId())`). Path-parameter IDs require an explicit ownership check. Never hardcode UUIDs. See `docs/details/identity-and-authz.md`.
 - **Frontend talks to Spring Boot only.** Next.js never calls the Python agent or Neo4j directly, and never uses the Supabase JS client for clinical data.
+- **Evaluator soft-block.** Any CRITICAL evaluator finding (DDI, allergy, dose, pregnancy) must be acknowledged by the doctor before `/api/visits/{id}/report/finalize` returns 200. This check is enforced in both Spring Boot (`SoapWriteAppService`) and the Python agent (`/agents/report/finalize`). Never remove or bypass this gate. See `docs/details/agent-design.md` §Evaluator Agent.
 
 ## Skill usage
 
@@ -81,3 +82,7 @@ Read the relevant file on demand — don't preload everything.
 - **`non-functional.md`** — PDPA, performance targets, Resilience4j config, rollout strategy, priority matrix, golden signals, correlation IDs. Read before ops/observability work.
 - **`scope-and-acceptance.md`** — Explicit out-of-scope list, MVP must/should split, user-story IDs with PRD-defined acceptance criteria. Read before adding features.
 - **`open-questions.md`** — Unresolved decisions and assumptions to validate.
+
+Feature specs and plans (read on-demand for those features):
+- **`docs/superpowers/specs/2026-05-01-evaluator-and-drug-validation-design.md`** — Full design for the evaluator agent + drug validation (DDI, allergy, dose, pregnancy, hallucination, completeness validators).
+- **`docs/superpowers/plans/2026-05-01-evaluator-and-drug-validation.md`** — Phase-by-phase implementation plan for the evaluator feature.

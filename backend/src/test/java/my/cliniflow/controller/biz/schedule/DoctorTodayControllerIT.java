@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
@@ -76,8 +77,11 @@ class DoctorTodayControllerIT {
 
     @Test
     void today_returns_booked_appointments_sorted_by_start() throws Exception {
-        // Insert two slots for today: 09:00 and 14:00 (KL = UTC+8)
-        LocalDate today = LocalDate.now();
+        // Insert two slots for today: 09:00 and 14:00 (KL = UTC+8).
+        // Use the controller's KL clock — LocalDate.now() in UTC drifts
+        // off-by-one after 16:00 UTC and the controller-side window
+        // (computed in Asia/Kuala_Lumpur) returns zero rows.
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kuala_Lumpur"));
         OffsetDateTime morning = today.atTime(9, 0).atOffset(ZoneOffset.ofHours(8));
         OffsetDateTime afternoon = today.atTime(14, 0).atOffset(ZoneOffset.ofHours(8));
 
@@ -114,7 +118,7 @@ class DoctorTodayControllerIT {
 
     @Test
     void today_excludes_non_booked_appointments() throws Exception {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kuala_Lumpur"));
         OffsetDateTime start = today.atTime(10, 0).atOffset(ZoneOffset.ofHours(8));
 
         UUID slot = insertSlot(start, start.plusMinutes(30), "BOOKED");

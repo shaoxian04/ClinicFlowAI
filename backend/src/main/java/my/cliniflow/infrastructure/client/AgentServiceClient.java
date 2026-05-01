@@ -2,6 +2,7 @@ package my.cliniflow.infrastructure.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import my.cliniflow.controller.base.UpstreamException;
+import my.cliniflow.controller.biz.visit.response.EvaluatorFindingDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -417,4 +418,48 @@ public class AgentServiceClient {
         @com.fasterxml.jackson.annotation.JsonProperty("text") String text
     ) {}
     public record SttResult(String text) {}
+
+    public List<EvaluatorFindingDTO> getFindings(UUID visitId) {
+        log.info("[AGENT] GET /agents/evaluator/findings/{}", visitId);
+        try {
+            FindingsListResponse resp = client.get()
+                .uri("/agents/evaluator/findings/{id}", visitId)
+                .retrieve()
+                .bodyToMono(FindingsListResponse.class)
+                .block();
+            return resp == null ? List.of() : resp.findings();
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /findings HTTP {} visit={} body={}", e.getRawStatusCode(), visitId, e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /findings FAILED visit={} err={}", visitId, e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
+    public void reEvaluate(UUID visitId, UUID patientId, UUID doctorId) {
+        log.info("[AGENT] POST /agents/evaluator/re-evaluate visitId={}", visitId);
+        try {
+            withCorrelation(client.post().uri("/agents/evaluator/re-evaluate"))
+                .bodyValue(new ReEvaluateBody(visitId.toString(), patientId.toString(), doctorId.toString()))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (WebClientResponseException e) {
+            log.error("[AGENT] /re-evaluate HTTP {} visit={} body={}", e.getRawStatusCode(), visitId, e.getResponseBodyAsString());
+            throw new UpstreamException("agent", e.getRawStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("[AGENT] /re-evaluate FAILED visit={} err={}", visitId, e.toString(), e);
+            throw new UpstreamException("agent", 0, e.toString(), e);
+        }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private record ReEvaluateBody(
+        @com.fasterxml.jackson.annotation.JsonProperty("visit_id") String visitId,
+        @com.fasterxml.jackson.annotation.JsonProperty("patient_id") String patientId,
+        @com.fasterxml.jackson.annotation.JsonProperty("doctor_id") String doctorId
+    ) {}
+
+    public record FindingsListResponse(List<EvaluatorFindingDTO> findings) {}
 }

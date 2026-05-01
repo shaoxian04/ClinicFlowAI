@@ -21,7 +21,10 @@ const ACCEPTED_AUDIO = ".mp3,.mp4,.mpeg,.mpga,.m4a,.wav,.webm,.ogg,.flac";
 export function GenerateBar({ visitId, onGenerate, generating, hasReport, initialTranscript }: GenerateBarProps) {
   const [transcript, setTranscript] = useState(initialTranscript ?? "");
   const [expanded, setExpanded] = useState(!hasReport);
-  const [mode, setMode] = useState<Mode>("text");
+  // Live recording is the primary capture path during a real consultation —
+  // text mode is reserved for paste/edit, voice mode for uploading a saved
+  // recording. Default to "live" so the doctor can hit record immediately.
+  const [mode, setMode] = useState<Mode>("live");
 
   // Voice (file upload) state
   const [dragOver, setDragOver] = useState(false);

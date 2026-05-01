@@ -11,6 +11,8 @@ import { GenerateBar } from "./GenerateBar";
 import { ReportPanel } from "./ReportPanel";
 import { ReportChatPanel } from "./ReportChatPanel";
 import { AgentThinkingTrail } from "./AgentThinkingTrail";
+import type { Availability, Finding } from "@/app/doctor/visits/[visitId]/components/safety/types";
+import { AISafetyReviewPanel } from "@/app/doctor/visits/[visitId]/components/safety/AISafetyReviewPanel";
 
 export interface SplitReviewProps {
   visitId: string;
@@ -18,9 +20,17 @@ export interface SplitReviewProps {
   initialApproved: boolean;
   locked: boolean;
   onNavigateToPreview: () => void;
+  onDraftChanged?: () => void | Promise<void> | Promise<unknown>;
+  unackedCriticalFindings?: Finding[];
+  onAcknowledgeFinding?: (id: string, reason?: string) => Promise<void>;
+  evaluatorFindings?: Finding[];
+  evaluatorAvailability?: Availability;
+  evaluatorLoading?: boolean;
+  evaluatorError?: string;
+  onReEvaluate?: () => Promise<Finding[] | null>;
 }
 
-export function SplitReview({ visitId, initialReport, initialApproved, locked, onNavigateToPreview }: SplitReviewProps) {
+export function SplitReview({ visitId, initialReport, initialApproved, locked, onNavigateToPreview, onDraftChanged, unackedCriticalFindings = [], onAcknowledgeFinding, evaluatorFindings, evaluatorAvailability, evaluatorLoading, evaluatorError, onReEvaluate }: SplitReviewProps) {
   const [state, dispatch] = useReducer(reviewReducer, {
     ...initialReviewState,
     report: initialReport,
@@ -48,6 +58,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
       );
       dispatch({ type: "GENERATE_DONE", report: resp.report, clarification: resp.clarification, status: resp.status });
       await refreshChat();
+      if (onDraftChanged) { await onDraftChanged(); }
     } catch (e) {
       dispatch({ type: "ERROR", message: (e as Error).message });
     }
@@ -72,6 +83,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
       const resp = await apiPost<ReportReviewResult>(`/visits/${visitId}/report/${path}`, body);
       dispatch({ type: "EDIT_DONE", report: resp.report, clarification: resp.clarification, status: resp.status });
       await refreshChat();
+      if (onDraftChanged) { await onDraftChanged(); }
     } catch (e) {
       dispatch({ type: "ERROR", message: (e as Error).message });
     }
@@ -85,6 +97,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
         { path, value },
       );
       dispatch({ type: "PATCH_DONE", path, report: resp.report });
+      if (onDraftChanged) { await onDraftChanged(); }
     } catch (e) {
       dispatch({ type: "PATCH_FAIL", path, message: (e as Error).message });
     }
@@ -128,6 +141,17 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
 
       <AgentThinkingTrail active={state.generating} />
 
+      {evaluatorFindings !== undefined && evaluatorAvailability !== undefined && onAcknowledgeFinding && onReEvaluate && (
+        <AISafetyReviewPanel
+          findings={evaluatorFindings}
+          availability={evaluatorAvailability}
+          loading={!!evaluatorLoading}
+          error={evaluatorError}
+          onAcknowledge={onAcknowledgeFinding}
+          onReEvaluate={onReEvaluate}
+        />
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 items-start">
         <ReportPanel
           report={state.report}
@@ -138,6 +162,11 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
           patching={state.patching}
           locked={locked}
           doctorName={doctorName}
+          clarification={state.clarification}
+          generating={state.generating || state.editing}
+          unackedCriticalFindings={unackedCriticalFindings}
+          onAcknowledgeFinding={onAcknowledgeFinding}
+          onReEvaluate={onReEvaluate}
         />
         {/* Sticky on large screens so the input stays reachable while
             the doctor scrolls the (potentially long) report. */}

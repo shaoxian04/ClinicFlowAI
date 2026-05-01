@@ -7,6 +7,10 @@ import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.domain.biz.schedule.service.exception.BookingsInWindowException;
 import my.cliniflow.domain.biz.schedule.service.exception.CancelWindowPassedException;
 import my.cliniflow.domain.biz.schedule.service.exception.SlotTakenException;
+import my.cliniflow.domain.biz.visit.exception.UnacknowledgedCriticalFindingsException;
+
+import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -94,6 +98,18 @@ public class GlobalExceptionConfiguration {
         log.info("[SCHEDULE] cancel window passed: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(WebResult.error(ResultCode.CONFLICT, ex.getMessage()));
+    }
+
+    public record UnackedFindingsBody(int code, String message, List<UUID> findingIds) {}
+
+    @ExceptionHandler(UnacknowledgedCriticalFindingsException.class)
+    public ResponseEntity<UnackedFindingsBody> onUnackedCritical(UnacknowledgedCriticalFindingsException ex) {
+        log.info("[EVALUATOR] finalize blocked unacked critical findings count={}", ex.getFindingIds().size());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(new UnackedFindingsBody(
+                ResultCode.CONFLICT.code(),
+                ex.getMessage(),
+                ex.getFindingIds()));
     }
 
     @ExceptionHandler(BusinessException.class)

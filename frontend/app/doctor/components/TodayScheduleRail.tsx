@@ -47,7 +47,7 @@ export function TodayScheduleRail({ appointments }: Props) {
                                 }
                             >
                                 {start.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" })}{" "}
-                                — {a.patientId.slice(0, 8)}
+                                — {a.patientName ?? a.patientId.slice(0, 8)}
                             </span>
                             <span className="ml-auto font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest">
                                 {a.type === "NEW_SYMPTOM" ? "NEW" : "F/U"}

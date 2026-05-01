@@ -1,6 +1,7 @@
 // frontend/app/doctor/visits/[visitId]/components/review/ReportPanel.tsx
 "use client";
-import type { MedicalReport, MedicationOrder } from "@/lib/types/report";
+import { useState } from "react";
+import type { Clarification, MedicalReport, MedicationOrder } from "@/lib/types/report";
 import { cn } from "@/design/cn";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -8,6 +9,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Separator } from "@/components/ui/Separator";
 import { SignatureStamp } from "@/components/ui/SignatureStamp";
 import { NoReportYetIllustration } from "@/components/illustrations/empty/NoReportYetIllustration";
+import { ApproveOverrideDialog } from "@/app/doctor/visits/[visitId]/components/safety/ApproveOverrideDialog";
+import type { Finding } from "@/app/doctor/visits/[visitId]/components/safety/types";
 
 export interface ReportPanelProps {
   report: MedicalReport | null;
@@ -18,6 +21,11 @@ export interface ReportPanelProps {
   patching: Set<string>;
   locked: boolean;
   doctorName?: string;
+  clarification?: Clarification | null;
+  generating?: boolean;
+  unackedCriticalFindings?: Finding[];
+  onAcknowledgeFinding?: (id: string, reason?: string) => Promise<void>;
+  onReEvaluate?: () => Promise<Finding[] | null>;
 }
 
 const VITAL_FIELDS: Array<{ key: string; label: string; placeholder: string }> = [
@@ -37,7 +45,41 @@ const textareaCls = "w-full rounded-xs border border-ink-rim bg-obsidian text-fo
 const labelCls = "block font-mono text-[11px] text-fog/70 uppercase tracking-widest mb-1.5";
 const fieldWrapCls = "mb-4";
 
-export function ReportPanel({ report, reportVersion = 0, approved, onApprove, onPatch, patching, locked, doctorName }: ReportPanelProps) {
+export function ReportPanel({ report, reportVersion = 0, approved, onApprove, onPatch, patching, locked, doctorName, clarification, generating = false, unackedCriticalFindings = [], onAcknowledgeFinding, onReEvaluate }: ReportPanelProps) {
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideFindings, setOverrideFindings] = useState<Finding[]>([]);
+  const [preApproveEvaluating, setPreApproveEvaluating] = useState(false);
+  const unackedCriticalCount = unackedCriticalFindings.length;
+  const requiresOverride = unackedCriticalCount > 0;
+
+  async function handleApproveClick() {
+    if (preApproveEvaluating) return;
+    // Re-run the evaluator just before approval so doctor edits made since the
+    // last validation (e.g. typed dose change, added medication) are checked.
+    // Use the freshly-returned findings — relying on parent state would race
+    // with the React commit and could approve based on stale data.
+    let latestCriticals: Finding[] = unackedCriticalFindings;
+    if (onReEvaluate) {
+      setPreApproveEvaluating(true);
+      try {
+        const fresh = await onReEvaluate();
+        if (fresh) {
+          latestCriticals = fresh.filter(
+            (f) => f.severity === "CRITICAL" && !f.acknowledgedAt,
+          );
+        }
+      } finally {
+        setPreApproveEvaluating(false);
+      }
+    }
+    if (latestCriticals.length > 0 && onAcknowledgeFinding) {
+      setOverrideFindings(latestCriticals);
+      setOverrideOpen(true);
+      return;
+    }
+    await onApprove();
+  }
+
   if (report == null) {
     return (
       <section className="relative bg-ink-well rounded-sm border border-ink-rim p-5 flex flex-col gap-2">
@@ -45,10 +87,40 @@ export function ReportPanel({ report, reportVersion = 0, approved, onApprove, on
         <div className="flex items-center justify-between mb-2">
           <span className="font-sans font-medium text-sm text-fog uppercase tracking-wider">Report</span>
         </div>
-        <div className="flex flex-col items-center py-4">
-          <NoReportYetIllustration />
-          <p className="font-sans text-sm text-fog-dim mt-2">Report will appear here once generated.</p>
-        </div>
+        {clarification ? (
+          <div
+            className="flex flex-col gap-2 px-4 py-4 my-2 bg-amber/5 border border-amber/30 rounded-xs"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-center gap-2">
+              <span aria-hidden className="font-mono text-xs text-amber">●</span>
+              <span className="font-mono text-[11px] text-amber uppercase tracking-widest">
+                Clarification needed
+              </span>
+            </div>
+            <p className="font-sans text-sm text-fog leading-relaxed">
+              {clarification.prompt}
+            </p>
+            {clarification.context && (
+              <p className="font-sans text-xs text-fog-dim leading-relaxed">
+                {clarification.context}
+              </p>
+            )}
+            <p className="font-sans text-xs text-fog-dim/80 mt-1">
+              Reply in the assistant chat on the right to continue. The report will appear here once the agent has enough information to draft it.
+            </p>
+          </div>
+        ) : generating ? (
+          <div className="flex flex-col items-center py-4">
+            <p className="font-sans text-sm text-fog-dim mt-2">Drafting report…</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center py-4">
+            <NoReportYetIllustration />
+            <p className="font-sans text-sm text-fog-dim mt-2">Report will appear here once generated.</p>
+          </div>
+        )}
       </section>
     );
   }
@@ -71,17 +143,43 @@ export function ReportPanel({ report, reportVersion = 0, approved, onApprove, on
           {(approved || locked) && (
             <Badge variant="published">Signed</Badge>
           )}
+          {requiresOverride && !approved && !locked && (
+            <Badge variant="danger">
+              {unackedCriticalCount} CRITICAL · OVERRIDE REQUIRED
+            </Badge>
+          )}
         </div>
         <Button
           type="button"
           variant="primary"
           size="sm"
-          onClick={onApprove}
-          disabled={approveDisabled}
+          onClick={handleApproveClick}
+          disabled={approveDisabled || preApproveEvaluating}
+          title={
+            requiresOverride
+              ? `${unackedCriticalCount} critical safety finding${unackedCriticalCount > 1 ? "s" : ""} — you'll be asked for an override reason before approving.`
+              : "Re-running safety checks before approval."
+          }
         >
-          {approved ? "Approved ✓" : "Approve & continue"}
+          {approved
+            ? "Approved ✓"
+            : preApproveEvaluating
+              ? "Re-checking safety…"
+              : requiresOverride
+                ? "Approve with override…"
+                : "Approve & continue"}
         </Button>
       </div>
+
+      {!approved && !locked && onAcknowledgeFinding && (
+        <ApproveOverrideDialog
+          open={overrideOpen}
+          onOpenChange={setOverrideOpen}
+          unackedCritical={overrideFindings.length > 0 ? overrideFindings : unackedCriticalFindings}
+          onAcknowledge={onAcknowledgeFinding}
+          onProceed={async () => { await onApprove(); }}
+        />
+      )}
 
       <div className={cn(
         !approved && !locked

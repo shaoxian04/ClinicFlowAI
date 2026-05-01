@@ -48,12 +48,27 @@ export type ReviewAction =
 export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
   switch (action.type) {
     case "GENERATE_START":
-      return { ...state, generating: true, error: null };
+      // Wipe the previous draft + clarification at the start of a fresh
+      // generate so the report panel doesn't keep showing stale content
+      // while the agent is working on a new transcript. EDIT_START
+      // intentionally does NOT do this — edits should leave the existing
+      // draft visible until the new one arrives.
+      return {
+        ...state,
+        generating: true,
+        error: null,
+        report: null,
+        clarification: null,
+        approved: false,
+      };
     case "GENERATE_DONE":
       return {
         ...state,
         generating: false,
-        report: action.report ?? state.report,
+        // Replace the report with whatever the agent returned — including
+        // null when the agent went into clarification mode. Falling back
+        // to state.report would leave the previous SOAP on screen forever.
+        report: action.report,
         clarification: action.clarification,
         reportVersion: action.report ? state.reportVersion + 1 : state.reportVersion,
       };

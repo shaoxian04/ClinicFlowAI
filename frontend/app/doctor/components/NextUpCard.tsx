@@ -36,7 +36,9 @@ export function NextUpCard({ next }: Props) {
                 </p>
                 <p className="font-mono text-xs text-cyan uppercase tracking-widest">{eyebrow}</p>
             </div>
-            <p className="font-display text-2xl text-fog mt-3">{next.patientId.slice(0, 8)}</p>
+            <p className="font-display text-2xl text-fog mt-3">
+                {next.patientName ?? next.patientId.slice(0, 8)}
+            </p>
             <p className="font-sans text-xs text-fog-dim mt-1">
                 {next.type === "NEW_SYMPTOM" ? "NEW symptom" : "Follow-up"} · 30 min
             </p>

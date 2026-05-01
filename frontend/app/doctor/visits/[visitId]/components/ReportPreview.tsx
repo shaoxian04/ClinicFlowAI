@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Separator } from "@/components/ui/Separator";
+import type { Finding } from "./safety/types";
+import { ApproveOverrideDialog } from "./safety/ApproveOverrideDialog";
 
 export interface ReportPreviewProps {
   visitId: string;
@@ -19,6 +21,10 @@ export interface ReportPreviewProps {
   approved: boolean;
   finalizedAt: string | null | undefined;
   onPublished: () => void;
+  findings?: Finding[];
+  onFindingsRefetch?: () => Promise<void>;
+  onAcknowledgeFinding?: (id: string, reason?: string) => Promise<void>;
+  onReEvaluate?: () => Promise<Finding[] | null>;
 }
 
 const CLINIC = {
@@ -91,20 +97,79 @@ const monoCls = "font-mono text-sm";
 export function ReportPreview({
   visitId, patientName, doctorName, createdAt, report,
   finalized, approved, finalizedAt, onPublished,
+  findings = [], onFindingsRefetch, onAcknowledgeFinding, onReEvaluate,
 }: ReportPreviewProps) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideFindings, setOverrideFindings] = useState<Finding[]>([]);
 
   const hasReport = report != null;
+
+  const unackedCriticalCount = findings.filter(
+    (f) => f.severity === "CRITICAL" && !f.acknowledgedAt,
+  ).length;
+
+  async function doFinalize() {
+    await apiPost(`/visits/${visitId}/report/finalize`, {});
+    onPublished();
+  }
+
+  function looksLikeCriticalConflict(msg: string) {
+    const upper = msg.toUpperCase();
+    return (
+      upper.includes("HTTP 409") ||
+      upper.includes("CONFLICT") ||
+      upper.includes("UNACKNOWLEDGED") ||
+      upper.includes("CRITICAL_FINDING") ||
+      upper.includes("CRITICAL SAFETY") ||
+      upper.includes("EVALUATOR") ||
+      upper.includes("AGENT RETURNED HTTP 409")
+    );
+  }
 
   async function publish() {
     setBusy(true);
     setErr(null);
     try {
-      await apiPost(`/visits/${visitId}/report/finalize`, {});
-      onPublished();
+      // Re-run evaluator first — finalize on the agent re-validates the
+      // report against fresh patient context, so a stale findings list
+      // can mask a new CRITICAL. Surface it before the user even sees a
+      // 409 from the publish call.
+      if (onReEvaluate) {
+        const fresh = await onReEvaluate();
+        if (fresh) {
+          const criticals = fresh.filter(
+            (f) => f.severity === "CRITICAL" && !f.acknowledgedAt,
+          );
+          if (criticals.length > 0 && onAcknowledgeFinding) {
+            setOverrideFindings(criticals);
+            setOverrideOpen(true);
+            return;
+          }
+        }
+      }
+      await doFinalize();
     } catch (e) {
-      setErr((e as Error).message);
+      const msg = (e as Error).message ?? "";
+      if (looksLikeCriticalConflict(msg) && onAcknowledgeFinding) {
+        // Agent rejected with a fresh critical finding we didn't have
+        // locally yet. Refetch and open the override dialog so the
+        // doctor can record a reason and retry without re-clicking.
+        if (onFindingsRefetch) await onFindingsRefetch();
+        const criticals = findings.filter(
+          (f) => f.severity === "CRITICAL" && !f.acknowledgedAt,
+        );
+        if (criticals.length > 0) {
+          setOverrideFindings(criticals);
+          setOverrideOpen(true);
+          setErr(null);
+          return;
+        }
+        setErr("Publishing was blocked by the safety evaluator. Click Re-run safety checks in the safety panel and try again.");
+      } else {
+        setErr(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -408,8 +473,17 @@ export function ReportPreview({
             variant="primary"
             onClick={publish}
             disabled={busy}
+            title={
+              unackedCriticalCount > 0
+                ? `${unackedCriticalCount} critical safety finding${unackedCriticalCount > 1 ? "s" : ""} — you'll be asked for an override reason before publishing.`
+                : "Re-running safety checks before publishing."
+            }
           >
-            {busy ? "Publishing…" : "Publish to patient"}
+            {busy
+              ? "Publishing…"
+              : unackedCriticalCount > 0
+                ? "Publish with override…"
+                : "Publish to patient"}
           </Button>
         )}
         <Button
@@ -421,6 +495,18 @@ export function ReportPreview({
         </Button>
         {err && <span className="font-sans text-sm text-crimson">{err}</span>}
       </div>
+
+      {!finalized && approved && onAcknowledgeFinding && (
+        <ApproveOverrideDialog
+          open={overrideOpen}
+          onOpenChange={setOverrideOpen}
+          unackedCritical={overrideFindings.length > 0
+            ? overrideFindings
+            : findings.filter((f) => f.severity === "CRITICAL" && !f.acknowledgedAt)}
+          onAcknowledge={onAcknowledgeFinding}
+          onProceed={async () => { await doFinalize(); }}
+        />
+      )}
     </div>
   );
 }
