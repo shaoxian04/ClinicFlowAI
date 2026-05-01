@@ -130,25 +130,27 @@ public class DevDataSeeder implements ApplicationRunner {
      * regenerating, so already-BOOKED slots are preserved.
      */
     private void seedScheduleTemplateAndSlots() {
-        // Both branches issue @Modifying JPQL deletes (slotGenSvc.deleteFutureAvailable),
-        // so the work must run inside a Spring transaction. ApplicationRunner.run is
-        // not transactional by itself.
+        // Always upsert + regenerate: ensures any change to the demo weekly hours
+        // (e.g. adding weekends) takes effect on the next backend restart, even
+        // when a stale template exists. SlotGenerateDomainService deletes only
+        // future-AVAILABLE slots before re-emitting, so already-BOOKED slots
+        // are preserved.
         tx.executeWithoutResult(status -> {
-            if (templateRepo.findCurrentForDoctor(DOCTORS_PK).isPresent()) {
-                var existing = templateRepo.findCurrentForDoctor(DOCTORS_PK).orElseThrow();
-                slotGenSvc.generate(existing, OffsetDateTime.now());
-                return;
-            }
             WeeklyHours wh = WeeklyHours.fromJson(Map.of(
                 "MON", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
                 "TUE", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
                 "WED", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
                 "THU", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
-                "FRI", List.of(List.of("09:00", "12:00"))
+                "FRI", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
+                "SAT", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00")),
+                "SUN", List.of(List.of("09:00", "12:00"), List.of("14:00", "17:00"))
             ));
+            LocalDate effectiveFrom = templateRepo.findCurrentForDoctor(DOCTORS_PK)
+                .map(t -> t.getEffectiveFrom())
+                .orElseGet(LocalDate::now);
             var saved = templateUpdateSvc.upsert(
                 DOCTORS_PK,
-                LocalDate.now(),
+                effectiveFrom,
                 (short) 30,
                 wh,
                 (short) 2,
