@@ -8,6 +8,7 @@ import { FileTextIcon as FileText } from "@/components/icons";
 
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { getMyProfile } from "@/lib/patient-me";
 import { WhatsAppOptInModal } from "@/app/components/schedule/WhatsAppOptInModal";
 import { cn } from "@/design/cn";
 import { fadeUp, staggerChildren } from "@/design/motion";
@@ -45,7 +46,11 @@ export default function PortalHome() {
     setFirstName(name.charAt(0).toUpperCase() + name.slice(1));
     try {
       const dismissed = localStorage.getItem(`wa-optin-dismissed-${user.userId ?? user.email}`);
-      if (!dismissed) setShowOptIn(true);
+      if (!dismissed) {
+        getMyProfile()
+          .then((me) => { if (!me.whatsappConsent) setShowOptIn(true); })
+          .catch(() => { /* if probe fails, don't show modal — fail closed */ });
+      }
     } catch { /* private mode */ }
     apiGet<VisitSummary[]>(`/patient/visits`)
       .then((v) => {

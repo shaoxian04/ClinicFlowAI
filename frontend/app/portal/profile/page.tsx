@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Separator } from "@/components/ui/Separator";
 import { apiPutVoid } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { getMyProfile } from "@/lib/patient-me";
 
 const PHONE_RE = /^\+?[0-9]{6,20}$/;
 
@@ -31,6 +32,23 @@ export default function ProfilePage() {
         const user = getUser();
         if (!user || user.role !== "PATIENT") router.replace("/login");
     }, [router]);
+
+    useEffect(() => {
+        let cancelled = false;
+        getMyProfile()
+            .then((me) => {
+                if (cancelled) return;
+                if (me.phone) {
+                    setPhone(me.phone);
+                    setPhoneSaved(me.phone);
+                }
+                setWhatsappOn(me.whatsappConsent);
+            })
+            .catch(() => {
+                // Silently ignore — first-load, blank form is fine
+            });
+        return () => { cancelled = true; };
+    }, []);
 
     async function savePhone(e: React.FormEvent) {
         e.preventDefault();
