@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { getDoctorToday } from "@/lib/appointments";
 import { cn } from "@/design/cn";
 import { fadeUp, staggerChildren } from "@/design/motion";
 import { Card } from "@/components/ui/Card";
@@ -90,6 +92,7 @@ export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [bookingCount, setBookingCount] = useState<number | null>(null);
 
   useEffect(() => {
     const user = getUser();
@@ -100,6 +103,12 @@ export default function DoctorDashboard() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [router]);
+
+  useEffect(() => {
+    getDoctorToday()
+      .then((rows) => setBookingCount(rows.length))
+      .catch(() => setBookingCount(0));
+  }, []);
 
   const groups = useMemo(() => groupVisits(visits), [visits]);
 
@@ -178,12 +187,33 @@ export default function DoctorDashboard() {
 
           {/* KPI strip */}
           {!loading && (
-            <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3 mb-8 max-w-md">
+            <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3 mb-6 max-w-md">
               <AnimatedStatTile label="Awaiting review" value={awaitingCount} sparklineData={awaitingSparkline} className="bg-ink-well/50 backdrop-blur-xl border border-ink-rim/60 shadow-glass" />
               <AnimatedStatTile label="Today" value={todayCount} sparklineData={todaySparkline} className="bg-ink-well/50 backdrop-blur-xl border border-ink-rim/60 shadow-glass" />
               <AnimatedStatTile label="Finalized" value={finalizedCount} sparklineData={finalizedSparkline} />
             </motion.div>
           )}
+
+          {/* Today's appointments booking card */}
+          <motion.div variants={fadeUp} className="mb-8 max-w-xs">
+            <Card className="px-5 py-4 bg-ink-well/50 backdrop-blur-xl border border-ink-rim/60">
+              <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-2">
+                Today&apos;s Appointments
+              </p>
+              <p className="font-display text-3xl text-fog leading-none mb-1">
+                {bookingCount ?? "—"}
+              </p>
+              <p className="font-sans text-sm text-fog-dim mb-3">
+                scheduled for today
+              </p>
+              <Link
+                href="/doctor/today"
+                className="font-sans text-sm text-cyan hover:underline"
+              >
+                View today&apos;s bookings →
+              </Link>
+            </Card>
+          </motion.div>
 
           {loading && (
             <motion.div variants={fadeUp} className="flex flex-col gap-3">

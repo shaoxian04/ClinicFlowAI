@@ -67,7 +67,7 @@ export default function DoctorTodayPage() {
 
     return (
         <>
-            <DoctorNav active="today" />
+            <DoctorNav active="bookings" />
             <main className="max-w-screen-xl mx-auto px-6 py-8">
                 <motion.div
                     variants={staggerChildren}
