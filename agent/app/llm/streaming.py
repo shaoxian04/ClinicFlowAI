@@ -44,3 +44,21 @@ def turn_complete(turn_index: int) -> SseEvent:
 
 def agent_error(message: str) -> SseEvent:
     return SseEvent("agent.error", {"message": message})
+
+
+def evaluator_done(
+    findings: list[dict],
+    validators_run: list[str],
+    validators_unavailable: list[tuple[str, str]],
+) -> SseEvent:
+    return SseEvent("evaluator.done", {
+        "findings": findings,
+        "validators_run": validators_run,
+        "validators_unavailable": [
+            {"category": c, "reason": r} for c, r in validators_unavailable
+        ],
+    })
+
+
+def evaluator_error(reason: str) -> SseEvent:
+    return SseEvent("evaluator.error", {"reason": reason})

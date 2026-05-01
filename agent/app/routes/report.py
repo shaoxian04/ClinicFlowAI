@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import AsyncIterator
@@ -11,9 +12,11 @@ from starlette.responses import JSONResponse, StreamingResponse
 
 from app.agents.base import AgentContext, ClarificationRequested
 from app.agents.report_agent import ReportAgent
+from app.config import settings
 from app.llm.openai_client import OpenAIClient
-from app.llm.streaming import clarification_needed
+from app.llm.streaming import clarification_needed, evaluator_done, evaluator_error
 from app.persistence.agent_turns import AgentTurnRepository
+from app.persistence.evaluator_findings import has_unacked_critical, list_active_findings
 from app.persistence.postgres import get_pool
 from app.schemas.report import MedicalReport, required_field_is_missing
 from app.tools.registry import build_registry
@@ -165,6 +168,47 @@ async def _run_stream(agent: ReportAgent, ctx: AgentContext, user_input: str) ->
         ).encode()
 
 
+async def _run_stream_with_evaluator(
+    agent: ReportAgent,
+    ctx: AgentContext,
+    user_input: str,
+) -> AsyncIterator[bytes]:
+    drafter_clarified = False
+    try:
+        async for ev in agent.step(ctx, user_input=user_input):
+            yield ev.encode()
+    except ClarificationRequested as exc:
+        drafter_clarified = True
+        args = exc.call.arguments
+        yield clarification_needed(
+            field=args.get("field", ""),
+            prompt=args.get("prompt", ""),
+            context=args.get("context", ""),
+        ).encode()
+
+    # Skip evaluator if drafter is asking for clarification or feature flag is off
+    if drafter_clarified or not settings.evaluator_enabled:
+        return
+
+    # Run evaluator and emit one terminal SSE event
+    try:
+        from app.agents.evaluator_agent import EvaluatorAgent, EvaluatorContext
+        result = await asyncio.wait_for(
+            EvaluatorAgent().evaluate(
+                EvaluatorContext(visit_id=ctx.visit_id, patient_id=ctx.patient_id)
+            ),
+            timeout=settings.evaluator_timeout_total_seconds,
+        )
+        yield evaluator_done(
+            findings=[f.model_dump() for f in result.findings],
+            validators_run=result.validators_run,
+            validators_unavailable=result.validators_unavailable,
+        ).encode()
+    except Exception as e:
+        log.exception("[AGENT] evaluator.failed visit=%s", ctx.visit_id)
+        yield evaluator_error(reason=type(e).__name__).encode()
+
+
 @router.post("/generate")
 async def generate(req: GenerateRequest) -> StreamingResponse:
     llm = OpenAIClient()
@@ -175,7 +219,7 @@ async def generate(req: GenerateRequest) -> StreamingResponse:
         llm=llm, registry=registry, turns=AgentTurnRepository(),
     )
     ctx = AgentContext(visit_id=req.visit_id, patient_id=req.patient_id, doctor_id=req.doctor_id)
-    return StreamingResponse(_run_stream(agent, ctx, req.transcript), media_type="text/event-stream")
+    return StreamingResponse(_run_stream_with_evaluator(agent, ctx, req.transcript), media_type="text/event-stream")
 
 
 @router.post("/clarify")
@@ -187,7 +231,7 @@ async def clarify(req: ClarifyRequest) -> StreamingResponse:
         llm=llm, registry=registry, turns=AgentTurnRepository(),
     )
     ctx = AgentContext(visit_id=req.visit_id, patient_id=req.patient_id, doctor_id=req.doctor_id)
-    return StreamingResponse(_run_stream(agent, ctx, req.answer), media_type="text/event-stream")
+    return StreamingResponse(_run_stream_with_evaluator(agent, ctx, req.answer), media_type="text/event-stream")
 
 
 @router.post("/edit")
@@ -207,7 +251,7 @@ async def edit(req: EditRequest) -> StreamingResponse:
     user_input = f"Doctor edit request:\n{req.edit}"
     log.info("[AGENT] /agents/report/edit visit=%s has_current_draft=%s edit_len=%d",
              req.visit_id, req.current_draft is not None, len(req.edit))
-    return StreamingResponse(_run_stream(agent, ctx, user_input), media_type="text/event-stream")
+    return StreamingResponse(_run_stream_with_evaluator(agent, ctx, user_input), media_type="text/event-stream")
 
 
 class FinalizeRequest(BaseModel):
@@ -221,6 +265,19 @@ async def finalize(req: FinalizeRequest) -> JSONResponse:
     Per spec §5.5, the backend owns all finalize-time writes to visits and
     medical_reports (atomic with audit_log). Agent just validates and summarizes.
     """
+    if await has_unacked_critical(req.visit_id):
+        rows = await list_active_findings(req.visit_id)
+        blocking = [
+            str(r["id"]) for r in rows
+            if r["severity"] == "CRITICAL" and r["acknowledged_at"] is None
+        ]
+        log.info("[AGENT] /agents/report/finalize blocked_by_critical visit=%s n=%d",
+                 req.visit_id, len(blocking))
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "unacknowledged_critical_findings", "finding_ids": blocking},
+        )
+
     pool = get_pool()
     row = await pool.fetchrow(
         "SELECT report_draft, report_confidence_flags FROM visits WHERE id=$1",
