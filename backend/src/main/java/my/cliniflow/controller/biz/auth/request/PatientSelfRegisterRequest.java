@@ -20,5 +20,7 @@ public record PatientSelfRegisterRequest(
         @Pattern(regexp = "en|ms|zh") String preferredLanguage,
         String nationalId,
         @NotBlank String consentVersion,
-        Map<String, Object> clinicalBaseline
+        Map<String, Object> clinicalBaseline,
+        Boolean whatsAppConsent,
+        String whatsAppConsentVersion
 ) {}

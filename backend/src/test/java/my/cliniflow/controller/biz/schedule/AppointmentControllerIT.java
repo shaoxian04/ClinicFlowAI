@@ -251,7 +251,7 @@ class AppointmentControllerIT {
             email, "Strong-Pwd-12345",
             "IT Patient", LocalDate.of(1990, 6, 15),
             "OTHER", "+60123456789",
-            "en", null, "v1", null);
+            "en", null, "v1", null, null, null);
 
         MvcResult result = mvc.perform(post("/api/auth/register/patient")
                 .contentType(MediaType.APPLICATION_JSON)

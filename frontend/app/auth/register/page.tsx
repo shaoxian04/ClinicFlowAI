@@ -17,6 +17,7 @@ import { fadeUp, staggerChildren } from "@/design/motion";
 type RegisterResponse = AuthUser & { token: string; patientId: string };
 
 const CONSENT_VERSION = "v1";
+const WHATSAPP_CONSENT_VERSION = "wa-v1";
 
 const SELECT_CLASSES =
   "h-10 w-full rounded-sm border border-ink-rim bg-ink-well px-3 text-sm font-sans text-fog focus:outline-none focus:ring-1 focus:ring-cyan/40 disabled:opacity-50 appearance-none";
@@ -34,6 +35,7 @@ export default function RegisterPage() {
   const [allergies, setAllergies] = useState("");
   const [conditions, setConditions] = useState("");
   const [consent, setConsent] = useState(false);
+  const [whatsappConsent, setWhatsappConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -46,6 +48,10 @@ export default function RegisterPage() {
     }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (whatsappConsent && (!phone || phone.trim().length < 8)) {
+      setError("Phone number is required to receive WhatsApp reminders.");
       return;
     }
     setBusy(true);
@@ -71,6 +77,8 @@ export default function RegisterPage() {
         nationalId: nationalId || null,
         consentVersion: CONSENT_VERSION,
         clinicalBaseline: Object.keys(clinicalBaseline).length ? clinicalBaseline : null,
+        whatsAppConsent: whatsappConsent,
+        whatsAppConsentVersion: whatsappConsent ? WHATSAPP_CONSENT_VERSION : null,
       });
       const { token, patientId: _patientId, ...user } = data;
       saveAuth(token, user);
@@ -205,6 +213,17 @@ export default function RegisterPage() {
                     privacy notice
                   </Link>
                   {" "}and consent to my health data being processed under PDPA.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2.5 mt-2 cursor-pointer">
+                <input type="checkbox" checked={whatsappConsent}
+                  onChange={(e) => setWhatsappConsent(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded-xs border border-ink-rim bg-ink-well accent-cyan focus:outline-none focus:ring-1 focus:ring-cyan/40" />
+                <span className="font-sans text-xs text-fog-dim leading-relaxed">
+                  I consent to receiving appointment confirmations, medication
+                  instructions, and follow-up reminders via WhatsApp at the phone
+                  number above. I can withdraw any time in profile settings.
                 </span>
               </label>
 

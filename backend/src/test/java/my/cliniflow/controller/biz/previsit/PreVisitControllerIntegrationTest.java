@@ -91,7 +91,7 @@ class PreVisitControllerIntegrationTest {
         PatientSelfRegisterRequest reg = new PatientSelfRegisterRequest(
             email, "Strong-Pwd-12345", "Regression Tester",
             LocalDate.of(1990, 1, 1), "FEMALE", "+60123334444",
-            "en", null, "v1", null);
+            "en", null, "v1", null, null, null);
         MvcResult regResult = mvc.perform(post("/api/auth/register/patient")
                 .contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsString(reg)))
             .andExpect(status().isOk()).andReturn();
@@ -125,7 +125,7 @@ class PreVisitControllerIntegrationTest {
         PatientSelfRegisterRequest regA = new PatientSelfRegisterRequest(
             emailA, "Strong-Pwd-12345", "Owner A",
             LocalDate.of(1990, 1, 1), "FEMALE", "+60123334444",
-            "en", null, "v1", null);
+            "en", null, "v1", null, null, null);
         MvcResult regAResult = mvc.perform(post("/api/auth/register/patient")
                 .contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsString(regA)))
             .andExpect(status().isOk()).andReturn();
@@ -142,7 +142,7 @@ class PreVisitControllerIntegrationTest {
         PatientSelfRegisterRequest regB = new PatientSelfRegisterRequest(
             emailB, "Strong-Pwd-12345", "Intruder B",
             LocalDate.of(1991, 2, 2), "MALE", "+60123335555",
-            "en", null, "v1", null);
+            "en", null, "v1", null, null, null);
         MvcResult regBResult = mvc.perform(post("/api/auth/register/patient")
                 .contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsString(regB)))
             .andExpect(status().isOk()).andReturn();
