@@ -18,4 +18,7 @@ public interface ScheduleDayOverrideRepository {
     Optional<ScheduleDayOverrideModel> findById(UUID id);
 
     List<ScheduleDayOverrideModel> findByDoctorAndDate(UUID doctorId, LocalDate date);
+
+    /** Removes the override with the given id. No-op if the id does not exist. */
+    void delete(UUID id);
 }

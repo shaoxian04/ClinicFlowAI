@@ -26,3 +26,12 @@ MERGE INTO doctors (id, user_id, mmc_number, specialty, is_accepting_patients) K
     ('00000000-0000-0000-0000-000000000020',
      '00000000-0000-0000-0000-000000000001',
      'MMC-DEMO', 'General', TRUE);
+
+-- Seed STAFF user for ScheduleController integration tests (Task 4.2).
+-- user_id = 00000000-0000-0000-0000-000000000003
+-- password = "password" (bcrypt cost 10)
+MERGE INTO users (id, email, password_hash, role, full_name, is_active) KEY(id) VALUES
+    ('00000000-0000-0000-0000-000000000003',
+     'staff@demo.local',
+     '$2a$10$AdJhIOYNdcRG/jSVWK.V7u6300yExmv1Z5/.AcFRYZwS9nfyHIZai',
+     'STAFF', 'Staff Demo', TRUE);

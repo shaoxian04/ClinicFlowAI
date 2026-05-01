@@ -58,6 +58,11 @@ public class ScheduleDayOverrideRepositoryImpl implements ScheduleDayOverrideRep
                   .stream().map(this::toModel).toList();
     }
 
+    @Override
+    public void delete(UUID id) {
+        jpa.deleteById(id);
+    }
+
     private ScheduleDayOverrideModel toModel(ScheduleDayOverrideEntity e) {
         return ScheduleDayOverrideModel.hydrate(
             e.getId(),
