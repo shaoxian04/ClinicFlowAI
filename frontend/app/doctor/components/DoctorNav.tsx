@@ -11,9 +11,9 @@ type Tab =
   | { key: DoctorNavTab; label: string; disabled: true };
 
 const TABS: Tab[] = [
-  { key: "today", label: "Visits", href: "/doctor" },
-  { key: "bookings", label: "Today", href: "/doctor/today" },
-  { key: "queue", label: "Queue", href: "/doctor/queue" },
+  { key: "today", label: "Dashboard", href: "/doctor" },
+  { key: "bookings", label: "Today's schedule", href: "/doctor/today" },
+  { key: "queue", label: "Awaiting review", href: "/doctor/queue" },
   { key: "finalized", label: "Finalized", href: "/doctor/finalized" },
   { key: "patients", label: "Patients", disabled: true },
 ];
