@@ -77,6 +77,31 @@ export async function apiGet<T>(path: string): Promise<T> {
     return envelope.data;
 }
 
+/** PUT to an endpoint that intentionally returns data:null on success. */
+export async function apiPutVoid(path: string, body: unknown): Promise<void> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+            const errBody: WebResult<unknown> = await res.json();
+            if (errBody.message) msg = errBody.message;
+        } catch { /* ignore parse failure */ }
+        throw new Error(msg);
+    }
+    const envelope: WebResult<unknown> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+}
+
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
     const token = getToken();
     const res = await fetch(`${BASE}${path}`, {
