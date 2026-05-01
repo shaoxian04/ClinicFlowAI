@@ -19,8 +19,8 @@ public interface MedicalReportRepository extends JpaRepository<MedicalReportMode
      * MedicalReportModel only — the visit join is via the matching visit_id.
      */
     @Query(
-        "SELECT r FROM MedicalReportModel r, my.cliniflow.domain.biz.visit.model.VisitModel v "
-        + "WHERE r.visitId = v.id AND v.patientId = :pid "
+        "SELECT r FROM MedicalReportModel r JOIN VisitModel v ON r.visitId = v.id "
+        + "WHERE v.patientId = :pid "
         + "AND r.finalizedAt IS NOT NULL "
         + "ORDER BY r.finalizedAt DESC")
     List<MedicalReportModel> findFinalizedByPatientId(@Param("pid") UUID patientId, Pageable page);

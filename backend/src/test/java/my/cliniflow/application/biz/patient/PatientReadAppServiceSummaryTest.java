@@ -73,14 +73,7 @@ class PatientReadAppServiceSummaryTest {
     void summaryReturnsDemographicsAndVisitPreviewsForKnownPatient() {
         UUID patientId = UUID.randomUUID();
         PatientModel p = new PatientModel();
-        // Set id reflectively (no public setter)
-        try {
-            var f = PatientModel.class.getDeclaredField("id");
-            f.setAccessible(true);
-            f.set(p, patientId);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        p.setId(patientId);
         p.setFullName("Pat Demo");
         p.setEmail("pat@example.com");
         p.setPhone("+60123456789");
