@@ -8,6 +8,7 @@ import { FileTextIcon as FileText } from "@/components/icons";
 
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { WhatsAppOptInModal } from "@/app/components/schedule/WhatsAppOptInModal";
 import { cn } from "@/design/cn";
 import { fadeUp, staggerChildren } from "@/design/motion";
 import { Card } from "@/components/ui/Card";
@@ -32,6 +33,7 @@ export default function PortalHome() {
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [firstName, setFirstName] = useState<string>("there");
+  const [showOptIn, setShowOptIn] = useState(false);
 
   useEffect(() => {
     const user = getUser();
@@ -41,6 +43,10 @@ export default function PortalHome() {
     }
     const name = (user.email ?? "there").split("@")[0];
     setFirstName(name.charAt(0).toUpperCase() + name.slice(1));
+    try {
+      const dismissed = localStorage.getItem(`wa-optin-dismissed-${user.userId ?? user.email}`);
+      if (!dismissed) setShowOptIn(true);
+    } catch { /* private mode */ }
     apiGet<VisitSummary[]>(`/patient/visits`)
       .then((v) => {
         setVisits(v);
@@ -209,6 +215,12 @@ export default function PortalHome() {
           </div>
         )}
       </motion.div>
+      {showOptIn && (
+        <WhatsAppOptInModal
+          userId={(getUser()?.userId ?? getUser()?.email) ?? ""}
+          onClose={() => setShowOptIn(false)}
+        />
+      )}
     </main>
   );
 }
