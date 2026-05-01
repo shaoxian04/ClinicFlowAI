@@ -6,6 +6,7 @@ import my.cliniflow.domain.biz.schedule.model.AppointmentSlotModel;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -29,4 +30,8 @@ public interface AppointmentSlotRepository {
 
     /** Bulk-deletes future AVAILABLE slots; used when regenerating from template. */
     int deleteFutureAvailable(UUID doctorId, OffsetDateTime now);
+
+    /** Returns start_at values of all future slots (any status) — used by the
+     *  generator to skip times that are already occupied (e.g. by BOOKED slots). */
+    Set<OffsetDateTime> findFutureStartAts(UUID doctorId, OffsetDateTime now);
 }
