@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Separator } from "@/components/ui/Separator";
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/Tooltip";
+import type { Finding } from "./safety/types";
 
 export interface ReportPreviewProps {
   visitId: string;
@@ -19,6 +26,8 @@ export interface ReportPreviewProps {
   approved: boolean;
   finalizedAt: string | null | undefined;
   onPublished: () => void;
+  findings?: Finding[];
+  onFindingsRefetch?: () => Promise<void>;
 }
 
 const CLINIC = {
@@ -91,11 +100,17 @@ const monoCls = "font-mono text-sm";
 export function ReportPreview({
   visitId, patientName, doctorName, createdAt, report,
   finalized, approved, finalizedAt, onPublished,
+  findings = [], onFindingsRefetch,
 }: ReportPreviewProps) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const hasReport = report != null;
+
+  const unackedCriticalCount = findings.filter(
+    (f) => f.severity === "CRITICAL" && !f.acknowledgedAt,
+  ).length;
+  const finalizeBlocked = unackedCriticalCount > 0;
 
   async function publish() {
     setBusy(true);
@@ -104,7 +119,21 @@ export function ReportPreview({
       await apiPost(`/visits/${visitId}/report/finalize`, {});
       onPublished();
     } catch (e) {
-      setErr((e as Error).message);
+      const msg = (e as Error).message ?? "";
+      // Detect backend-reported unacknowledged critical findings:
+      // – HTTP 409 surfaces as "HTTP 409" from apiPost's !res.ok path
+      // – envelope-level code !== 0 surfaces the backend message directly
+      //   (e.g. "UNACKNOWLEDGED_CRITICAL_FINDINGS" or similar)
+      if (
+        msg === "HTTP 409" ||
+        msg.toUpperCase().includes("UNACKNOWLEDGED") ||
+        msg.toUpperCase().includes("CRITICAL_FINDING")
+      ) {
+        setErr("New critical findings detected. Please review the safety panel.");
+        if (onFindingsRefetch) await onFindingsRefetch();
+      } else {
+        setErr(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -403,14 +432,37 @@ export function ReportPreview({
       {/* ============================ ACTIONS ============================ */}
       <div className="flex items-center gap-3 flex-wrap">
         {!finalized && approved && (
-          <Button
-            type="button"
-            variant="primary"
-            onClick={publish}
-            disabled={busy}
-          >
-            {busy ? "Publishing…" : "Publish to patient"}
-          </Button>
+          finalizeBlocked ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={publish}
+                      disabled={true}
+                      aria-disabled={true}
+                    >
+                      {busy ? "Publishing…" : "Publish to patient"}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Acknowledge {unackedCriticalCount} critical safety finding{unackedCriticalCount > 1 ? "s" : ""} before publishing.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={publish}
+              disabled={busy}
+            >
+              {busy ? "Publishing…" : "Publish to patient"}
+            </Button>
+          )
         )}
         <Button
           type="button"
