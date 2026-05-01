@@ -110,7 +110,7 @@ public class SoapWriteAppService {
                 .filter(EvaluatorFindingModel::isUnacknowledgedCritical)
                 .map(EvaluatorFindingModel::getId)
                 .toList();
-            auditWriter.append("EVALUATOR_FINALIZE_BLOCKED", "visit", visitId.toString(), doctorUserId, "DOCTOR");
+            auditWriter.append("UPDATE", "visit_finalize_blocked", visitId.toString(), doctorUserId, "DOCTOR");
             throw new UnacknowledgedCriticalFindingsException(blockers);
         }
         MedicalReportModel r = reports.findByVisitId(visitId).orElseThrow(

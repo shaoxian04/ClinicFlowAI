@@ -124,13 +124,14 @@ public class VisitReadAppService {
         }
     }
 
+    @Transactional
     public List<EvaluatorFindingDTO> listFindings(UUID visitId, UUID requesterUserId, Role role) {
         VisitModel visit = visits.findById(visitId).orElseThrow(
             () -> new ResourceNotFoundException("visit not found: " + visitId));
         if (role == Role.DOCTOR && !visit.getDoctorId().equals(requesterUserId)) {
             throw new BusinessException(ResultCode.FORBIDDEN, "not your visit");
         }
-        auditWriter.append("EVALUATOR_LIST_FINDINGS", "visit", visitId.toString(), requesterUserId, role.name());
+        auditWriter.append("READ", "evaluator_finding", visitId.toString(), requesterUserId, role.name());
         return findingRepo.findActiveByVisitId(visitId).stream()
             .map(findingConverter::convert)
             .toList();

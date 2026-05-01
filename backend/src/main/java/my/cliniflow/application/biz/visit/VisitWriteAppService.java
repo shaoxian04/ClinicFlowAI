@@ -87,7 +87,7 @@ public class VisitWriteAppService {
         }
         AcknowledgeFindingInfo info = new AcknowledgeFindingInfo(findingId, doctorId, reason);
         EvaluatorFindingModel ack = ackService.acknowledge(visitId, info);
-        auditWriter.append("EVALUATOR_ACKNOWLEDGE", "evaluator_finding", findingId.toString(), doctorId, "DOCTOR");
+        auditWriter.append("UPDATE", "evaluator_finding_ack", findingId.toString(), doctorId, "DOCTOR");
         events.publishEvent(new EvaluatorFindingAcknowledgedDomainEvent(
             visitId, findingId, doctorId, reason, OffsetDateTime.now()));
         return findingConverter.convert(ack);
@@ -99,7 +99,7 @@ public class VisitWriteAppService {
         if (!visit.getDoctorId().equals(doctorId)) {
             throw new BusinessException(ResultCode.FORBIDDEN, "not your visit");
         }
-        auditWriter.append("EVALUATOR_REEVALUATE", "visit", visitId.toString(), doctorId, "DOCTOR");
+        auditWriter.append("READ", "evaluator_reevaluate", visitId.toString(), doctorId, "DOCTOR");
         agent.reEvaluate(visitId, visit.getPatientId(), doctorId);
         return findingRepo.findActiveByVisitId(visitId).stream()
             .map(findingConverter::convert)
