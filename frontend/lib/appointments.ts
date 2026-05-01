@@ -20,6 +20,8 @@ export type Appointment = {
     parentVisitId: string | null;
     status: "BOOKED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
     cancelledAt: string | null;
+    doctorName: string | null;
+    patientName: string | null;
 };
 
 export type AppointmentBookRequest = {
@@ -128,6 +130,11 @@ export async function upsertScheduleTemplate(req: {
 
 export async function getDoctorToday(): Promise<Appointment[]> {
     return apiGet<Appointment[]>(`/doctor/appointments/today`);
+}
+
+/** Doctor's appointments for a [from, to] inclusive ISO-date range (YYYY-MM-DD). */
+export async function getDoctorAppointmentsRange(from: string, to: string): Promise<Appointment[]> {
+    return apiGet<Appointment[]>(`/doctor/appointments/range?from=${from}&to=${to}`);
 }
 
 // ---------------------------------------------------------------------------

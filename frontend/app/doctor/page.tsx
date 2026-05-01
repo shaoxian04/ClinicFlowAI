@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import DoctorNav from "./components/DoctorNav";
@@ -85,7 +86,12 @@ export default function DoctorHome() {
                 </motion.section>
 
                 <motion.section variants={fadeUp} className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <KpiTile label="Awaiting review" value={dashboard?.kpis.awaitingReview} accent />
+                    <KpiTile
+                        label="Awaiting review"
+                        value={dashboard?.kpis.awaitingReview}
+                        accent
+                        href="/doctor/queue"
+                    />
                     <KpiTile label="Today's bookings" value={dashboard?.kpis.bookedToday} />
                     <KpiTile label="Finalized this week" value={dashboard?.kpis.finalizedThisWeek} />
                     <KpiTile
@@ -121,17 +127,35 @@ function KpiTile({
     label,
     value,
     accent,
+    href,
 }: {
     label: string;
     value: number | string | undefined;
     accent?: boolean;
+    href?: string;
 }) {
-    return (
-        <div className="border border-ink-rim rounded-sm p-3">
-            <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest">{label}</p>
+    const inner = (
+        <>
+            <div className="flex items-baseline justify-between">
+                <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest">{label}</p>
+                {href && (
+                    <span className="font-mono text-[10px] text-cyan/70 group-hover:text-cyan transition-colors">
+                        →
+                    </span>
+                )}
+            </div>
             <p className={"font-display text-2xl mt-1 " + (accent ? "text-cyan" : "text-fog")}>
                 {value ?? "—"}
             </p>
-        </div>
+        </>
     );
+    const baseClasses = "border border-ink-rim rounded-sm p-3 block";
+    if (href) {
+        return (
+            <Link href={href} className={baseClasses + " group hover:border-cyan/60 transition-colors"}>
+                {inner}
+            </Link>
+        );
+    }
+    return <div className={baseClasses}>{inner}</div>;
 }

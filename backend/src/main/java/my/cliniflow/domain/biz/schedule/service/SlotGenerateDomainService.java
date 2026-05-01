@@ -11,12 +11,15 @@ import my.cliniflow.domain.biz.schedule.repository.ScheduleDayOverrideRepository
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Domain service that eager-materialises appointment slots from a
@@ -52,6 +55,12 @@ public class SlotGenerateDomainService {
 
     public int generate(ScheduleTemplateModel tpl, OffsetDateTime now) {
         slots.deleteFutureAvailable(tpl.getDoctorId(), now);
+        // After deleting orphan AVAILABLE slots, any remaining future slots are
+        // either BOOKED or AVAILABLE-with-appointment-history. Skip those start_at
+        // values during generation so the (doctor_id, start_at) unique constraint
+        // doesn't blow up. Compare on Instant so offset differences don't matter.
+        Set<Instant> existingInstants = slots.findFutureStartAts(tpl.getDoctorId(), now)
+            .stream().map(OffsetDateTime::toInstant).collect(Collectors.toSet());
         WeeklyHours wh = tpl.getWeeklyHours();
         int slotMinutes = tpl.getSlotMinutes();
         int horizonDays = tpl.getGenerationHorizonDays();
@@ -78,6 +87,10 @@ public class SlotGenerateDomainService {
                     OffsetDateTime startAt = ZonedDateTime.of(date, slotStart, KL).toOffsetDateTime();
                     OffsetDateTime endAt   = ZonedDateTime.of(date, slotEnd,   KL).toOffsetDateTime();
                     if (!startAt.isAfter(now)) {
+                        cursor = cursor.plusMinutes(slotMinutes);
+                        continue;
+                    }
+                    if (existingInstants.contains(startAt.toInstant())) {
                         cursor = cursor.plusMinutes(slotMinutes);
                         continue;
                     }
