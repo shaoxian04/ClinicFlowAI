@@ -68,7 +68,7 @@ class PatientMeControllerIT {
             .andExpect(jsonPath("$.code").value(0));
 
         long auditBefore = jdbc.queryForObject(
-            "SELECT COUNT(*) FROM audit_log WHERE action='GRANT' AND resource_type='WHATSAPP_CONSENT'",
+            "SELECT COUNT(*) FROM audit_log WHERE action='UPDATE' AND resource_type='WHATSAPP_CONSENT_GRANT'",
             Long.class);
 
         // Grant consent
@@ -89,7 +89,7 @@ class PatientMeControllerIT {
         assertThat(rowsWithConsent).isEqualTo(1);
 
         long auditAfter = jdbc.queryForObject(
-            "SELECT COUNT(*) FROM audit_log WHERE action='GRANT' AND resource_type='WHATSAPP_CONSENT'",
+            "SELECT COUNT(*) FROM audit_log WHERE action='UPDATE' AND resource_type='WHATSAPP_CONSENT_GRANT'",
             Long.class);
         assertThat(auditAfter).isEqualTo(auditBefore + 1);
     }

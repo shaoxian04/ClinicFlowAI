@@ -162,7 +162,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
     occurred_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     actor_user_id  UUID         REFERENCES users(id),
     actor_role     VARCHAR(32),
-    action         VARCHAR(16)  NOT NULL,
+    action         VARCHAR(16)  NOT NULL
+                   CHECK (action IN ('READ','CREATE','UPDATE','DELETE','LOGIN','EXPORT')),
     resource_type  VARCHAR(64)  NOT NULL,
     resource_id    VARCHAR(128),
     correlation_id VARCHAR(64),

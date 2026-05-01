@@ -81,7 +81,7 @@ class OutboxDrainerSchedulerTest {
         assertThat(row.getStatus()).isEqualTo("SENT");
         assertThat(row.getSentAt()).isNotNull();
         verify(messageLog).save(any(WhatsAppMessageLogEntity.class));
-        verify(audit).append(eq("SEND"), eq("NOTIFICATION"), any(), any(), eq("SYSTEM"));
+        verify(audit).append(eq("UPDATE"), eq("NOTIFICATION_SEND"), any(), any(), eq("SYSTEM"));
     }
 
     @Test

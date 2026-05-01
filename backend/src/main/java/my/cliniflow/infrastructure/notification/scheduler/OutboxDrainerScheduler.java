@@ -122,7 +122,7 @@ public class OutboxDrainerScheduler {
                 outbox.save(row);
                 logSendSuccess(row, payload, s);
                 String rowId = row.getId() != null ? row.getId().toString() : "unknown";
-                audit.append("SEND", "NOTIFICATION", rowId, null, "SYSTEM");
+                audit.append("UPDATE", "NOTIFICATION_SEND", rowId, null, "SYSTEM");
             }
             case SendResult.Retryable r -> {
                 row.setAttempts((short) (row.getAttempts() + 1));

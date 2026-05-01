@@ -248,7 +248,8 @@ public class PatientWriteAppService {
         }
         patients.save(p);
         String role = users.findById(userId).orElseThrow().getRole().name();
-        audit.append(consent ? "GRANT" : "WITHDRAW", "WHATSAPP_CONSENT",
+        audit.append("UPDATE",
+            consent ? "WHATSAPP_CONSENT_GRANT" : "WHATSAPP_CONSENT_WITHDRAW",
             p.getId().toString(), userId, role);
     }
 
