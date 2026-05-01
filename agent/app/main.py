@@ -11,6 +11,7 @@ from app.graph.driver import close_driver
 from app.graph.schema import apply_schema
 from app.graph.seed.apply_drug_knowledge import apply_drug_knowledge
 from app.persistence import postgres
+from app.routes import evaluator as evaluator_routes
 from app.routes import patient_context as patient_context_routes
 from app.routes import pre_visit, report, rules, stt
 
@@ -148,5 +149,11 @@ app.include_router(
     stt.router,
     prefix="/agents/stt",
     tags=["stt"],
+    dependencies=[Depends(require_service_token)],
+)
+app.include_router(
+    evaluator_routes.router,
+    prefix="/agents/evaluator",
+    tags=["evaluator"],
     dependencies=[Depends(require_service_token)],
 )
