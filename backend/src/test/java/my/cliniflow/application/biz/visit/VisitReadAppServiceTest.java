@@ -1,13 +1,16 @@
 package my.cliniflow.application.biz.visit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import my.cliniflow.controller.biz.visit.converter.EvaluatorFindingModel2DTOConverter;
 import my.cliniflow.controller.biz.visit.response.VisitDetailResponse;
 import my.cliniflow.domain.biz.patient.repository.PatientRepository;
 import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 import my.cliniflow.domain.biz.visit.model.PreVisitReportModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
+import my.cliniflow.domain.biz.visit.repository.EvaluatorFindingRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
+import my.cliniflow.infrastructure.audit.AuditWriter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,12 +32,16 @@ class VisitReadAppServiceTest {
     @Mock VisitRepository visits;
     @Mock MedicalReportRepository reports;
     @Mock PatientRepository patients;
+    @Mock EvaluatorFindingRepository findingRepo;
+    @Mock EvaluatorFindingModel2DTOConverter findingConverter;
+    @Mock AuditWriter auditWriter;
 
     VisitReadAppService svc;
 
     @BeforeEach
     void setUp() {
-        svc = new VisitReadAppService(visits, reports, patients, new ObjectMapper());
+        svc = new VisitReadAppService(visits, reports, patients, new ObjectMapper(),
+            findingRepo, findingConverter, auditWriter);
     }
 
     @Test

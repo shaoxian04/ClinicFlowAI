@@ -1,5 +1,4 @@
 import pytest
-from uuid import uuid4
 from app.graph.queries.pregnancy_safety import fetch_pregnancy_categories
 
 

@@ -1,5 +1,4 @@
 """Tests for GET /findings/{visit_id} and POST /re-evaluate routes."""
-import pytest
 from datetime import datetime
 from uuid import uuid4
 from unittest.mock import patch, AsyncMock

@@ -3,7 +3,6 @@ from uuid import uuid4
 import pytest
 
 from app.schemas.report import MedicalReport, Subjective, Objective, Assessment, Plan, FollowUp, MedicationOrder
-from app.schemas.evaluator import Finding
 from app.agents.evaluator_agent import EvaluatorAgent, EvaluatorContext
 
 
@@ -78,11 +77,17 @@ async def test_orchestrator_skips_pregnancy_when_not_pregnant():
          patch("app.agents.evaluator_agent.supersede_active", AsyncMock()), \
          patch("app.agents.evaluator_agent.insert_findings", AsyncMock()), \
          patch("app.agents.evaluator_agent.get_pool") as gp:
-        conn = AsyncMock(); conn.execute = AsyncMock()
-        tx = AsyncMock(); tx.__aenter__ = AsyncMock(return_value=tx); tx.__aexit__ = AsyncMock(return_value=None)
+        conn = AsyncMock()
+        conn.execute = AsyncMock()
+        tx = AsyncMock()
+        tx.__aenter__ = AsyncMock(return_value=tx)
+        tx.__aexit__ = AsyncMock(return_value=None)
         conn.transaction = lambda: tx
-        acq = AsyncMock(); acq.__aenter__ = AsyncMock(return_value=conn); acq.__aexit__ = AsyncMock(return_value=None)
-        pool = AsyncMock(); pool.acquire = lambda: acq
+        acq = AsyncMock()
+        acq.__aenter__ = AsyncMock(return_value=conn)
+        acq.__aexit__ = AsyncMock(return_value=None)
+        pool = AsyncMock()
+        pool.acquire = lambda: acq
         gp.return_value = pool
         result = await agent.evaluate(_ctx())
     pregnancy_mock.assert_not_awaited()
@@ -107,11 +112,17 @@ async def test_orchestrator_marks_validator_unavailable_on_exception():
          patch("app.agents.evaluator_agent.supersede_active", AsyncMock()), \
          patch("app.agents.evaluator_agent.insert_findings", AsyncMock()), \
          patch("app.agents.evaluator_agent.get_pool") as gp:
-        conn = AsyncMock(); conn.execute = AsyncMock()
-        tx = AsyncMock(); tx.__aenter__ = AsyncMock(return_value=tx); tx.__aexit__ = AsyncMock(return_value=None)
+        conn = AsyncMock()
+        conn.execute = AsyncMock()
+        tx = AsyncMock()
+        tx.__aenter__ = AsyncMock(return_value=tx)
+        tx.__aexit__ = AsyncMock(return_value=None)
         conn.transaction = lambda: tx
-        acq = AsyncMock(); acq.__aenter__ = AsyncMock(return_value=conn); acq.__aexit__ = AsyncMock(return_value=None)
-        pool = AsyncMock(); pool.acquire = lambda: acq
+        acq = AsyncMock()
+        acq.__aenter__ = AsyncMock(return_value=conn)
+        acq.__aexit__ = AsyncMock(return_value=None)
+        pool = AsyncMock()
+        pool.acquire = lambda: acq
         gp.return_value = pool
         result = await agent.evaluate(_ctx())
     assert any(cat == "DDI" for cat, _ in result.validators_unavailable)

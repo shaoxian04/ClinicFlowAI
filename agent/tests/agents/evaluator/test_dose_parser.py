@@ -2,8 +2,6 @@ import pytest
 from app.agents.evaluator.dose_parser import (
     parse_dose_mg,
     parse_frequency_per_day,
-    DoseParseResult,
-    FreqParseResult,
 )
 
 
