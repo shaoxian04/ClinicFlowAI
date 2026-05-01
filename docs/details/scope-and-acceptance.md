@@ -32,3 +32,18 @@ User stories **US-P01..P05, US-D01..D06, US-R01..R02, US-O01..O02** have explici
 - Patients can opt-in/opt-out of WhatsApp reminders at any time via the patient portal (`PUT /api/patients/me/whatsapp-consent`).
 - The notification outbox ensures at-most-once delivery (idempotency via outbox pattern); failed sends are retried with exponential backoff.
 - Phone numbers are PII-redacted in logs; only a SHA-256 hash is stored in the message log.
+
+## Evaluator + drug validation (added 2026-05-01)
+
+**Status:** MVP complete on `feat/evaluator-and-drug-validation`.
+
+**Acceptance criteria** (from spec §7.6 E2E):
+- Generating a SOAP draft for a warfarin patient with proposed ibuprofen produces ≥1 CRITICAL DDI finding visible in the AI Safety Review panel.
+- The publish/finalize button is disabled while any unacknowledged CRITICAL finding exists; tooltip shows the count.
+- Acknowledging with optional reason enables the publish button (UI) and the backend permits finalize (200 instead of 409).
+- The finalized doctor-facing report contains no AI-Safety attribution (no "evaluator", "AI Safety", or "approved by evaluator" strings).
+- Validator failure (e.g., Neo4j down) marks the validator unavailable in the SSE event without preventing the rest of the flow.
+
+**Out of scope** (deferred for follow-up):
+- Hermes-style adaptive rule learning from acknowledgement reasons. (Read side built in agent; write side is `NotImplementedError`.)
+- E-prescription generation (per PRD §7 — explicitly out of scope).
