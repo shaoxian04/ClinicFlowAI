@@ -1,31 +1,34 @@
 package my.cliniflow.infrastructure.notification.outbox;
 
 import my.cliniflow.domain.biz.patient.model.PatientModel;
+import my.cliniflow.domain.biz.user.model.UserModel;
+import my.cliniflow.domain.biz.user.repository.UserRepository;
 import my.cliniflow.infrastructure.notification.whatsapp.WhatsAppPayload;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
-/**
- * Translates an outbox row + patient into a {@link WhatsAppPayload} for the
- * sender. MVP scope: passes through the row's payload map as the var source
- * and uses the patient's preferred locale (defaulting to "en").
- *
- * <p>Future enhancement: per-template helpers that look up doctor name, slot
- * times, portal URL etc. and render PHI-safe variables only. The current
- * implementation surfaces only the fields already present in the outbox
- * payload — callers (listeners) are responsible for putting only PHI-safe
- * data there.
- */
 @Component
 public class OutboxPayloadBuilder {
 
-    private final String portalBaseUrl;
+    private static final ZoneId KL = ZoneId.of("Asia/Kuala_Lumpur");
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("d MMM yyyy");
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("h:mm a");
 
-    public OutboxPayloadBuilder(@Value("${cliniflow.frontend.base-url:http://localhost:3000}") String portalBaseUrl) {
+    private final String portalBaseUrl;
+    private final UserRepository users;
+
+    public OutboxPayloadBuilder(
+            @Value("${cliniflow.frontend.base-url:http://localhost:3000}") String portalBaseUrl,
+            UserRepository users) {
         this.portalBaseUrl = portalBaseUrl;
+        this.users = users;
     }
 
     public WhatsAppPayload build(NotificationOutboxEntity row, PatientModel patient) {
@@ -35,13 +38,38 @@ public class OutboxPayloadBuilder {
 
         Map<String, String> vars = new LinkedHashMap<>();
         vars.put("patientName", safe(patient.getFullName(), "there"));
-        // Pass through any string-coercible fields from the outbox payload — listeners
-        // are responsible for putting only PHI-safe data here (no symptoms, no diagnoses).
+
         if (row.getPayload() != null) {
+            Object slotStart = row.getPayload().get("slotStartAt");
+            if (slotStart != null) {
+                OffsetDateTime t = parseOdt(slotStart.toString());
+                if (t != null) {
+                    vars.put("date", t.atZoneSameInstant(KL).format(DATE_FMT));
+                    vars.put("time", t.atZoneSameInstant(KL).format(TIME_FMT));
+                }
+            }
+            Object followUp = row.getPayload().get("followUpDate");
+            if (followUp != null && !vars.containsKey("date")) {
+                vars.put("date", followUp.toString());
+                vars.put("time", "—");
+            }
+            Object doctorId = row.getPayload().get("doctorId");
+            if (doctorId != null) {
+                try {
+                    users.findById(UUID.fromString(doctorId.toString()))
+                         .map(UserModel::getFullName)
+                         .ifPresent(name -> vars.put("doctorName", name));
+                } catch (IllegalArgumentException ignored) { }
+            }
             row.getPayload().forEach((k, v) -> {
-                if (v != null) vars.put(k, v.toString());
+                if (v != null && !vars.containsKey(k)) vars.put(k, v.toString());
             });
         }
+
+        vars.putIfAbsent("doctorName", "your doctor");
+        vars.putIfAbsent("date", "your scheduled date");
+        vars.putIfAbsent("time", "the scheduled time");
+        vars.putIfAbsent("medsSummary", "see portal for full list");
         vars.put("portalUrl", portalBaseUrl);
 
         return new WhatsAppPayload(
@@ -49,6 +77,10 @@ public class OutboxPayloadBuilder {
             row.getTemplateId(),
             locale,
             vars);
+    }
+
+    private static OffsetDateTime parseOdt(String s) {
+        try { return OffsetDateTime.parse(s); } catch (Exception e) { return null; }
     }
 
     private static String safe(String s, String fallback) {

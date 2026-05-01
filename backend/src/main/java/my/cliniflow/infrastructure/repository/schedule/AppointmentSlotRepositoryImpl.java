@@ -6,8 +6,10 @@ import my.cliniflow.domain.biz.schedule.repository.AppointmentSlotRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -69,6 +71,11 @@ public class AppointmentSlotRepositoryImpl implements AppointmentSlotRepository 
     @Override
     public int deleteFutureAvailable(UUID doctorId, OffsetDateTime now) {
         return jpa.deleteFutureAvailable(doctorId, now);
+    }
+
+    @Override
+    public Set<OffsetDateTime> findFutureStartAts(UUID doctorId, OffsetDateTime now) {
+        return new HashSet<>(jpa.findFutureStartAts(doctorId, now));
     }
 
     private AppointmentSlotModel toModel(AppointmentSlotEntity e) {

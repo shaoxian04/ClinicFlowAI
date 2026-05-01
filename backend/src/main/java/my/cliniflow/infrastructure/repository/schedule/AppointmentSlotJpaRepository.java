@@ -56,8 +56,20 @@ public interface AppointmentSlotJpaRepository extends JpaRepository<AppointmentS
          WHERE s.doctorId = :doctorId
            AND s.status = 'AVAILABLE'
            AND s.startAt > :now
+           AND NOT EXISTS (
+               SELECT 1 FROM AppointmentEntity a WHERE a.slotId = s.id
+           )
         """)
     int deleteFutureAvailable(
+        @Param("doctorId") UUID doctorId,
+        @Param("now") OffsetDateTime now);
+
+    @Query("""
+        SELECT s.startAt FROM AppointmentSlotEntity s
+         WHERE s.doctorId = :doctorId
+           AND s.startAt > :now
+        """)
+    List<OffsetDateTime> findFutureStartAts(
         @Param("doctorId") UUID doctorId,
         @Param("now") OffsetDateTime now);
 }

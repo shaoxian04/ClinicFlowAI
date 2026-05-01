@@ -40,6 +40,7 @@ public class AppointmentReadAppService {
     private final PatientReadAppService patientReads;
     private final AppointmentModel2DTOConverter apptConverter;
     private final AppointmentSlotModel2DTOConverter slotConverter;
+    private final AppointmentNameResolver nameResolver;
     private final UUID singleDoctorId;
 
     public AppointmentReadAppService(
@@ -48,12 +49,14 @@ public class AppointmentReadAppService {
             PatientReadAppService patientReads,
             AppointmentModel2DTOConverter apptConverter,
             AppointmentSlotModel2DTOConverter slotConverter,
+            AppointmentNameResolver nameResolver,
             @Value("${cliniflow.dev.seeded-doctor-pk}") String singleDoctorId) {
         this.appts = appts;
         this.slots = slots;
         this.patientReads = patientReads;
         this.apptConverter = apptConverter;
         this.slotConverter = slotConverter;
+        this.nameResolver = nameResolver;
         this.singleDoctorId = UUID.fromString(singleDoctorId);
     }
 
@@ -97,6 +100,13 @@ public class AppointmentReadAppService {
 
     private AppointmentDTO toDtoWithSlot(AppointmentModel a) {
         AppointmentSlotModel slot = slots.findById(a.getSlotId()).orElse(null);
-        return slot != null ? apptConverter.convert(a, slot) : apptConverter.convert(a);
+        AppointmentDTO base = slot != null ? apptConverter.convert(a, slot) : apptConverter.convert(a);
+        String doctorName = slot != null ? nameResolver.doctorName(slot.getDoctorId()) : null;
+        String patientName = nameResolver.patientName(a.getPatientId());
+        return new AppointmentDTO(
+            base.id(), base.slotId(), base.startAt(), base.endAt(),
+            base.doctorId(), base.patientId(), base.visitId(), base.type(),
+            base.parentVisitId(), base.status(), base.cancelledAt(),
+            doctorName, patientName);
     }
 }

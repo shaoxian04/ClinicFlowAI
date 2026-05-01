@@ -19,5 +19,15 @@ public record AppointmentDTO(
     String type,
     UUID parentVisitId,
     String status,
-    OffsetDateTime cancelledAt
-) {}
+    OffsetDateTime cancelledAt,
+    String doctorName,
+    String patientName
+) {
+    /** Backwards-compatible constructor for callers that don't have names. */
+    public AppointmentDTO(UUID id, UUID slotId, OffsetDateTime startAt, OffsetDateTime endAt,
+                          UUID doctorId, UUID patientId, UUID visitId, String type,
+                          UUID parentVisitId, String status, OffsetDateTime cancelledAt) {
+        this(id, slotId, startAt, endAt, doctorId, patientId, visitId, type,
+             parentVisitId, status, cancelledAt, null, null);
+    }
+}
