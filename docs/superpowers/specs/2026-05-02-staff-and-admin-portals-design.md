@@ -108,18 +108,20 @@ All new endpoints follow Spring Boot conventions already established in this cod
 
 ### 5.1 Endpoint table
 
-| Method | Path | Auth | Purpose | Audit action |
+**Audit convention (existing, must follow):** `audit_log.action` has a CHECK constraint allowing only `READ / CREATE / UPDATE / DELETE / LOGIN / EXPORT`. The "what specifically changed" goes into `resource_type` (e.g., `USER_PASSWORD`) and/or the `metadata` JSONB column (e.g., `{field: "role", from: "DOCTOR", to: "ADMIN"}`). The existing `AuditWriter.append(action, resourceType, resourceId, actorUserId, actorRole)` signature is used unchanged for new endpoints — except the analytics/audit/role-change tasks add a 6th-arg `metadata` overload (see plan).
+
+| Method | Path | Auth | Purpose | Audit (action / resource_type) |
 |---|---|---|---|---|
-| GET | `/api/staff/today` | `STAFF` | Today's appointments + check-in state + pre-visit status | (read) |
-| POST | `/api/staff/checkin` | `STAFF` | Body: `{appointmentId}` → `CHECKED_IN` | `APPOINTMENT.CHECK_IN` |
-| POST | `/api/staff/patients` | `STAFF` | Walk-in registration; creates `PATIENT` user; returns `{patientId, userId, tempPassword}` | `USER.CREATE` + `PATIENT.CREATE` |
-| GET | `/api/patients/search?q=` | `STAFF` or `DOCTOR` | (already exists; frontend path fix only) | (read) |
-| GET | `/api/patients/{id}` | `STAFF` or `DOCTOR` | Demographics + last 5 visits preview | (read) |
-| PATCH | `/api/admin/users/{id}/role` | `ADMIN` | Body: `{role}` → updates `users.role`. Reject self-demotion | `USER.ROLE_CHANGE` |
-| PATCH | `/api/admin/users/{id}/disabled` | `ADMIN` | Body: `{disabled: bool}`. Reject self-disable | `USER.DISABLE` / `USER.REACTIVATE` |
-| POST | `/api/admin/users/{id}/force-password-reset` | `ADMIN` | Sets `must_change_password=true`, rotates password, returns `tempPassword` once | `USER.FORCE_PASSWORD_RESET` |
-| GET | `/api/admin/audit` | `ADMIN` | Paginated, filterable; returns enriched rows with actor + action label + resource label | (read) |
-| GET | `/api/admin/analytics` | `ADMIN` | 4 KPIs + `dailyVisits30d: [{date, count}]` zero-filled to 30 entries | (read) |
+| GET | `/api/staff/today` | `STAFF` | Today's appointments + check-in state + pre-visit status | (read, none) |
+| POST | `/api/staff/checkin` | `STAFF` | Body: `{appointmentId}` → `CHECKED_IN` | `UPDATE` / `APPOINTMENT` (metadata: `{checked_in: true}`) |
+| POST | `/api/staff/patients` | `STAFF` | Walk-in registration; creates `PATIENT` user; returns `{patientId, userId, tempPassword}` | `CREATE` / `USER` and `CREATE` / `PATIENT` |
+| GET | `/api/patients/search?q=` | `STAFF` or `DOCTOR` | (already exists; frontend path fix only) | (read, none) |
+| GET | `/api/patients/{id}` | `STAFF` or `DOCTOR` | Demographics + last 5 visits preview | (read, none) |
+| PATCH | `/api/admin/users/{id}/role` | `ADMIN` | Body: `{role}` → updates `users.role`. Reject self-demotion | `UPDATE` / `USER_ROLE` (metadata: `{from, to}`) |
+| PATCH | `/api/admin/users/{id}/active` | `ADMIN` | Body: `{active: bool}` → flips existing `users.is_active`. Reject self-deactivate | `UPDATE` / `USER` (metadata: `{is_active: bool}`) |
+| POST | `/api/admin/users/{id}/force-password-reset` | `ADMIN` | Sets `must_change_password=true`, rotates password, returns `tempPassword` once | `UPDATE` / `USER_PASSWORD` (metadata: `{force_reset: true}`) |
+| GET | `/api/admin/audit` | `ADMIN` | Paginated, filterable; returns enriched rows with actor + resource label | (read, none) |
+| GET | `/api/admin/analytics` | `ADMIN` | 4 KPIs + `dailyVisits30d: [{date, count}]` zero-filled to 30 entries | (read, none) |
 
 ### 5.2 Authorization rules (explicit)
 
@@ -131,15 +133,11 @@ All new endpoints follow Spring Boot conventions already established in this cod
 
 ### 5.3 Schema changes
 
-- New migration file `backend/src/main/resources/db/migration/V12__user_disabled.sql`:
-  ```sql
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS disabled BOOLEAN NOT NULL DEFAULT FALSE;
-  CREATE INDEX IF NOT EXISTS idx_users_disabled ON users (disabled);
-  ```
-  This file is documentation only — must be applied manually via the Supabase SQL editor before deploying Phase 2 backend, per the project's "Flyway is NOT used" policy.
-- Verify `users.must_change_password` already exists (introduced in V9 registration migration). If absent, include in V12.
-- No `audit_log` schema change — append-only triggers stay untouched. New action codes are application-level enum/constant additions only.
-- Verify or add indexes on `audit_log`: `(timestamp DESC)`, `(actor_id)`, `(action)`, `(resource_type)`. If missing, include `V13__audit_indexes.sql`.
+- **No new column needed for disable/reactivate.** `users.is_active boolean NOT NULL DEFAULT true` already exists from V1. Disable = `is_active = false`. Login filter and JWT issuance already check this column.
+- **No new column needed for force-reset.** `users.must_change_password boolean NOT NULL DEFAULT false` already exists from V9. Setting to `true` is sufficient to gate the next login.
+- **No `audit_log` schema change.** Existing CHECK constraint (`action IN READ/CREATE/UPDATE/DELETE/LOGIN/EXPORT`) and append-only triggers stay untouched. New events use the existing six action verbs; the discriminator goes into `resource_type` (e.g., `USER_PASSWORD`, `USER_ROLE`) and `metadata` JSONB.
+- **AuditWriter overload.** Add an `AuditWriter.append(action, resourceType, resourceId, actorUserId, actorRole, metadata)` overload that writes the `metadata jsonb` column. The existing 5-arg `append` continues to work and writes empty `{}` metadata.
+- **Audit indexes.** V1 already has `audit_log_resource_idx (resource_type, resource_id)` and `audit_log_actor_time_idx (actor_user_id, occurred_at DESC)`. New migration `V12__audit_action_index.sql` adds `idx_audit_log_action_time (action, occurred_at DESC)` to keep the audit list page snappy under date+action filters. Apply manually in Supabase SQL editor.
 
 ### 5.4 Error codes (all returned via `WebResult.error`)
 
@@ -289,7 +287,9 @@ GET /api/staff/today
   → return list sorted by slot.startAt
 
 POST /api/staff/checkin {appointmentId}
-  → if appt.status = BOOKED        → set CHECKED_IN, audit APPOINTMENT.CHECK_IN
+  → if appt.status = BOOKED        → set CHECKED_IN
+                                    audit: action=UPDATE, resource_type=APPOINTMENT,
+                                           resource_id=appt.id, metadata={checked_in: true}
   → if appt.status = CHECKED_IN    → 200 idempotent (no audit row, no state change)
   → if appt.status = CANCELLED|NO_SHOW|COMPLETED → 409 INVALID_STATE
 ```
@@ -301,16 +301,19 @@ PATCH /api/admin/users/{id}/role  {role}
   → guard: actor.id != id                                  (else 409 SELF_ACTION_FORBIDDEN)
   → guard: target.role IN (STAFF, DOCTOR, ADMIN)           (else 409 INVALID_TARGET_ROLE)
   → guard: requested role IN (STAFF, DOCTOR, ADMIN)        (else 409 INVALID_TARGET_ROLE)
-  → update users.role; audit USER.ROLE_CHANGE with detail {from, to}
+  → update users.role
+  → audit: action=UPDATE, resource_type=USER_ROLE, resource_id=user.id, metadata={from, to}
 
-PATCH /api/admin/users/{id}/disabled  {disabled: bool}
+PATCH /api/admin/users/{id}/active  {active: bool}
   → guard: actor.id != id
-  → update users.disabled; audit USER.DISABLE or USER.REACTIVATE
+  → update users.is_active
+  → audit: action=UPDATE, resource_type=USER, resource_id=user.id, metadata={is_active: <bool>}
 
 POST /api/admin/users/{id}/force-password-reset
   → guard: actor.id != id
   → set must_change_password=true; rotate password to fresh temp string; return tempPassword once
-  → audit USER.FORCE_PASSWORD_RESET; detail must NOT contain plaintext password
+  → audit: action=UPDATE, resource_type=USER_PASSWORD, resource_id=user.id, metadata={force_reset: true}
+    (metadata must NOT contain the plaintext temp password)
 ```
 
 ### 7.4 W5 Audit list with enriched labels
@@ -360,7 +363,7 @@ GET /api/admin/analytics
 
 - **Server-side identity.** Every controller derives `actorId` from `JwtService.Claims claims`. Path params are validated against actor identity for self-action guards.
 - **Audit triggers untouched.** `audit_log` UPDATE/DELETE remain rejected by DB triggers. Application code only INSERTs.
-- **No audit-leak.** `detailJson` for `USER.FORCE_PASSWORD_RESET` records the fact of reset only — never the temp password.
+- **No audit-leak.** The `metadata` JSONB for the force-reset event records `{force_reset: true}` only — never the plaintext temp password.
 - **Frontend talks to Spring Boot only.** No direct calls from Next.js to the Python agent or Neo4j; no Supabase JS client for clinical data.
 - **Walk-in role assignment is server-side.** `POST /api/staff/patients` always assigns `role=PATIENT`. Body cannot escalate.
 
@@ -370,7 +373,7 @@ GET /api/admin/analytics
 
 - `UserWriteAppService.createPatientUser` — generates valid temp password, sets `must_change_password=true`, writes both audit rows.
 - `AdminUserAppService.changeRole` — rejects self-demotion (409); writes audit detail `{from, to}`.
-- `AdminUserAppService.setDisabled` — rejects self-disable; emits correct audit code (DISABLE vs REACTIVATE).
+- `AdminUserAppService.setActive` — rejects self-deactivate; flips `users.is_active`; emits audit row with `metadata.is_active = <bool>`.
 - `AdminUserAppService.forcePasswordReset` — rotates password, sets must-change flag, audit row contains no plaintext password.
 - `AuditReadAppService.list` — filter combinations (user × action × resourceType × dateRange); resource-label batch-loader returns correct labels per type and falls back to truncated UUID.
 - `AnalyticsReadAppService.compute` — KPI math on a deterministic fixture; sparkline zero-fills missing days; week boundary respects clinic timezone.
@@ -401,9 +404,9 @@ Each phase rebuilds Docker `--no-cache` and uses Playwright MCP. Critical journe
 - **Staff walk-in:** login as staff → Today → "+ Walk-in" → search "nonexistent" → "Register new" → fill form → pick slot → NEW_SYMPTOM → Book → see new row in Today list.
 - **Staff check-in:** click Check-in on a booked row → row updates to "Checked in".
 - **Patients path fix:** login as staff → Patients → search → results render (no "Data unavailable" banner); click row → patient detail loads.
-- **Admin user lifecycle:** login as admin → Users → click row → drawer opens → change role to STAFF → Save → drawer reflects → Audit page shows USER.ROLE_CHANGE.
-- **Admin disable + reactivate:** disable a doctor → drawer shows "Disabled" chip → audit USER.DISABLE → reactivate → audit USER.REACTIVATE.
-- **Admin force-reset:** trigger reset → audit USER.FORCE_PASSWORD_RESET; logging in as that user lands on forced-password-change page.
+- **Admin user lifecycle:** login as admin → Users → click row → drawer opens → change role to STAFF → Save → drawer reflects → Audit page shows an `UPDATE` / `USER_ROLE` row with `metadata.from`/`metadata.to`.
+- **Admin deactivate + reactivate:** deactivate a doctor → drawer shows "Inactive" chip → audit shows `UPDATE` / `USER` `{is_active: false}` → reactivate → audit shows `{is_active: true}`.
+- **Admin force-reset:** trigger reset → audit shows `UPDATE` / `USER_PASSWORD` `{force_reset: true}`; logging in as that user lands on forced-password-change page.
 - **Admin self-action guard:** admin opens own row → controls disabled with tooltip; attempting via curl returns 409.
 - **Admin analytics:** loads with non-zero KPIs and a 30-bar sparkline against seeded fixture.
 - **Admin audit:** filters work (user, action, range presets); expand row shows detail; resource label resolves for known types.
@@ -424,12 +427,12 @@ Each phase is independently shippable. Phase gating: backend tests green; fronte
 
 ### Phase 2 — Admin user actions + drawer
 
-**Backend:** disable, force-reset endpoints; `V12__user_disabled.sql` migration to apply via Supabase SQL editor.
+**Backend:** active-flip + force-reset endpoints. No new column needed (`users.is_active` and `users.must_change_password` both already exist).
 **Frontend:** `UserDetailDrawer` + R2 redesign of Users page.
 
 ### Phase 3 — Audit + analytics
 
-**Backend:** `/api/admin/audit` with enriched labels; `/api/admin/analytics` with sparkline series; `V13__audit_indexes.sql` if missing.
+**Backend:** `/api/admin/audit` with enriched labels; `/api/admin/analytics` with sparkline series; `V12__audit_action_index.sql` (new index `idx_audit_log_action_time` for filter performance).
 **Frontend:** R3 audit redesign, R4 analytics redesign with `KpiSparkline`.
 
 ### Phase 4 — Walk-in + book-for-patient
@@ -445,9 +448,9 @@ Each phase is independently shippable. Phase gating: backend tests green; fronte
 
 | Risk | Mitigation |
 |---|---|
-| `users.disabled` column doesn't exist; manual Supabase migration required | Phase 2 deliverable includes `V12__user_disabled.sql`; plan adds explicit step "Run this in Supabase SQL editor before deploying Phase 2 backend" |
+| Wrong assumption that disable needs a new column | Verified: `users.is_active` already exists from V1 — no migration. Login filter already gates on it |
 | Walk-in race: two staff book the same slot simultaneously | Already handled by `AppointmentWriteAppService` `SELECT … FOR UPDATE`; surface 409 SLOT_TAKEN cleanly in modal |
-| JWT-stateless disable means disabled users can act until token expires | Documented as known limitation. Optional follow-up: add `users.disabled_at` check in JWT auth filter to reject tokens issued before disable timestamp. Out of this round |
+| JWT-stateless deactivate means deactivated users can act until token expires | Verify `JwtAuthenticationFilter` rejects requests when `users.is_active=false` per-request (most filters re-load the principal); if not, document as a known limitation. Out of this round |
 | Resource-label batch loader N+1 if implemented naively | Plan calls out: group by `resource_type`, one IN query per type |
 | Audit page heavy under load (large `audit_log`) | Verify indexes on `(timestamp DESC)`, `(actor_id)`, `(action)`, `(resource_type)`; add via migration if missing |
 | Force-reset flow could leak the temp password into audit detail if implemented carelessly | Spec calls out explicitly: `detailJson` records the fact of reset only |
