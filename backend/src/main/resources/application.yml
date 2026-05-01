@@ -53,7 +53,11 @@ cliniflow:
     connect-timeout-ms: 2000
     read-timeout-ms: 15000
   dev:
+    # users(id) of the seeded DOCTOR user — used for visits.doctor_id (FK→users)
     seeded-doctor-id: 00000000-0000-0000-0000-000000000001
+    # doctors(id) PK of the seeded doctor row — used for appointment_slots.doctor_id
+    # and any join into the doctors table. DIFFERENT from seeded-doctor-id above.
+    seeded-doctor-pk: 00000000-0000-0000-0000-000000000020
     seeded-patient-id: 00000000-0000-0000-0000-000000000010
   neo4j:
     outbox:

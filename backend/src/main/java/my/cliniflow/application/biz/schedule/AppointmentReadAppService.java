@@ -48,7 +48,7 @@ public class AppointmentReadAppService {
             PatientReadAppService patientReads,
             AppointmentModel2DTOConverter apptConverter,
             AppointmentSlotModel2DTOConverter slotConverter,
-            @Value("${cliniflow.dev.seeded-doctor-id}") String singleDoctorId) {
+            @Value("${cliniflow.dev.seeded-doctor-pk}") String singleDoctorId) {
         this.appts = appts;
         this.slots = slots;
         this.patientReads = patientReads;
