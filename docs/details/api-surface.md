@@ -12,6 +12,30 @@
 - `PUT /api/visits/{id}/report`
 - `GET /api/post-visit/{visitId}/summary`
 
+## Schedule & appointments
+
+**Patient endpoints (`hasRole('PATIENT')`):**
+- `GET  /api/appointments/availability?from=YYYY-MM-DD&to=YYYY-MM-DD` → `AvailabilityResponse{slots[]}` — list AVAILABLE slots for the (single MVP) doctor in the date range. Max 14-day range.
+- `POST /api/appointments` ← `AppointmentBookRequest{slotId, type, visitId?, parentVisitId?}` → `UUID` — book an appointment. NEW_SYMPTOM requires visitId; FOLLOW_UP requires parentVisitId. 409 on race-loss (slot taken).
+- `GET  /api/appointments/mine?status=BOOKED|CANCELLED|...` → `List<AppointmentDTO>`
+- `DELETE /api/appointments/{id}` ← `AppointmentCancelRequest{reason?}` → 204. 403 cross-patient. 409 if cancel lead-time has passed.
+- `PUT /api/patients/me/phone` ← `PhoneUpdateRequest{phone}` → 204. E.164 validation.
+- `PUT /api/patients/me/whatsapp-consent` ← `WhatsAppConsentUpdateRequest{consent: bool}` → 204. 400 if consent=true with no phone on file.
+
+**Staff endpoints (`hasRole('STAFF')`):**
+- `GET  /api/schedule/days/{date}` → `DayScheduleResponse{date, slots[], appointments[]}`
+- `POST /api/schedule/days/{date}/closures` ← `DayClosureRequest{date, reason?}` → `UUID` (override id). 409 if active bookings exist.
+- `POST /api/schedule/days/{date}/blocks` ← `WindowBlockRequest{date, windowStart, windowEnd, reason?}` → `UUID`. 409 if active bookings overlap.
+- `DELETE /api/schedule/overrides/{id}` → 204
+- `POST /api/schedule/appointments/{id}/no-show` → 204
+
+**Admin endpoints (`hasRole('ADMIN')`):**
+- `GET  /api/schedule/template` → `ScheduleTemplateDTO` (404 if none)
+- `PUT  /api/schedule/template` ← `ScheduleTemplateUpsertRequest` → `ScheduleTemplateDTO`. Triggers slot regeneration in same transaction.
+
+**Doctor endpoints (`hasRole('DOCTOR')`):**
+- `GET  /api/doctor/appointments/today` → `List<AppointmentDTO>`
+
 ## Python agent (internal, service-token-authenticated)
 
 - `POST /agents/pre-visit/start` + continue step
