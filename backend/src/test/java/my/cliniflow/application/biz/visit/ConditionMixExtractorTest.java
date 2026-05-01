@@ -39,7 +39,7 @@ class ConditionMixExtractorTest {
 
     @Test
     void recognises_fever() {
-        assertThat(extractor.classify("Fever 38.5C, no cough"))
+        assertThat(extractor.classify("Fever 38.5C since yesterday"))
             .isEqualTo("Fever");
     }
 

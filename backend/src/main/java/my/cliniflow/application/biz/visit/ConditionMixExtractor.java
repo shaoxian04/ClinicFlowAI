@@ -21,7 +21,7 @@ public class ConditionMixExtractor {
 
     private static Map<String, List<String>> buildRules() {
         Map<String, List<String>> m = new LinkedHashMap<>();
-        m.put("URTI",            List.of("urti", "sore throat", "runny nose"));
+        m.put("URTI",            List.of("urti", "sore throat", "runny nose", "cough"));
         m.put("Diabetes f/u",    List.of("diabetes", " dm ", " dm,", " dm.", "hba1c", "blood sugar"));
         m.put("Hypertension f/u",List.of("hypertension", " htn ", " htn,", " htn."));
         m.put("Headache",        List.of("headache", "migraine"));
