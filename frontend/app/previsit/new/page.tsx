@@ -396,9 +396,14 @@ export default function PreVisitNewPage() {
               </div>
             )}
 
-            <div className="pt-1">
+            <div className="pt-1 flex flex-wrap gap-2">
               <Button asChild variant="primary" size="md">
-                <Link href="/portal">Return to portal</Link>
+                <Link href={visitId ? `/portal/book?visitId=${visitId}` : "/portal"}>
+                  Book your appointment
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="md">
+                <Link href="/portal">I&rsquo;ll book later</Link>
               </Button>
             </div>
           </Card>
