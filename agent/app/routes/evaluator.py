@@ -46,8 +46,26 @@ async def re_evaluate(req: ReEvaluateRequest) -> JSONResponse:
         result = await EvaluatorAgent().evaluate(
             EvaluatorContext(visit_id=req.visit_id, patient_id=req.patient_id)
         )
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError:
+        # No draft yet — fall back to currently-persisted active findings (may be empty).
+        # This is the expected state right after a visit is created or after the
+        # draft has been cleared. Returning 404 here would put the panel in
+        # "UNAVAILABLE" state for a benign condition.
+        rows = await list_active_findings(req.visit_id)
+        return JSONResponse({
+            "findings": [
+                {
+                    "category": r["category"],
+                    "severity": r["severity"],
+                    "field_path": r["field_path"],
+                    "message": r["message"],
+                    "details": r["details"],
+                }
+                for r in rows
+            ],
+            "validators_run": [],
+            "validators_unavailable": [{"category": "DRAFT", "reason": "no_draft"}],
+        })
     return JSONResponse({
         "findings": [f.model_dump() for f in result.findings],
         "validators_run": result.validators_run,

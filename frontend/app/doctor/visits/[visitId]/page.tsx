@@ -116,6 +116,7 @@ export default function VisitDetailPage() {
         refetch();
         window.location.hash = "#preview";
       }}
+      onDraftChanged={evaluator.reEvaluate}
     />
   );
 

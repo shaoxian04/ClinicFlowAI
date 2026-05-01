@@ -6,14 +6,13 @@ Searches:
   3. Class↔Class INTERACTS_WITH
 
 Considers:
-  - Patient's active medications (last 90 days from finalized visits)
+  - Patient's active medications via (:Patient)-[:TAKES]->(:Medication)
   - Co-prescribed drugs within the same draft (proposed_drugs list)
 """
 from __future__ import annotations
 
 from uuid import UUID
 
-from app.config import settings
 from app.graph.driver import get_driver
 
 _QUERY = """
@@ -21,10 +20,8 @@ WITH [d IN $proposed | toLower(d)] AS proposed_lower
 UNWIND proposed_lower AS proposed
 MATCH (proposed_drug:Drug {name: proposed})
 
-// Active medications (last N days from finalized visits)
-OPTIONAL MATCH (p:Patient {id: $patient_id})<-[:FOR_PATIENT]-(v:Visit)
-            -[:PRESCRIBED]->(active_med:Medication)
-WHERE v.finalized_at >= datetime() - duration({days: $lookback_days})
+// Active medications: Patient -[TAKES]-> Medication (current state, no date filter)
+OPTIONAL MATCH (p:Patient {id: $patient_id})-[:TAKES]->(active_med:Medication)
 WITH proposed, proposed_drug, proposed_lower,
      collect(DISTINCT toLower(active_med.name)) AS active_names
 
@@ -66,7 +63,6 @@ async def check_drug_drug_interactions(patient_id: UUID, proposed_drugs: list[st
             _QUERY,
             patient_id=str(patient_id),
             proposed=proposed_drugs,
-            lookback_days=settings.evaluator_ddi_active_med_lookback_days,
         )
         rows: list[dict] = []
         async for r in result:

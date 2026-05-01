@@ -32,6 +32,25 @@ from app.schemas.report import MedicalReport
 log = structlog.get_logger(__name__)
 
 
+def _camel_to_snake(name: str) -> str:
+    out: list[str] = []
+    for i, ch in enumerate(name):
+        if ch.isupper() and i > 0:
+            out.append("_")
+        out.append(ch.lower())
+    return "".join(out)
+
+
+def _camel_to_snake_keys(obj):
+    """Recursively rename dict keys from camelCase → snake_case. Lists are recursed.
+    Other types pass through unchanged."""
+    if isinstance(obj, dict):
+        return {_camel_to_snake(k): _camel_to_snake_keys(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_camel_to_snake_keys(v) for v in obj]
+    return obj
+
+
 @dataclass
 class EvaluatorContext:
     visit_id: UUID
@@ -244,7 +263,10 @@ class EvaluatorAgent:
             flags = _json.loads(raw_flags)
         else:
             flags = raw_flags
-        return MedicalReport(**draft, confidence_flags=flags)
+        # The Spring Boot DTO writes camelCase (`drugName`, `chiefComplaint`, …)
+        # via patchReportDraftJsonb, while the agent itself writes snake_case
+        # via update_soap_draft. Normalize both shapes before validating.
+        return MedicalReport(**_camel_to_snake_keys(draft), confidence_flags=flags)
 
     async def _load_patient_state(self, patient_id: UUID) -> dict:
         pool = get_pool()

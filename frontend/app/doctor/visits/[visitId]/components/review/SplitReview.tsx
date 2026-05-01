@@ -18,9 +18,10 @@ export interface SplitReviewProps {
   initialApproved: boolean;
   locked: boolean;
   onNavigateToPreview: () => void;
+  onDraftChanged?: () => void | Promise<void>;
 }
 
-export function SplitReview({ visitId, initialReport, initialApproved, locked, onNavigateToPreview }: SplitReviewProps) {
+export function SplitReview({ visitId, initialReport, initialApproved, locked, onNavigateToPreview, onDraftChanged }: SplitReviewProps) {
   const [state, dispatch] = useReducer(reviewReducer, {
     ...initialReviewState,
     report: initialReport,
@@ -48,6 +49,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
       );
       dispatch({ type: "GENERATE_DONE", report: resp.report, clarification: resp.clarification, status: resp.status });
       await refreshChat();
+      if (onDraftChanged) { await onDraftChanged(); }
     } catch (e) {
       dispatch({ type: "ERROR", message: (e as Error).message });
     }
@@ -72,6 +74,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
       const resp = await apiPost<ReportReviewResult>(`/visits/${visitId}/report/${path}`, body);
       dispatch({ type: "EDIT_DONE", report: resp.report, clarification: resp.clarification, status: resp.status });
       await refreshChat();
+      if (onDraftChanged) { await onDraftChanged(); }
     } catch (e) {
       dispatch({ type: "ERROR", message: (e as Error).message });
     }
@@ -85,6 +88,7 @@ export function SplitReview({ visitId, initialReport, initialApproved, locked, o
         { path, value },
       );
       dispatch({ type: "PATCH_DONE", path, report: resp.report });
+      if (onDraftChanged) { await onDraftChanged(); }
     } catch (e) {
       dispatch({ type: "PATCH_FAIL", path, message: (e as Error).message });
     }
