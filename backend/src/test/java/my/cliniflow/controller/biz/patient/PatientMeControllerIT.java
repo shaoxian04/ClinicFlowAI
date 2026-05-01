@@ -187,7 +187,45 @@ class PatientMeControllerIT {
     }
 
     // -----------------------------------------------------------------------
-    // Scenario 6: Invalid phone format rejected by bean validation → 400
+    // Scenario 6: GET /api/patients/me returns phone + consent state
+    // -----------------------------------------------------------------------
+
+    @Test
+    void get_me_returns_phone_and_consent_state() throws Exception {
+        // Register with phone and consent
+        String email = "it-me-get-" + UUID.randomUUID() + "@example.com";
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("email", email);
+        body.put("password", "Strong-Pwd-12345");
+        body.put("fullName", "IT Me Get Patient");
+        body.put("dateOfBirth", "1990-06-01");
+        body.put("gender", "OTHER");
+        body.put("preferredLanguage", "en");
+        body.put("nationalId", null);
+        body.put("consentVersion", "v1");
+        body.put("clinicalBaseline", null);
+        body.put("phone", "+60123456789");
+        body.put("whatsAppConsent", true);
+
+        MvcResult regResult = mvc.perform(post("/api/auth/register/patient")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(body)))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String token = om.readTree(regResult.getResponse().getContentAsString())
+            .path("data").path("token").asText();
+
+        mvc.perform(get("/api/patients/me")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data.phone").value("+60123456789"))
+            .andExpect(jsonPath("$.data.whatsappConsent").value(true));
+    }
+
+    // -----------------------------------------------------------------------
+    // Scenario 7: Invalid phone format rejected by bean validation → 400
     // -----------------------------------------------------------------------
 
     @Test

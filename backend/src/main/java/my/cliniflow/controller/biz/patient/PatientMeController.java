@@ -1,10 +1,12 @@
 package my.cliniflow.controller.biz.patient;
 
 import jakarta.validation.Valid;
+import my.cliniflow.application.biz.patient.PatientReadAppService;
 import my.cliniflow.application.biz.patient.PatientWriteAppService;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.patient.request.PhoneUpdateRequest;
 import my.cliniflow.controller.biz.patient.request.WhatsAppConsentUpdateRequest;
+import my.cliniflow.controller.biz.patient.response.PatientMeResponse;
 import my.cliniflow.infrastructure.security.JwtService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -21,10 +23,18 @@ import java.util.UUID;
 @PreAuthorize("hasRole('PATIENT')")
 public class PatientMeController {
 
+    private final PatientReadAppService reads;
     private final PatientWriteAppService writes;
 
-    public PatientMeController(PatientWriteAppService writes) {
+    public PatientMeController(PatientReadAppService reads, PatientWriteAppService writes) {
+        this.reads = reads;
         this.writes = writes;
+    }
+
+    @GetMapping
+    public WebResult<PatientMeResponse> me(Authentication auth) {
+        UUID userId = ((JwtService.Claims) auth.getPrincipal()).userId();
+        return WebResult.ok(reads.getMyProfile(userId));
     }
 
     @PutMapping("/whatsapp-consent")

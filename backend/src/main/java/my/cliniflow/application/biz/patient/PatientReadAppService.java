@@ -2,6 +2,7 @@ package my.cliniflow.application.biz.patient;
 
 import my.cliniflow.controller.base.ResourceNotFoundException;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse;
+import my.cliniflow.controller.biz.patient.response.PatientMeResponse;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Labeled;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Medication;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.RecentVisit;
@@ -70,6 +71,19 @@ public class PatientReadAppService {
         this.agent = agent;
         this.clinicalProfiles = clinicalProfiles;
         this.nidEncryptor = nidEncryptor;
+    }
+
+    public PatientMeResponse getMyProfile(UUID userId) {
+        PatientModel p = patients.findByUserId(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("patient profile not found: " + userId));
+        return new PatientMeResponse(
+            p.getId(),
+            p.getFullName(),
+            p.getPhone(),
+            p.getPreferredLanguage(),
+            p.getWhatsappConsentAt() != null,
+            p.getWhatsappConsentAt(),
+            p.getWhatsappConsentVersion());
     }
 
     public PatientModel getById(UUID id) {
