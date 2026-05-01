@@ -4,6 +4,8 @@ import my.cliniflow.controller.base.BusinessException;
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.controller.base.UpstreamException;
 import my.cliniflow.controller.base.WebResult;
+import my.cliniflow.domain.biz.schedule.service.exception.CancelWindowPassedException;
+import my.cliniflow.domain.biz.schedule.service.exception.SlotTakenException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -70,6 +72,20 @@ public class GlobalExceptionConfiguration {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
             .body(WebResult.error(ResultCode.UPSTREAM_UNAVAILABLE,
                 "upstream HTTP " + ex.getRawStatusCode()));
+    }
+
+    @ExceptionHandler(SlotTakenException.class)
+    public ResponseEntity<WebResult<Void>> onSlotTaken(SlotTakenException ex) {
+        log.info("[SCHEDULE] slot taken: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(WebResult.error(ResultCode.CONFLICT, ex.getMessage()));
+    }
+
+    @ExceptionHandler(CancelWindowPassedException.class)
+    public ResponseEntity<WebResult<Void>> onCancelWindowPassed(CancelWindowPassedException ex) {
+        log.info("[SCHEDULE] cancel window passed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(WebResult.error(ResultCode.CONFLICT, ex.getMessage()));
     }
 
     @ExceptionHandler(BusinessException.class)
