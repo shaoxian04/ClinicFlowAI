@@ -56,7 +56,7 @@ Read these before touching agent or clinical-data code:
 - **PDPA audit log** is append-only. Never delete or update rows in application code. Every CREATE / UPDATE / DELETE of per-patient data must write a row.
 - **Server-side identity.** Every controller that acts on per-patient data must derive `patient_id` from the JWT principal (`PatientReadAppService.findByUserId(claims.userId())`). Path-parameter IDs require an explicit ownership check. Never hardcode UUIDs. See `docs/details/identity-and-authz.md`.
 - **Frontend talks to Spring Boot only.** Next.js never calls the Python agent or Neo4j directly, and never uses the Supabase JS client for clinical data.
-- **Evaluator soft-block.** Any CRITICAL evaluator finding (DDI, allergy, dose, pregnancy) must be acknowledged by the doctor before `/api/visits/{id}/report/finalize` returns 200. This check is enforced in both Spring Boot (`SoapWriteAppService`) and the Python agent (`/agents/report/finalize`). Never remove or bypass this gate. See `docs/details/agent-design.md` §Evaluator Agent.
+- **Evaluator soft-block.** Any CRITICAL evaluator finding (DDI, allergy, dose, pregnancy) must be acknowledged by the doctor before the visit can move forward. The gate is enforced at three points: (1) `ReportReviewAppService.approve`, (2) `SoapWriteAppService.finalize`, (3) the Python agent's `/agents/report/finalize`. The doctor may override CRITICAL findings only via the frontend `ApproveOverrideDialog`, which writes a per-finding ack-with-reason row to `evaluator_findings` before retrying the gated mutation. Never remove or bypass this gate, and never auto-acknowledge findings without a doctor-supplied reason. See `docs/details/agent-design.md` §Evaluator Agent.
 
 ## Skill usage
 
@@ -86,3 +86,5 @@ Read the relevant file on demand — don't preload everything.
 Feature specs and plans (read on-demand for those features):
 - **`docs/superpowers/specs/2026-05-01-evaluator-and-drug-validation-design.md`** — Full design for the evaluator agent + drug validation (DDI, allergy, dose, pregnancy, hallucination, completeness validators).
 - **`docs/superpowers/plans/2026-05-01-evaluator-and-drug-validation.md`** — Phase-by-phase implementation plan for the evaluator feature.
+
+> The evaluator agent is the fourth Python agent (alongside Pre-Visit / Visit / Post-Visit). Read `docs/details/agent-design.md` §Evaluator Agent before touching anything under `agent/app/agents/evaluator/`, `agent/app/graph/queries/`, or any Spring file under `application/biz/visit/` or `domain/biz/visit/` whose name starts with `EvaluatorFinding`. The drug knowledge graph schema lives in `docs/details/data-model.md` §Neo4j drug knowledge graph.

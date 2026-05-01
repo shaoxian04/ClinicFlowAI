@@ -39,11 +39,13 @@ User stories **US-P01..P05, US-D01..D06, US-R01..R02, US-O01..O02** have explici
 
 **Acceptance criteria** (from spec §7.6 E2E):
 - Generating a SOAP draft for a warfarin patient with proposed ibuprofen produces ≥1 CRITICAL DDI finding visible in the AI Safety Review panel.
-- The publish/finalize button is disabled while any unacknowledged CRITICAL finding exists; tooltip shows the count.
-- Acknowledging with optional reason enables the publish button (UI) and the backend permits finalize (200 instead of 409).
+- The Approve and Publish buttons re-evaluate before deciding their action; if any unacknowledged CRITICAL finding exists, clicking the button opens an `ApproveOverrideDialog` that requires a free-text reason (≥10 chars). Cancel keeps the visit in its current state.
+- Submitting the override dialog acknowledges every unacked CRITICAL finding with that reason (one audit row per finding) and then retries the gated mutation; backend returns 200 because `countUnacknowledgedCritical(visitId)` is now zero.
+- Direct API callers that skip the dialog still receive 409 from `POST /report/approve` and `POST /report/finalize` while CRITICALs are unacked — the frontend dialog is the convenience path, the backend gate is the safety property.
 - The finalized doctor-facing report contains no AI-Safety attribution (no "evaluator", "AI Safety", or "approved by evaluator" strings).
 - Validator failure (e.g., Neo4j down) marks the validator unavailable in the SSE event without preventing the rest of the flow.
 
 **Out of scope** (deferred for follow-up):
 - Hermes-style adaptive rule learning from acknowledgement reasons. (Read side built in agent; write side is `NotImplementedError`.)
+- Real-time evaluator SSE pushed to the panel during the doctor's editing session — current implementation re-evaluates synchronously on each draft change and on Approve/Publish click instead.
 - E-prescription generation (per PRD §7 — explicitly out of scope).

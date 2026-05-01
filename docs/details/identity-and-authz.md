@@ -57,6 +57,15 @@ Where `action ∈ {CREATE, UPDATE, DELETE, READ}` and `resourceType` is upper-sn
 
 This is what makes incident triage possible. The 2026-04-30 incident left 65 contaminated visits unrecoverable specifically because `VISIT.CREATE` was never audited.
 
+## Rule 5 — Evaluator finding endpoints reuse the visit ownership pattern
+
+The evaluator routes added on `feat/evaluator-and-drug-validation` (`GET /api/visits/{visitId}/findings`, `POST /api/visits/{visitId}/findings/{findingId}/acknowledge`, `POST /api/visits/{visitId}/re-evaluate`) all take a path-parameter `visitId` and follow Rule 2 verbatim:
+
+1. `@PreAuthorize("hasRole('DOCTOR')")` — staff and patients cannot read or acknowledge findings.
+2. The handler resolves `VisitModel` by id and verifies `visit.getDoctorId().equals(claims.userId())` before any read or write. A foreign visit returns 403, not 404.
+3. **Acknowledge writes** must include the doctor's free-text reason (≤255 chars, may be empty). The audit row is `UPDATE / evaluator_finding_ack`. **Do not auto-acknowledge** from a service-to-service path — every ack must trace to a real doctor. Hermes rule learning is read-only over this stream (CLAUDE.md invariants).
+4. **Re-evaluate** is a `READ`-class audit (`READ / evaluator_reevaluate`) even though it triggers an agent computation, because no patient-data fields change in `audit_log`'s sense — only the findings projection is regenerated.
+
 ## Why this exists
 
 See `docs/post-mortem/2026-04-30-cross-patient-phi-leak.md` (PM-08, PM-09, PM-10). The hardcoded UUID, the missed audit row, and the plausible-sounding "the LLM hallucinated" red herring all came from the same root: identity was assumed, not derived.
