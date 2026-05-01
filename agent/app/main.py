@@ -9,6 +9,7 @@ from app.config import settings
 from app.deps import require_service_token
 from app.graph.driver import close_driver
 from app.graph.schema import apply_schema
+from app.graph.seed.apply_drug_knowledge import apply_drug_knowledge
 from app.persistence import postgres
 from app.routes import patient_context as patient_context_routes
 from app.routes import pre_visit, report, rules, stt
@@ -68,6 +69,11 @@ async def lifespan(app: FastAPI):
         await apply_schema()
     except Exception:
         log.exception("neo4j.schema_apply_failed")
+
+    try:
+        await apply_drug_knowledge()
+    except Exception:
+        log.exception("neo4j.drug_knowledge_load_failed")
 
     try:
         ok = await patient_context_routes._probe_neo4j()
