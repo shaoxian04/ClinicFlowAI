@@ -11,7 +11,6 @@ import { apiGet } from "@/lib/api";
 import { getMyProfile } from "@/lib/patient-me";
 import { getPatientDashboard, type PatientDashboard } from "@/lib/patient-me";
 import { WhatsAppOptInModal } from "@/app/components/schedule/WhatsAppOptInModal";
-import { PortalNav } from "@/app/components/PortalNav";
 import { NextAppointmentHero } from "./components/NextAppointmentHero";
 import { QuickActionsRow } from "./components/QuickActionsRow";
 import { HealthSnapshotStrip } from "./components/HealthSnapshotStrip";
@@ -63,7 +62,6 @@ export default function PortalHome() {
 
     return (
         <>
-            <PortalNav active="home" />
             <motion.main
                 variants={staggerChildren}
                 initial="initial"

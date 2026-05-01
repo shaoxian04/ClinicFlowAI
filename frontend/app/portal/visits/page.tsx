@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { fadeUp, staggerChildren } from "@/design/motion";
 import { apiGet } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import { PortalNav } from "@/app/components/PortalNav";
 
 type VisitSummary = {
     visitId: string;
@@ -35,7 +34,6 @@ export default function VisitHistoryPage() {
 
     return (
         <>
-            <PortalNav active="visits" />
             <motion.main
                 variants={staggerChildren}
                 initial="initial"
