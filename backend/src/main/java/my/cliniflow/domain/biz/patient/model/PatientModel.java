@@ -93,4 +93,36 @@ public class PatientModel {
     public void setWhatsappConsentVersion(String v) { this.whatsappConsentVersion = v; }
     public OffsetDateTime getGmtCreate() { return gmtCreate; }
     public OffsetDateTime getGmtModified() { return gmtModified; }
+
+    /**
+     * Grant WhatsApp consent. Requires a non-blank phone number.
+     *
+     * @throws IllegalStateException if phone is null or blank
+     */
+    public void grantWhatsAppConsent(OffsetDateTime at, String version) {
+        if (this.phone == null || this.phone.isBlank()) {
+            throw new IllegalStateException("phone required before granting whatsapp consent");
+        }
+        this.whatsappConsentAt = at;
+        this.whatsappConsentVersion = version;
+    }
+
+    /**
+     * Withdraw WhatsApp consent. Idempotent — keeps version for audit history.
+     */
+    public void withdrawWhatsAppConsent() {
+        this.whatsappConsentAt = null;
+        // keep whatsappConsentVersion for history
+    }
+
+    /**
+     * Update phone. Rejects null/blank if consent is currently active —
+     * withdraw consent before clearing the phone.
+     */
+    public void updatePhone(String newPhone) {
+        if (whatsappConsentAt != null && (newPhone == null || newPhone.isBlank())) {
+            throw new IllegalStateException("withdraw consent before clearing phone");
+        }
+        this.phone = newPhone;
+    }
 }
