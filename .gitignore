@@ -19,6 +19,9 @@ backend/src/main/resources/application-local.yml
 # Test / MCP artifacts
 .playwright-mcp/
 
+# Brainstorming visual companion sessions
+.superpowers/
+
 # Node / Next.js
 node_modules/
 .next/
