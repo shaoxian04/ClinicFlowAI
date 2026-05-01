@@ -1,16 +1,19 @@
 package my.cliniflow.application.biz.visit;
 
 import my.cliniflow.domain.biz.visit.enums.VisitStatus;
+import my.cliniflow.domain.biz.visit.event.SoapFinalizedDomainEvent;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.PreVisitReportModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
 import my.cliniflow.controller.base.ConflictException;
 import my.cliniflow.controller.base.ResourceNotFoundException;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
+import my.cliniflow.domain.biz.visit.repository.MedicationRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,11 +33,17 @@ public class SoapWriteAppService {
     private final VisitRepository visits;
     private final MedicalReportRepository reports;
     private final AgentServiceClient agent;
+    private final MedicationRepository medications;
+    private final ApplicationEventPublisher events;
 
-    public SoapWriteAppService(VisitRepository visits, MedicalReportRepository reports, AgentServiceClient agent) {
+    public SoapWriteAppService(VisitRepository visits, MedicalReportRepository reports,
+                               AgentServiceClient agent, MedicationRepository medications,
+                               ApplicationEventPublisher events) {
         this.visits = visits;
         this.reports = reports;
         this.agent = agent;
+        this.medications = medications;
+        this.events = events;
     }
 
     @Transactional
@@ -104,6 +113,8 @@ public class SoapWriteAppService {
         v.setStatus(VisitStatus.FINALIZED);
         v.setFinalizedAt(OffsetDateTime.now());
         visits.save(v);
+        boolean hasMeds = !medications.findByVisitIdOrderByGmtCreateAsc(visitId).isEmpty();
+        events.publishEvent(new SoapFinalizedDomainEvent(visitId, v.getPatientId(), hasMeds, null));
         return r;
     }
 

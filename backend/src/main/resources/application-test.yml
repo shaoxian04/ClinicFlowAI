@@ -1,0 +1,4 @@
+cliniflow:
+  whatsapp:
+    provider: stub
+    drainer-fixed-delay-ms: 60000   # slow in tests; tests trigger drainer manually

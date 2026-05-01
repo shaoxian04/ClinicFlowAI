@@ -14,7 +14,7 @@ Four roles with RBAC: **Patient**, **Doctor**, **Clinic Staff/Receptionist**, **
 
 ## Repository status
 
-**Skeleton scaffolded** — `frontend/` (Next.js 14), `backend/` (Spring Boot 3.3 / Java 21 / Maven), `agent/` (FastAPI + LangGraph), `deploy/nginx/`. Business logic not yet implemented. DDD package tree for the 4 bounded contexts is in place under `backend/src/main/java/my/cliniflow/` (empty leaves marked with `.gitkeep`).
+**MVP flows implemented; ongoing hardening.** `frontend/` (Next.js 14), `backend/` (Spring Boot 3.3 / Java 21 / Maven), `agent/` (FastAPI + LangGraph), `deploy/nginx/`. Registration, pre-visit intake, SOAP generation + doctor review, post-visit summary, patient portal, admin user management, audit log, and the Neo4j projection drainer are wired end-to-end. The DDD package tree for the 4 bounded contexts lives under `backend/src/main/java/my/cliniflow/`.
 
 Design artifacts:
 - `Product Requirement Document (PRD) — CliniFlow AI.pdf` — product spec (what to build)
@@ -42,8 +42,6 @@ Copy `.env.example` to `.env` and fill in secrets before running.
 | Agent | `agent/` | `uvicorn app.main:app --reload --port 8000` | — | `pytest` |
 | Full stack | repo root | `docker compose up --build` (Nginx on :80) | — | — |
 
-The Maven wrapper (`./mvnw`) is not yet committed — generate it once with `mvn wrapper:wrapper` inside `backend/` after installing Maven locally, or just use `mvn` directly.
-
 ## Stack at a glance
 
 Next.js → Spring Boot 3 (Java 21) + Spring Security → Python FastAPI + LangGraph → Z.AI GLM 5.1. Supabase Postgres for relational data, Neo4j for the patient knowledge graph. Deploy via Docker Compose behind Nginx. Monorepo: `frontend/`, `backend/`, `agent/`, `deploy/`.
@@ -55,7 +53,8 @@ See `docs/details/architecture.md` for the full stack table, ports, DDD bounded 
 Read these before touching agent or clinical-data code:
 - **Doctor-in-the-loop**: every AI-generated clinical note passes an explicit doctor review-and-confirm before finalization. UI visibly distinguishes AI draft from human-confirmed.
 - **Hermes adaptive rules are scoped to documentation style only — never clinical reasoning.** No learned rule may alter diagnosis, treatment, dosing, contraindications, or red-flag thresholds.
-- **PDPA audit log** is append-only. Never delete or update rows in application code.
+- **PDPA audit log** is append-only. Never delete or update rows in application code. Every CREATE / UPDATE / DELETE of per-patient data must write a row.
+- **Server-side identity.** Every controller that acts on per-patient data must derive `patient_id` from the JWT principal (`PatientReadAppService.findByUserId(claims.userId())`). Path-parameter IDs require an explicit ownership check. Never hardcode UUIDs. See `docs/details/identity-and-authz.md`.
 - **Frontend talks to Spring Boot only.** Next.js never calls the Python agent or Neo4j directly, and never uses the Supabase JS client for clinical data.
 
 ## Skill usage
@@ -67,12 +66,14 @@ Read these before touching agent or clinical-data code:
 Read before making infrastructure or API changes — these are real mistakes from this project, not hypotheticals.
 
 - **`2026-04-22-backend-boot-and-schema.md`** — Docker cache pitfalls (`--no-cache` vs `--build`; `restart` vs `up -d`); Flyway exclusion silently no-ops `enabled: true`; `ddl-auto: validate` blocks startup when schema is manually managed; `apiPost` throws on void responses; component prop names must be read before use; frontend pages must confirm backend routes exist before calling them.
+- **`2026-04-30-cross-patient-phi-leak.md`** — Hardcoded `patientId` in `PreVisitController` made every patient see Pat Demo's chart; LLM looked like it was hallucinating but was reading a wrong patient. Lessons: derive identity from JWT, audit every mutation (`VISIT.CREATE` was missed), don't blame the model before checking what data it received.
 
 ## Detail index (`docs/details/`)
 
 Read the relevant file on demand — don't preload everything.
 
 - **`architecture.md`** — Full tech-stack table, ports/protocols, DDD bounded contexts, architectural rules. Read before making structural changes.
+- **`identity-and-authz.md`** — How to derive identity from the JWT principal, ownership checks on path-parameter IDs, `@PreAuthorize` defaults, audit-row obligations. **Read before writing any controller that touches per-patient data.**
 - **`ddd-conventions.md`** — Java package layering, class-naming suffixes (`XxxModel`, `XxxDomainService`, `XxxRepository`, `XxxReadAppService`, `XxxWriteAppService`, `XxxController`, `XxxModel2DTOConverter`…), CQRS split, end-to-end slice example. **Read before writing any Java code in `backend/`.**
 - **`agent-design.md`** — Per-agent responsibilities, Graphify pattern (Neo4j graph-RAG with confidence-scored edges), Hermes pattern (adaptive rule engine, style-only), Visit-agent prompt composition. Read before working on `agent/`.
 - **`data-model.md`** — Postgres tables and Neo4j node/edge schema. Read before schema changes or Cypher queries.

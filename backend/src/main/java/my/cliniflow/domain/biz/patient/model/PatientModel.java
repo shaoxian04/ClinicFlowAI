@@ -49,6 +49,12 @@ public class PatientModel {
     @Column(name = "consent_version", length = 16)
     private String consentVersion;
 
+    @Column(name = "whatsapp_consent_at")
+    private OffsetDateTime whatsappConsentAt;
+
+    @Column(name = "whatsapp_consent_version", length = 16)
+    private String whatsappConsentVersion;
+
     @Column(name = "gmt_create", nullable = false, updatable = false, insertable = false)
     private OffsetDateTime gmtCreate;
 
@@ -81,6 +87,42 @@ public class PatientModel {
     public void setConsentGivenAt(OffsetDateTime v) { this.consentGivenAt = v; }
     public String getConsentVersion() { return consentVersion; }
     public void setConsentVersion(String v) { this.consentVersion = v; }
+    public OffsetDateTime getWhatsappConsentAt() { return whatsappConsentAt; }
+    public void setWhatsappConsentAt(OffsetDateTime v) { this.whatsappConsentAt = v; }
+    public String getWhatsappConsentVersion() { return whatsappConsentVersion; }
+    public void setWhatsappConsentVersion(String v) { this.whatsappConsentVersion = v; }
     public OffsetDateTime getGmtCreate() { return gmtCreate; }
     public OffsetDateTime getGmtModified() { return gmtModified; }
+
+    /**
+     * Grant WhatsApp consent. Requires a non-blank phone number.
+     *
+     * @throws IllegalStateException if phone is null or blank
+     */
+    public void grantWhatsAppConsent(OffsetDateTime at, String version) {
+        if (this.phone == null || this.phone.isBlank()) {
+            throw new IllegalStateException("phone required before granting whatsapp consent");
+        }
+        this.whatsappConsentAt = at;
+        this.whatsappConsentVersion = version;
+    }
+
+    /**
+     * Withdraw WhatsApp consent. Idempotent — keeps version for audit history.
+     */
+    public void withdrawWhatsAppConsent() {
+        this.whatsappConsentAt = null;
+        // keep whatsappConsentVersion for history
+    }
+
+    /**
+     * Update phone. Rejects null/blank if consent is currently active —
+     * withdraw consent before clearing the phone.
+     */
+    public void updatePhone(String newPhone) {
+        if (whatsappConsentAt != null && (newPhone == null || newPhone.isBlank())) {
+            throw new IllegalStateException("withdraw consent before clearing phone");
+        }
+        this.phone = newPhone;
+    }
 }

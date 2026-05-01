@@ -8,6 +8,24 @@ export type WebResult<T> = {
     data: T | null;
 };
 
+export async function apiDelete<T>(path: string, body?: unknown): Promise<T | void> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "DELETE",
+        headers: {
+            ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const envelope: WebResult<T> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+    return envelope.data ?? undefined;
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     const token = getToken();
     const res = await fetch(`${BASE}${path}`, {
@@ -57,6 +75,31 @@ export async function apiGet<T>(path: string): Promise<T> {
     }
     if (envelope.data == null) throw new Error("empty response data");
     return envelope.data;
+}
+
+/** PUT to an endpoint that intentionally returns data:null on success. */
+export async function apiPutVoid(path: string, body: unknown): Promise<void> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+            const errBody: WebResult<unknown> = await res.json();
+            if (errBody.message) msg = errBody.message;
+        } catch { /* ignore parse failure */ }
+        throw new Error(msg);
+    }
+    const envelope: WebResult<unknown> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
 }
 
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {

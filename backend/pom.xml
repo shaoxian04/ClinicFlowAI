@@ -27,6 +27,8 @@
         <testcontainers.version>1.20.4</testcontainers.version>
         <neo4j-driver.version>5.25.0</neo4j-driver.version>
         <bucket4j.version>8.10.1</bucket4j.version>
+        <twilio-sdk.version>10.4.1</twilio-sdk.version>
+        <wiremock.version>3.0.1</wiremock.version>
     </properties>
 
     <dependencies>
@@ -108,10 +110,25 @@
             <version>${bucket4j.version}</version>
         </dependency>
 
+        <!-- External messaging clients -->
+        <!-- Twilio SDK (WhatsApp) -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>${twilio-sdk.version}</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- WireMock for stubbed Twilio in IT -->
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8</artifactId>
+            <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -162,6 +179,17 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <parameters>true</parameters>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*IT.java</include>
+                    </includes>
                 </configuration>
             </plugin>
         </plugins>

@@ -4,15 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/design/cn";
 
-export type DoctorNavTab = "today" | "queue" | "finalized" | "patients";
+export type DoctorNavTab = "today" | "bookings" | "queue" | "finalized" | "patients";
 
 type Tab =
   | { key: DoctorNavTab; label: string; href: string; disabled?: false }
   | { key: DoctorNavTab; label: string; disabled: true };
 
 const TABS: Tab[] = [
-  { key: "today", label: "Today", href: "/doctor" },
-  { key: "queue", label: "Queue", href: "/doctor/queue" },
+  { key: "today", label: "Dashboard", href: "/doctor" },
+  { key: "bookings", label: "Today's schedule", href: "/doctor/today" },
+  { key: "queue", label: "Awaiting review", href: "/doctor/queue" },
   { key: "finalized", label: "Finalized", href: "/doctor/finalized" },
   { key: "patients", label: "Patients", disabled: true },
 ];
@@ -25,6 +26,9 @@ export default function DoctorNav({ active }: Props) {
   function isActive(tab: Tab): boolean {
     if (tab.key === "today") {
       return pathname === "/doctor" || pathname.startsWith("/doctor/visits/");
+    }
+    if (tab.key === "bookings") {
+      return pathname === "/doctor/today";
     }
     return active === tab.key;
   }

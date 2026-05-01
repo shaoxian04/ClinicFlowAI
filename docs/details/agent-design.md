@@ -41,6 +41,15 @@ Implementation of the Hermes self-evolving agent concept (https://github.com/nou
 
 **Confidence gate:** a rule is only applied once its **doctor-acceptance rate ≥ 80%** (acceptance = doctor finalized the output unchanged in the regions the rule touched). Rules that fall below 50% acceptance over 24h are auto-paused and a P3 alert fires. Thresholds live in config, not code.
 
+## Prompt-engineering invariants (apply to every agent)
+
+These rules are universal — pre-visit, visit, post-visit, report-clarification, anything that puts patient data into a GLM prompt. A prior incident (2026-04-30 cross-patient PHI leak) involved an agent prompt with a literal `"penicillin"` example that looked like LLM hallucination but was actually correct retrieval against a wrong patient_id.
+
+- **Never include real-sounding clinical values as example placeholders.** Use `<allergy_name>` / `<value>` style or drop the example. Concrete examples (penicillin, peanuts, metformin) act as hallucination anchors when tool calls fail or return empty.
+- **No-data fallback is open-ended.** If `get_patient_context` returns `[]` for a slot, the agent must ask an open question (`"Do you have any allergies?"`) — never fall back to an example value.
+- **Hallucination guardrail in every system prompt.** State explicitly: `NEVER mention any allergy / medication / condition / past visit unless that exact string appears in the tool output you received this turn.` Restate for each clinical data type the agent may surface.
+- **Tool failures must not silently degrade.** If a tool errors or times out, the agent treats the slot as unknown and asks the patient — it does not invent a fallback value.
+
 ## Visit-agent prompt composition (order matters)
 
 1. System instructions (role, safety boundaries, SOAP schema, output contract)

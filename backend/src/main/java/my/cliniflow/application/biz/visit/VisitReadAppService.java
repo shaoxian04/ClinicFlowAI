@@ -12,6 +12,9 @@ import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.PreVisitReportModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
+import my.cliniflow.controller.base.BusinessException;
+import my.cliniflow.controller.base.ResourceNotFoundException;
+import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +107,14 @@ public class VisitReadAppService {
         } catch (Exception e) {
             log.warn("[DETAIL] could not parse report_draft visit={} err={}", visitId, e.toString());
             return null;
+        }
+    }
+
+    public void assertOwnedBy(UUID visitId, UUID patientId) {
+        VisitModel v = visits.findById(visitId)
+            .orElseThrow(() -> new ResourceNotFoundException("visit not found: " + visitId));
+        if (!v.getPatientId().equals(patientId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "cross-patient visit access");
         }
     }
 

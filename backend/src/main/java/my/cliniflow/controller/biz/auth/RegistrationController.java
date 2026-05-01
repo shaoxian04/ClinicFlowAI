@@ -6,6 +6,7 @@ import my.cliniflow.application.biz.patient.PatientWriteAppService.RegistrationI
 import my.cliniflow.application.biz.patient.PatientWriteAppService.RegistrationResult;
 import my.cliniflow.application.biz.user.UserReadAppService;
 import my.cliniflow.application.biz.user.UserWriteAppService;
+import my.cliniflow.controller.base.BusinessException;
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.auth.request.ForcedPasswordChangeRequest;
@@ -55,6 +56,13 @@ public class RegistrationController {
                 req.clinicalBaseline()
         );
         RegistrationResult result = patientWrite.register(input, null, "PATIENT");
+        if (Boolean.TRUE.equals(req.whatsAppConsent())) {
+            try {
+                patientWrite.updateWhatsAppConsent(result.userId(), true);
+            } catch (BusinessException ex) {
+                throw ex;
+            }
+        }
         UserModel u = userRead.getById(result.userId());
         String token = jwt.issue(u.getId(), u.getEmail(), u.getRole());
         return WebResult.ok(new PatientRegisteredResponse(

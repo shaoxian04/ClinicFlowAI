@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 
-export type StaffNavTab = "today" | "patients";
+export type StaffNavTab = "today" | "patients" | "schedule";
 
 type Tab = { key: StaffNavTab; label: string; href: string };
 
 const TABS: Tab[] = [
     { key: "today", label: "Today", href: "/staff" },
     { key: "patients", label: "Patients", href: "/staff/patients" },
+    { key: "schedule", label: "Schedule", href: "/staff/schedule" },
 ];
 
 type Props = { active: StaffNavTab };
