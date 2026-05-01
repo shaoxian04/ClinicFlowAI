@@ -1,8 +1,10 @@
 package my.cliniflow.application.biz.patient;
 
 import my.cliniflow.application.biz.user.UserWriteAppService;
+import my.cliniflow.controller.base.BusinessException;
 import my.cliniflow.controller.base.ConflictException;
 import my.cliniflow.controller.base.ResourceNotFoundException;
+import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.domain.biz.patient.model.PatientClinicalProfileModel;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.domain.biz.patient.repository.PatientClinicalProfileRepository;
@@ -227,6 +229,42 @@ public class PatientWriteAppService {
         if (filled == 0) return "INCOMPLETE";
         if (filled >= 5 && p.getDrugAllergiesUpdatedAt() != null) return "COMPLETE";
         return "PARTIAL";
+    }
+
+    private static final String CONSENT_VERSION = "wa-v1";
+
+    @Transactional
+    public void updateWhatsAppConsent(UUID userId, boolean consent) {
+        PatientModel p = patients.findByUserId(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("patient profile not found: " + userId));
+        try {
+            if (consent) {
+                p.grantWhatsAppConsent(OffsetDateTime.now(), CONSENT_VERSION);
+            } else {
+                p.withdrawWhatsAppConsent();
+            }
+        } catch (IllegalStateException ex) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, ex.getMessage());
+        }
+        patients.save(p);
+        String role = users.findById(userId).orElseThrow().getRole().name();
+        audit.append(consent ? "GRANT" : "WITHDRAW", "WHATSAPP_CONSENT",
+            p.getId().toString(), userId, role);
+    }
+
+    @Transactional
+    public void updatePhone(UUID userId, String phone) {
+        PatientModel p = patients.findByUserId(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("patient profile not found: " + userId));
+        String normalized = (phone == null || phone.isBlank()) ? null : phone.trim();
+        try {
+            p.updatePhone(normalized);
+        } catch (IllegalStateException ex) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, ex.getMessage());
+        }
+        patients.save(p);
+        String role = users.findById(userId).orElseThrow().getRole().name();
+        audit.append("UPDATE", "PATIENT_PHONE", p.getId().toString(), userId, role);
     }
 
     /** Input for registration. Built by controller from request DTO. */
