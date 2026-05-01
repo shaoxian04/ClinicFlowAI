@@ -1,9 +1,11 @@
 package my.cliniflow.controller.biz.patient;
 
 import jakarta.validation.Valid;
+import my.cliniflow.application.biz.dashboard.PatientDashboardReadAppService;
 import my.cliniflow.application.biz.patient.PatientReadAppService;
 import my.cliniflow.application.biz.patient.PatientWriteAppService;
 import my.cliniflow.controller.base.WebResult;
+import my.cliniflow.controller.biz.dashboard.response.PatientDashboardResponse;
 import my.cliniflow.controller.biz.patient.request.PhoneUpdateRequest;
 import my.cliniflow.controller.biz.patient.request.WhatsAppConsentUpdateRequest;
 import my.cliniflow.controller.biz.patient.response.PatientMeResponse;
@@ -25,16 +27,26 @@ public class PatientMeController {
 
     private final PatientReadAppService reads;
     private final PatientWriteAppService writes;
+    private final PatientDashboardReadAppService dashboardReads;
 
-    public PatientMeController(PatientReadAppService reads, PatientWriteAppService writes) {
+    public PatientMeController(PatientReadAppService reads,
+                               PatientWriteAppService writes,
+                               PatientDashboardReadAppService dashboardReads) {
         this.reads = reads;
         this.writes = writes;
+        this.dashboardReads = dashboardReads;
     }
 
     @GetMapping
     public WebResult<PatientMeResponse> me(Authentication auth) {
         UUID userId = ((JwtService.Claims) auth.getPrincipal()).userId();
         return WebResult.ok(reads.getMyProfile(userId));
+    }
+
+    @GetMapping("/dashboard")
+    public WebResult<PatientDashboardResponse> dashboard(Authentication auth) {
+        UUID userId = ((JwtService.Claims) auth.getPrincipal()).userId();
+        return WebResult.ok(dashboardReads.build(userId));
     }
 
     @PutMapping("/whatsapp-consent")
