@@ -45,7 +45,7 @@ public class AppointmentEntity {
     @Column(name = "parent_visit_id")
     private UUID parentVisitId;
 
-    /** One of BOOKED / CANCELLED / COMPLETED / NO_SHOW. */
+    /** One of BOOKED / CHECKED_IN / CANCELLED / COMPLETED / NO_SHOW. */
     @Column(nullable = false, length = 16)
     private String status = "BOOKED";
 
@@ -57,6 +57,10 @@ public class AppointmentEntity {
 
     @Column(name = "cancelled_by")
     private UUID cancelledBy;
+
+    /** Timestamp at which the patient physically checked in at the clinic. */
+    @Column(name = "checked_in_at")
+    private OffsetDateTime checkedInAt;
 
     @Column(name = "gmt_create", nullable = false, insertable = false, updatable = false)
     private OffsetDateTime gmtCreate;
@@ -96,6 +100,9 @@ public class AppointmentEntity {
 
     public UUID getCancelledBy() { return cancelledBy; }
     public void setCancelledBy(UUID v) { this.cancelledBy = v; }
+
+    public OffsetDateTime getCheckedInAt() { return checkedInAt; }
+    public void setCheckedInAt(OffsetDateTime v) { this.checkedInAt = v; }
 
     public OffsetDateTime getGmtCreate() { return gmtCreate; }
     public OffsetDateTime getGmtModified() { return gmtModified; }

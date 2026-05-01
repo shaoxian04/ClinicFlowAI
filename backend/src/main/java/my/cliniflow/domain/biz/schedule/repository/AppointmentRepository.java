@@ -1,5 +1,6 @@
 package my.cliniflow.domain.biz.schedule.repository;
 
+import my.cliniflow.domain.biz.schedule.enums.AppointmentStatus;
 import my.cliniflow.domain.biz.schedule.model.AppointmentModel;
 
 import java.time.OffsetDateTime;
@@ -34,4 +35,12 @@ public interface AppointmentRepository {
                                                      OffsetDateTime dayStart,
                                                      OffsetDateTime dayEnd,
                                                      Collection<String> activeStatuses);
+
+    /**
+     * Returns appointments whose slot is in {@code slotIds} and whose status
+     * is in {@code statuses}. Used to assemble cross-doctor day views (e.g.
+     * the staff "today" waiting list) without scanning by doctor.
+     */
+    List<AppointmentModel> findBySlotIdInAndStatusIn(Collection<UUID> slotIds,
+                                                      Collection<AppointmentStatus> statuses);
 }
