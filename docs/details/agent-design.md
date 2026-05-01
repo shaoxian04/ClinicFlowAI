@@ -87,7 +87,13 @@ before finalizing the report (soft-block).
 - `evaluator.done { findings, validators_run, validators_unavailable }`
 - `evaluator.error { reason }` (validator agent failed)
 
-**Finalize gate:** `/agents/report/finalize` returns 409 with `{error: "unacknowledged_critical_findings", finding_ids: [...]}` if any CRITICAL is unacked at finalize time. Spring Boot `SoapWriteAppService.finalize` enforces the same guard before transitioning to FINALIZED.
+**Finalize gate:** `/agents/report/finalize` returns 409 with `{error: "unacknowledged_critical_findings", finding_ids: [...]}` if any CRITICAL is unacked at finalize time. Spring Boot enforces the same guard at **two** points before the agent ever sees the request:
+1. `ReportReviewAppService.approve` — blocks `POST /report/approve` when `EvaluatorFindingRepository.countUnacknowledgedCritical(visitId) > 0`.
+2. `SoapWriteAppService.finalize` — blocks `POST /report/finalize` for the same condition before transitioning the visit to FINALIZED.
+
+**Override-with-reason flow (frontend).** When the doctor clicks Approve or Publish with unacked CRITICAL findings, the UI opens an `ApproveOverrideDialog` that requires a free-text reason (≥10 chars). On submit, the frontend acknowledges *each* unacked CRITICAL finding via `POST /findings/{id}/acknowledge` with the same reason (one audit row per finding tying the override to that specific safety check), then retries the gated mutation. Both backend gates therefore see zero unacked criticals on the retry. The gates are kept as defense-in-depth against direct API callers that skip the dialog.
+
+**Pre-action re-evaluation.** Approve and Publish in the UI both call `POST /visits/{id}/re-evaluate` *before* deciding whether to open the override dialog, so doctor edits made since the last validator run are caught even though the panel state may be stale.
 
 **See:** `docs/superpowers/specs/2026-05-01-evaluator-and-drug-validation-design.md` for the full design.
 

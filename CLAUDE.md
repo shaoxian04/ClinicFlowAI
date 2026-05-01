@@ -56,7 +56,7 @@ Read these before touching agent or clinical-data code:
 - **PDPA audit log** is append-only. Never delete or update rows in application code. Every CREATE / UPDATE / DELETE of per-patient data must write a row.
 - **Server-side identity.** Every controller that acts on per-patient data must derive `patient_id` from the JWT principal (`PatientReadAppService.findByUserId(claims.userId())`). Path-parameter IDs require an explicit ownership check. Never hardcode UUIDs. See `docs/details/identity-and-authz.md`.
 - **Frontend talks to Spring Boot only.** Next.js never calls the Python agent or Neo4j directly, and never uses the Supabase JS client for clinical data.
-- **Evaluator soft-block.** Any CRITICAL evaluator finding (DDI, allergy, dose, pregnancy) must be acknowledged by the doctor before `/api/visits/{id}/report/finalize` returns 200. This check is enforced in both Spring Boot (`SoapWriteAppService`) and the Python agent (`/agents/report/finalize`). Never remove or bypass this gate. See `docs/details/agent-design.md` §Evaluator Agent.
+- **Evaluator soft-block.** Any CRITICAL evaluator finding (DDI, allergy, dose, pregnancy) must be acknowledged by the doctor before the visit can move forward. The gate is enforced at three points: (1) `ReportReviewAppService.approve`, (2) `SoapWriteAppService.finalize`, (3) the Python agent's `/agents/report/finalize`. The doctor may override CRITICAL findings only via the frontend `ApproveOverrideDialog`, which writes a per-finding ack-with-reason row to `evaluator_findings` before retrying the gated mutation. Never remove or bypass this gate, and never auto-acknowledge findings without a doctor-supplied reason. See `docs/details/agent-design.md` §Evaluator Agent.
 
 ## Skill usage
 
