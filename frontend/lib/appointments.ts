@@ -47,3 +47,13 @@ export async function listMine(status?: Appointment["status"]): Promise<Appointm
 export async function cancelAppointment(id: string, reason?: string): Promise<void> {
     await apiDelete<void>(`/appointments/${id}`, reason ? { reason } : undefined);
 }
+
+/**
+ * Fetch a single appointment by id. The backend exposes no single-GET
+ * endpoint (only /mine list), so we list and find by id.
+ * Returns null when the appointment is not found.
+ */
+export async function getAppointment(id: string): Promise<Appointment | null> {
+    const all = await listMine();
+    return all.find((a) => a.id === id) ?? null;
+}
