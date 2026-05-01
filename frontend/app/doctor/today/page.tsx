@@ -139,9 +139,10 @@ export default function DoctorTodayPage() {
                                 Clinician workspace
                             </p>
                             <h1 className="font-display text-3xl text-fog leading-tight">
-                                {isOnToday ? "Today's " : ""}
-                                <em className="not-italic text-cyan">schedule</em>
-                                {!isOnToday && <span className="text-fog"> · {formatDayHeading(fromDate)}</span>}
+                                <em className="not-italic text-cyan">Schedule</em>
+                                {isOnToday ? null : (
+                                    <span className="text-fog"> · {formatDayHeading(fromDate)}</span>
+                                )}
                             </h1>
                             <p className="font-sans text-sm text-fog-dim mt-2">
                                 {totalCount} booked appointment{totalCount === 1 ? "" : "s"} across the next {STRIP_DAYS} days, ordered by start time.
@@ -242,8 +243,12 @@ function DayGroup({ iso, items }: { iso: string; items: Appointment[] }) {
                                     {formatTime(appt.startAt)}
                                 </span>
                                 <span className="font-sans text-sm text-fog flex-1 min-w-0 truncate">
-                                    Patient{" "}
-                                    <span className="font-mono text-fog-dim">{truncateId(appt.patientId)}</span>
+                                    {appt.patientName ?? (
+                                        <>
+                                            Patient{" "}
+                                            <span className="font-mono text-fog-dim">{truncateId(appt.patientId)}</span>
+                                        </>
+                                    )}
                                 </span>
                                 <span
                                     className={cn(

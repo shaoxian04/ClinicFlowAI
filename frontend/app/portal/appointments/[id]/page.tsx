@@ -270,7 +270,7 @@ export default function AppointmentDetailPage() {
                                         : "New symptom visit"
                                 }
                             />
-                            <DataRow label="Doctor ID" value={appointment.doctorId} />
+                            <DataRow label="Doctor" value={appointment.doctorName ?? appointment.doctorId} />
                             <DataRow label="Status" value={STATUS_LABEL[appointment.status]} />
                             {appointment.status === "CANCELLED" && appointment.cancelledAt && (
                                 <DataRow

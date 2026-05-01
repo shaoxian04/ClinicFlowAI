@@ -12,7 +12,7 @@ type Tab =
 
 const TABS: Tab[] = [
   { key: "today", label: "Dashboard", href: "/doctor" },
-  { key: "bookings", label: "Today's schedule", href: "/doctor/today" },
+  { key: "bookings", label: "Schedule", href: "/doctor/today" },
   { key: "queue", label: "Awaiting review", href: "/doctor/queue" },
   { key: "finalized", label: "Finalized", href: "/doctor/finalized" },
   { key: "patients", label: "Patients", disabled: true },

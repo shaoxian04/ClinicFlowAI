@@ -20,6 +20,8 @@ export type Appointment = {
     parentVisitId: string | null;
     status: "BOOKED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
     cancelledAt: string | null;
+    doctorName: string | null;
+    patientName: string | null;
 };
 
 export type AppointmentBookRequest = {

@@ -1,5 +1,6 @@
 package my.cliniflow.controller.biz.schedule;
 
+import my.cliniflow.application.biz.schedule.AppointmentNameResolver;
 import my.cliniflow.application.biz.schedule.converter.AppointmentModel2DTOConverter;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.schedule.response.AppointmentDTO;
@@ -39,15 +40,18 @@ public class DoctorTodayController {
     private final AppointmentRepository appts;
     private final AppointmentSlotRepository slots;
     private final AppointmentModel2DTOConverter converter;
+    private final AppointmentNameResolver nameResolver;
     private final UUID doctorId;
 
     public DoctorTodayController(AppointmentRepository appts,
                                   AppointmentSlotRepository slots,
                                   AppointmentModel2DTOConverter converter,
+                                  AppointmentNameResolver nameResolver,
                                   @Value("${cliniflow.dev.seeded-doctor-pk}") String doctorId) {
         this.appts = appts;
         this.slots = slots;
         this.converter = converter;
+        this.nameResolver = nameResolver;
         this.doctorId = UUID.fromString(doctorId);
     }
 
@@ -89,13 +93,21 @@ public class DoctorTodayController {
     private List<AppointmentDTO> rangeForDoctor(LocalDate fromDay, LocalDate toDayExclusive) {
         OffsetDateTime windowStart = ZonedDateTime.of(fromDay, LocalTime.MIN, KL).toOffsetDateTime();
         OffsetDateTime windowEnd   = ZonedDateTime.of(toDayExclusive, LocalTime.MIN, KL).toOffsetDateTime();
-        return appts
-            .findByDoctorAndDayWindow(doctorId, windowStart, windowEnd,
-                List.of(AppointmentStatus.BOOKED.name()))
-            .stream()
+        var rows = appts.findByDoctorAndDayWindow(doctorId, windowStart, windowEnd,
+            List.of(AppointmentStatus.BOOKED.name()));
+        // Batch-fetch patient names in one pass to avoid N+1 reads.
+        java.util.Map<UUID, String> patientNames = nameResolver.patientNames(
+            rows.stream().map(a -> a.getPatientId()).toList());
+        String singleDoctorName = nameResolver.doctorName(doctorId);
+        return rows.stream()
             .map(a -> {
                 var slot = slots.findById(a.getSlotId()).orElse(null);
-                return slot != null ? converter.convert(a, slot) : converter.convert(a);
+                AppointmentDTO base = slot != null ? converter.convert(a, slot) : converter.convert(a);
+                return new AppointmentDTO(
+                    base.id(), base.slotId(), base.startAt(), base.endAt(),
+                    base.doctorId(), base.patientId(), base.visitId(), base.type(),
+                    base.parentVisitId(), base.status(), base.cancelledAt(),
+                    singleDoctorName, patientNames.get(a.getPatientId()));
             })
             .sorted((a, b) -> {
                 if (a.startAt() == null && b.startAt() == null) return 0;
