@@ -8,6 +8,24 @@ export type WebResult<T> = {
     data: T | null;
 };
 
+export async function apiDelete<T>(path: string, body?: unknown): Promise<T | void> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "DELETE",
+        headers: {
+            ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const envelope: WebResult<T> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+    return envelope.data ?? undefined;
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     const token = getToken();
     const res = await fetch(`${BASE}${path}`, {
