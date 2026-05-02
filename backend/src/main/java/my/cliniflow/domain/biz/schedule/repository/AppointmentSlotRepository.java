@@ -34,4 +34,11 @@ public interface AppointmentSlotRepository {
     /** Returns start_at values of all future slots (any status) — used by the
      *  generator to skip times that are already occupied (e.g. by BOOKED slots). */
     Set<OffsetDateTime> findFutureStartAts(UUID doctorId, OffsetDateTime now);
+
+    /**
+     * Returns all slots whose {@code start_at} falls in the half-open window
+     * {@code [from, to)}, ordered ascending. Doctor- and status-agnostic —
+     * intended for cross-doctor day views (e.g. the staff "today" list).
+     */
+    List<AppointmentSlotModel> findByStartAtBetween(OffsetDateTime from, OffsetDateTime to);
 }

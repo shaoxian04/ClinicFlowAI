@@ -12,9 +12,9 @@ import java.util.UUID;
  * state-transition methods; the {@link #hydrate} factory is for
  * infrastructure-layer reconstruction only.
  *
- * <p>Lifecycle: BOOKED → COMPLETED | CANCELLED | NO_SHOW. All transitions
- * are guarded — attempting an invalid transition throws
- * {@link IllegalStateException}.
+ * <p>Lifecycle: BOOKED → CHECKED_IN → COMPLETED, with terminal branches
+ * to CANCELLED or NO_SHOW from BOOKED. All transitions are guarded —
+ * attempting an invalid transition throws {@link IllegalStateException}.
  */
 public class AppointmentModel {
 
@@ -28,6 +28,7 @@ public class AppointmentModel {
     private String cancelReason;
     private OffsetDateTime cancelledAt;
     private UUID cancelledBy;
+    private OffsetDateTime checkedInAt;
 
     // -----------------------------------------------------------------------
     // Private constructor — use static factories
@@ -43,7 +44,8 @@ public class AppointmentModel {
             AppointmentStatus status,
             String cancelReason,
             OffsetDateTime cancelledAt,
-            UUID cancelledBy) {
+            UUID cancelledBy,
+            OffsetDateTime checkedInAt) {
         this.id = id;
         this.slotId = slotId;
         this.patientId = patientId;
@@ -54,6 +56,7 @@ public class AppointmentModel {
         this.cancelReason = cancelReason;
         this.cancelledAt = cancelledAt;
         this.cancelledBy = cancelledBy;
+        this.checkedInAt = checkedInAt;
     }
 
     // -----------------------------------------------------------------------
@@ -87,12 +90,13 @@ public class AppointmentModel {
 
         return new AppointmentModel(
             null, slotId, patientId, visitId, type, parentVisitId,
-            AppointmentStatus.BOOKED, null, null, null);
+            AppointmentStatus.BOOKED, null, null, null, null);
     }
 
     /**
-     * Reconstructs an {@code AppointmentModel} from a JPA entity. For use by
-     * the infrastructure layer only — bypasses all validation rules.
+     * Reconstructs an {@code AppointmentModel} from a JPA entity, leaving
+     * {@code checkedInAt} as {@code null}. For backwards compatibility with
+     * callers that don't yet supply check-in metadata.
      */
     public static AppointmentModel hydrate(
             UUID id,
@@ -105,9 +109,30 @@ public class AppointmentModel {
             String cancelReason,
             OffsetDateTime cancelledAt,
             UUID cancelledBy) {
+        return hydrate(id, slotId, patientId, visitId, type, parentVisitId,
+            status, cancelReason, cancelledAt, cancelledBy, null);
+    }
+
+    /**
+     * Reconstructs an {@code AppointmentModel} from a JPA entity, including
+     * check-in metadata. For use by the infrastructure layer only — bypasses
+     * all validation rules.
+     */
+    public static AppointmentModel hydrate(
+            UUID id,
+            UUID slotId,
+            UUID patientId,
+            UUID visitId,
+            AppointmentType type,
+            UUID parentVisitId,
+            AppointmentStatus status,
+            String cancelReason,
+            OffsetDateTime cancelledAt,
+            UUID cancelledBy,
+            OffsetDateTime checkedInAt) {
         return new AppointmentModel(
             id, slotId, patientId, visitId, type, parentVisitId,
-            status, cancelReason, cancelledAt, cancelledBy);
+            status, cancelReason, cancelledAt, cancelledBy, checkedInAt);
     }
 
     // -----------------------------------------------------------------------
@@ -182,4 +207,25 @@ public class AppointmentModel {
     public String getCancelReason() { return cancelReason; }
     public OffsetDateTime getCancelledAt() { return cancelledAt; }
     public UUID getCancelledBy() { return cancelledBy; }
+    public OffsetDateTime getCheckedInAt() { return checkedInAt; }
+
+    // -----------------------------------------------------------------------
+    // Mutators (infrastructure / write-app-service use only)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Sets the check-in timestamp. Intended for use by the staff check-in
+     * write-app-service when transitioning {@link AppointmentStatus#BOOKED}
+     * to {@link AppointmentStatus#CHECKED_IN}.
+     */
+    public void setCheckedInAt(OffsetDateTime v) { this.checkedInAt = v; }
+
+    /**
+     * Mutates the appointment status. Intended for the same call-site that
+     * sets {@link #setCheckedInAt(OffsetDateTime)}. Validation of legal
+     * transitions remains the caller's responsibility (the dedicated
+     * state-transition methods on this class are still preferred where
+     * applicable).
+     */
+    public void setStatus(AppointmentStatus v) { this.status = v; }
 }

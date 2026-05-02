@@ -52,7 +52,7 @@ export default function StaffPatientsPage() {
         setDataUnavailable(false);
         (async () => {
             try {
-                const path = `/patients?q=${encodeURIComponent(debounced)}`;
+                const path = `/patients/search?q=${encodeURIComponent(debounced)}`;
                 const data = await apiGet<PatientsResponse>(path);
                 if (!cancelled) {
                     setPatients(data.patients ?? []);

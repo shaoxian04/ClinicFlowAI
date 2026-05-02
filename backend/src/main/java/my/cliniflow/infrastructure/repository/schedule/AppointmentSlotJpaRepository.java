@@ -72,4 +72,19 @@ public interface AppointmentSlotJpaRepository extends JpaRepository<AppointmentS
     List<OffsetDateTime> findFutureStartAts(
         @Param("doctorId") UUID doctorId,
         @Param("now") OffsetDateTime now);
+
+    /**
+     * Returns all slots in the half-open window {@code [from, to)}, regardless
+     * of doctor or status. Used by the staff "today" view which lists every
+     * doctor's appointments for the day.
+     */
+    @Query("""
+        SELECT s FROM AppointmentSlotEntity s
+         WHERE s.startAt >= :from
+           AND s.startAt <  :to
+         ORDER BY s.startAt
+        """)
+    List<AppointmentSlotEntity> findByStartAtBetween(
+        @Param("from") OffsetDateTime from,
+        @Param("to")   OffsetDateTime to);
 }

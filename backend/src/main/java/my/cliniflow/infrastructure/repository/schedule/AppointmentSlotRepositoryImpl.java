@@ -78,6 +78,11 @@ public class AppointmentSlotRepositoryImpl implements AppointmentSlotRepository 
         return new HashSet<>(jpa.findFutureStartAts(doctorId, now));
     }
 
+    @Override
+    public List<AppointmentSlotModel> findByStartAtBetween(OffsetDateTime from, OffsetDateTime to) {
+        return jpa.findByStartAtBetween(from, to).stream().map(this::toModel).toList();
+    }
+
     private AppointmentSlotModel toModel(AppointmentSlotEntity e) {
         return AppointmentSlotModel.hydrate(
             e.getId(),

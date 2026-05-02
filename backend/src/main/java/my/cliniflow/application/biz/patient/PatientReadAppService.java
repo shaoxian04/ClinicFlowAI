@@ -6,6 +6,7 @@ import my.cliniflow.controller.biz.patient.response.PatientMeResponse;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Labeled;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.Medication;
 import my.cliniflow.controller.biz.patient.response.PatientContextResponse.RecentVisit;
+import my.cliniflow.controller.biz.patient.response.PatientSummaryDTO;
 import my.cliniflow.controller.biz.patient.response.PatientVisitDetailResponse;
 import my.cliniflow.controller.biz.patient.response.PatientVisitSummaryResponse;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
@@ -89,6 +90,27 @@ public class PatientReadAppService {
     public PatientModel getById(UUID id) {
         return patients.findById(id).orElseThrow(
             () -> new ResourceNotFoundException("PATIENT", id));
+    }
+
+    /**
+     * Staff/doctor-friendly summary: demographics + last 5 finalized visit previews.
+     * Excludes clinical sensitive data (allergies, conditions, meds) — those live
+     * in the doctor-only clinical-profile endpoint.
+     */
+    public PatientSummaryDTO summary(UUID patientId) {
+        PatientModel p = patients.findById(patientId).orElseThrow(
+            () -> new ResourceNotFoundException("PATIENT", patientId));
+        List<MedicalReportModel> reports = medicalReports.findFinalizedByPatientId(
+            patientId, org.springframework.data.domain.PageRequest.of(0, 5));
+        List<PatientSummaryDTO.VisitPreview> previews = reports.stream()
+            .map(r -> new PatientSummaryDTO.VisitPreview(
+                r.getVisitId(),
+                r.getFinalizedAt() == null ? null : r.getFinalizedAt().toString(),
+                truncate(r.getSummaryEn(), PREVIEW_LEN)))
+            .toList();
+        return new PatientSummaryDTO(
+            p.getId(), p.getFullName(), p.getEmail(), p.getPhone(),
+            p.getDateOfBirth(), previews);
     }
 
     public java.util.Optional<PatientModel> findByNationalId(String nationalIdRaw) {

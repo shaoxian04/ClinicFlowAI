@@ -1,10 +1,15 @@
 package my.cliniflow.controller.biz.admin;
 
 import jakarta.validation.Valid;
+import my.cliniflow.application.biz.user.UserAdminAppService;
 import my.cliniflow.application.biz.user.UserWriteAppService;
+import my.cliniflow.controller.base.BusinessException;
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.controller.base.WebResult;
+import my.cliniflow.controller.biz.admin.request.ActiveRequest;
 import my.cliniflow.controller.biz.admin.request.CreateUserRequest;
+import my.cliniflow.controller.biz.admin.request.RoleChangeRequest;
+import my.cliniflow.domain.biz.user.enums.Role;
 import my.cliniflow.domain.biz.user.model.UserModel;
 import my.cliniflow.domain.biz.user.repository.UserRepository;
 import my.cliniflow.infrastructure.security.JwtService;
@@ -23,10 +28,14 @@ import java.util.UUID;
 public class AdminUserController {
 
     private final UserWriteAppService userWrite;
+    private final UserAdminAppService adminSvc;
     private final UserRepository users;
 
-    public AdminUserController(UserWriteAppService userWrite, UserRepository users) {
+    public AdminUserController(UserWriteAppService userWrite,
+                                UserAdminAppService adminSvc,
+                                UserRepository users) {
         this.userWrite = userWrite;
+        this.adminSvc = adminSvc;
         this.users = users;
     }
 
@@ -39,6 +48,7 @@ public class AdminUserController {
                     m.put("email", u.getEmail());
                     m.put("name", u.getFullName());
                     m.put("role", u.getRole().name());
+                    m.put("active", u.isActive());
                     return m;
                 })
                 .toList();
@@ -66,5 +76,37 @@ public class AdminUserController {
             default -> throw new IllegalArgumentException("invalid role: " + req.role());
         };
         return WebResult.ok(Map.of("userId", createdId.toString(), "role", req.role()));
+    }
+
+    @PatchMapping("/{id}/role")
+    public WebResult<Void> changeRole(@PathVariable("id") UUID targetId,
+                                       @Valid @RequestBody RoleChangeRequest req,
+                                       Authentication auth) {
+        UUID actor = ((JwtService.Claims) auth.getPrincipal()).userId();
+        Role role;
+        try {
+            role = Role.valueOf(req.role());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "invalid role: " + req.role());
+        }
+        adminSvc.changeRole(actor, targetId, role);
+        return WebResult.ok(null);
+    }
+
+    @PatchMapping("/{id}/active")
+    public WebResult<Void> setActive(@PathVariable("id") UUID targetId,
+                                      @Valid @RequestBody ActiveRequest req,
+                                      Authentication auth) {
+        UUID actor = ((JwtService.Claims) auth.getPrincipal()).userId();
+        adminSvc.setActive(actor, targetId, req.active());
+        return WebResult.ok(null);
+    }
+
+    @PostMapping("/{id}/force-password-reset")
+    public WebResult<Void> forcePasswordReset(@PathVariable("id") UUID targetId,
+                                               Authentication auth) {
+        UUID actor = ((JwtService.Claims) auth.getPrincipal()).userId();
+        adminSvc.forcePasswordReset(actor, targetId);
+        return WebResult.ok(null);
     }
 }

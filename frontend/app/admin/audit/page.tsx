@@ -1,112 +1,92 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
 import { getUser } from "@/lib/auth";
-import { apiGet } from "@/lib/api";
-
+import { getAuditLog, type AuditEntry, type AuditPage } from "@/lib/admin";
 import AdminNav from "../components/AdminNav";
 
-type AuditEntry = {
-    id: string;
-    timestamp: string;
-    userEmail: string;
-    action: string;
-    resourceId: string;
+const ACTIONS = ["", "READ", "CREATE", "UPDATE", "DELETE", "LOGIN", "EXPORT"];
+const LIMIT = 50;
+
+const ACTION_COLOR: Record<string, string> = {
+    READ:   "text-fog-dim",
+    CREATE: "text-cyan",
+    UPDATE: "text-amber",
+    DELETE: "text-crimson",
+    LOGIN:  "text-lime",
+    EXPORT: "text-violet",
 };
 
-type AuditResponse = {
-    entries: AuditEntry[];
-    totalPages: number;
-    currentPage: number;
-};
+function ActionBadge({ action }: { action: string }) {
+    return (
+        <span className={`font-mono text-xs font-semibold uppercase tracking-wider ${ACTION_COLOR[action] ?? "text-fog-dim"}`}>
+            {action}
+        </span>
+    );
+}
 
-type Filters = {
-    user: string;
-    action: string;
-    dateFrom: string;
-    dateTo: string;
-};
+function fmtTime(iso: string) {
+    try {
+        return new Date(iso).toLocaleString("en-MY", {
+            month: "short", day: "numeric",
+            hour: "2-digit", minute: "2-digit", second: "2-digit",
+            hour12: false,
+        });
+    } catch { return iso; }
+}
 
-const EMPTY_FILTERS: Filters = { user: "", action: "", dateFrom: "", dateTo: "" };
+function truncate(s: string | null | undefined, n: number) {
+    if (!s) return "—";
+    return s.length > n ? s.slice(0, n) + "…" : s;
+}
+
+function metaSummary(meta: Record<string, unknown>) {
+    const keys = Object.keys(meta);
+    if (keys.length === 0) return "—";
+    return keys.slice(0, 2).map(k => `${k}=${JSON.stringify(meta[k])}`).join(", ")
+        + (keys.length > 2 ? " …" : "");
+}
 
 export default function AdminAuditPage() {
     const router = useRouter();
-    const [loading, setLoading] = useState<boolean>(true);
-    const [entries, setEntries] = useState<AuditEntry[]>([]);
-    const [totalPages, setTotalPages] = useState<number>(1);
-    const [currentPage, setCurrentPage] = useState<number>(0);
-    const [stub, setStub] = useState<boolean>(false);
-    const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-    const [pendingFilters, setPendingFilters] = useState<Filters>(EMPTY_FILTERS);
-
-    const loadPage = useCallback(
-        async (page: number, activeFilters: Filters) => {
-            setLoading(true);
-            setStub(false);
-            try {
-                const params = new URLSearchParams({ page: String(page), size: "20" });
-                if (activeFilters.user) params.set("user", activeFilters.user);
-                if (activeFilters.action) params.set("action", activeFilters.action);
-                if (activeFilters.dateFrom) params.set("dateFrom", activeFilters.dateFrom);
-                if (activeFilters.dateTo) params.set("dateTo", activeFilters.dateTo);
-                const data = await apiGet<AuditResponse>(`/admin/audit?${params.toString()}`);
-                setEntries(data.entries ?? []);
-                setTotalPages(data.totalPages ?? 1);
-                setCurrentPage(data.currentPage ?? page);
-            } catch (err) {
-                const msg = err instanceof Error ? err.message : String(err);
-                if (msg === "HTTP 401" || msg === "HTTP 403") {
-                    router.replace("/login");
-                    return;
-                }
-                setStub(true);
-                setEntries([]);
-                setTotalPages(1);
-                setCurrentPage(0);
-                console.warn("admin/audit unavailable", err);
-            } finally {
-                setLoading(false);
-            }
-        },
-        [router],
-    );
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<AuditPage | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(0);
+    const [filterAction, setFilterAction] = useState("");
+    const [filterResourceType, setFilterResourceType] = useState("");
+    const [filterFrom, setFilterFrom] = useState("");
+    const [filterTo, setFilterTo] = useState("");
+    const [applied, setApplied] = useState(0);
 
     useEffect(() => {
         const user = getUser();
-        if (!user) {
-            router.replace("/login");
-            return;
-        }
-        if (user.role !== "ADMIN") {
-            router.replace("/login");
-            return;
-        }
-        loadPage(0, EMPTY_FILTERS);
-    }, [router, loadPage]);
+        if (!user || user.role !== "ADMIN") { router.replace("/login"); return; }
+    }, [router]);
 
-    function onFilterChange(field: keyof Filters, value: string) {
-        setPendingFilters((prev) => ({ ...prev, [field]: value }));
-    }
+    useEffect(() => {
+        let cancelled = false;
+        setLoading(true);
+        setError(null);
+        getAuditLog({
+            page, limit: LIMIT,
+            action: filterAction || undefined,
+            resourceType: filterResourceType || undefined,
+            from: filterFrom || undefined,
+            to: filterTo || undefined,
+        }).then(d => {
+            if (!cancelled) { setData(d); setLoading(false); }
+        }).catch(err => {
+            if (!cancelled) { setError(err instanceof Error ? err.message : String(err)); setLoading(false); }
+        });
+        return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, applied]);
 
-    function onApplyFilters(e: React.FormEvent) {
-        e.preventDefault();
-        setFilters(pendingFilters);
-        loadPage(0, pendingFilters);
-    }
+    function applyFilters() { setPage(0); setApplied(n => n + 1); }
 
-    function onPrev() {
-        if (currentPage > 0) {
-            loadPage(currentPage - 1, filters);
-        }
-    }
-
-    function onNext() {
-        if (currentPage < totalPages - 1) {
-            loadPage(currentPage + 1, filters);
-        }
-    }
+    const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
 
     return (
         <>
@@ -116,172 +96,111 @@ export default function AdminAuditPage() {
                     <div className="page-header-eyebrow">Clinic admin</div>
                     <h1 className="page-header-title">Audit log.</h1>
                     <p className="page-header-sub">
-                        PDPA-compliant append-only record of all actions. Read-only — no edits or
-                        deletions permitted.
+                        PDPA-compliant append-only record of all create, update, delete and login events.
                     </p>
                 </header>
 
-                {stub && (
-                    <div className="ghost-banner" role="status">
-                        Stub — backend pending. Showing empty log until the API is wired up.
+                <div className="audit-filters">
+                    <div className="audit-filter-field field">
+                        <label className="field-label">Action</label>
+                        <select className="input" value={filterAction} onChange={e => setFilterAction(e.target.value)}>
+                            {ACTIONS.map(a => <option key={a} value={a}>{a || "All"}</option>)}
+                        </select>
                     </div>
-                )}
+                    <div className="audit-filter-field field">
+                        <label className="field-label">Resource type</label>
+                        <input className="input" placeholder="e.g. USER" value={filterResourceType}
+                            onChange={e => setFilterResourceType(e.target.value.toUpperCase())} />
+                    </div>
+                    <div className="audit-filter-field field">
+                        <label className="field-label">From</label>
+                        <input className="input" type="date" value={filterFrom}
+                            onChange={e => setFilterFrom(e.target.value)} />
+                    </div>
+                    <div className="audit-filter-field field">
+                        <label className="field-label">To</label>
+                        <input className="input" type="date" value={filterTo}
+                            onChange={e => setFilterTo(e.target.value)} />
+                    </div>
+                    <div className="audit-filter-btn">
+                        <button type="button" className="btn btn-primary" onClick={applyFilters}>Apply</button>
+                    </div>
+                </div>
 
-                <form onSubmit={onApplyFilters} className="audit-filters">
-                    <label className="field audit-filter-field">
-                        <span className="field-label">User email</span>
-                        <input
-                            type="text"
-                            className="input"
-                            placeholder="Filter by user…"
-                            value={pendingFilters.user}
-                            onChange={(e) => onFilterChange("user", e.target.value)}
-                        />
-                    </label>
-                    <label className="field audit-filter-field">
-                        <span className="field-label">Action</span>
-                        <input
-                            type="text"
-                            className="input"
-                            placeholder="Filter by action…"
-                            value={pendingFilters.action}
-                            onChange={(e) => onFilterChange("action", e.target.value)}
-                        />
-                    </label>
-                    <label className="field audit-filter-field">
-                        <span className="field-label">From</span>
-                        <input
-                            type="date"
-                            className="input"
-                            value={pendingFilters.dateFrom}
-                            onChange={(e) => onFilterChange("dateFrom", e.target.value)}
-                        />
-                    </label>
-                    <label className="field audit-filter-field">
-                        <span className="field-label">To</span>
-                        <input
-                            type="date"
-                            className="input"
-                            value={pendingFilters.dateTo}
-                            onChange={(e) => onFilterChange("dateTo", e.target.value)}
-                        />
-                    </label>
-                    <button type="submit" className="btn btn-primary audit-filter-btn">
-                        Apply filters
-                    </button>
-                </form>
+                {error && <div className="banner banner-error mt-4">{error}</div>}
 
                 {loading ? (
-                    <AuditSkeleton />
-                ) : entries.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-title">No audit entries found.</div>
-                        <div className="empty-state-body">
-                            Try adjusting your filters or check back after some activity has been
-                            recorded.
-                        </div>
-                    </div>
-                ) : (
-                    <div className="admin-table-wrap">
-                        <table className="audit-table">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>User</th>
-                                    <th>Action</th>
-                                    <th>Resource ID</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {entries.map((entry) => (
-                                    <tr key={entry.id}>
-                                        <td>{formatTimestamp(entry.timestamp)}</td>
-                                        <td>{entry.userEmail}</td>
-                                        <td>{entry.action}</td>
-                                        <td>
-                                            <code>{entry.resourceId}</code>
-                                        </td>
+                    <SkeletonAudit />
+                ) : data && data.entries.length > 0 ? (
+                    <>
+                        <div className="admin-table-wrap">
+                            <table className="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Actor</th>
+                                        <th>Action</th>
+                                        <th>Resource</th>
+                                        <th>ID</th>
+                                        <th>Details</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {data.entries.map((e: AuditEntry) => (
+                                        <tr key={e.id}>
+                                            <td className="font-mono text-xs whitespace-nowrap">{fmtTime(e.occurred_at)}</td>
+                                            <td className="text-sm">{e.actor_name ?? e.actor_email ?? "System"}</td>
+                                            <td><ActionBadge action={e.action} /></td>
+                                            <td className="font-mono text-xs">{e.resource_type}</td>
+                                            <td className="font-mono text-xs">{truncate(e.resource_id, 20)}</td>
+                                            <td className="font-mono text-xs text-fog-dim max-w-xs truncate">{metaSummary(e.metadata)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="audit-pagination">
+                            <button type="button" className="btn btn-sm"
+                                onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+                                ← Prev
+                            </button>
+                            <span className="audit-page-info">
+                                Page {page + 1} of {totalPages} · {data.total.toLocaleString()} entries
+                            </span>
+                            <button type="button" className="btn btn-sm"
+                                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
+                                Next →
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="empty-state mt-6">
+                        <div className="empty-state-title">No audit entries.</div>
+                        <div className="empty-state-body">Adjust filters or wait for activity.</div>
                     </div>
                 )}
-
-                <div className="audit-pagination">
-                    <button
-                        type="button"
-                        className="btn"
-                        disabled={currentPage <= 0 || loading}
-                        onClick={onPrev}
-                    >
-                        ← Prev
-                    </button>
-                    <span className="audit-page-info">
-                        Page {currentPage + 1} of {totalPages}
-                    </span>
-                    <button
-                        type="button"
-                        className="btn"
-                        disabled={currentPage >= totalPages - 1 || loading}
-                        onClick={onNext}
-                    >
-                        Next →
-                    </button>
-                </div>
             </main>
         </>
     );
 }
 
-function AuditSkeleton() {
+function SkeletonAudit() {
     return (
-        <div className="admin-table-wrap" aria-busy="true">
+        <div className="admin-table-wrap mt-6" aria-busy="true">
             <table className="audit-table">
                 <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Resource ID</th>
-                    </tr>
+                    <tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>ID</th><th>Details</th></tr>
                 </thead>
                 <tbody>
-                    {Array.from({ length: 5 }).map((_, i) => (
+                    {Array.from({ length: 8 }).map((_, i) => (
                         <tr key={i}>
-                            <td>
-                                <span className="skeleton-bar skeleton-bar-narrow" />
-                            </td>
-                            <td>
-                                <span className="skeleton-bar skeleton-bar-wide" />
-                            </td>
-                            <td>
-                                <span className="skeleton-bar skeleton-bar-narrow" />
-                            </td>
-                            <td>
-                                <span className="skeleton-bar skeleton-bar-narrow" />
-                            </td>
+                            {Array.from({ length: 6 }).map((__, j) => (
+                                <td key={j}><span className="skeleton-bar skeleton-bar-wide" /></td>
+                            ))}
                         </tr>
                     ))}
                 </tbody>
             </table>
         </div>
     );
-}
-
-function formatTimestamp(iso: string): string {
-    try {
-        const d = new Date(iso);
-        if (Number.isNaN(d.getTime())) return "—";
-        return d.toLocaleString([], {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-        });
-    } catch {
-        return "—";
-    }
 }

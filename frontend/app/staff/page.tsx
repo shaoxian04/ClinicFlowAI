@@ -3,31 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { apiGet, apiPost } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { getTodayList, checkIn, type WaitingEntry, type WalkInResult } from "@/lib/staff";
 
 import StaffNav from "./components/StaffNav";
-
-type PreVisitStatus = "pending" | "submitted" | "none";
-
-type WaitingEntry = {
-    patientId: string;
-    patientName: string;
-    preVisitStatus: PreVisitStatus;
-    arrivedAt: string;
-};
-
-type WaitingResponse = { waitingList: WaitingEntry[] };
+import WalkInModal from "./components/WalkInModal";
 
 type RowState = {
     checkedIn: boolean;
     busy: boolean;
-    stubHint: boolean;
     error: string | null;
 };
 
 function emptyRowState(): RowState {
-    return { checkedIn: false, busy: false, stubHint: false, error: null };
+    return { checkedIn: false, busy: false, error: null };
 }
 
 export default function StaffTodayPage() {
@@ -36,6 +25,8 @@ export default function StaffTodayPage() {
     const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
     const [dataUnavailable, setDataUnavailable] = useState<boolean>(false);
     const [rowStates, setRowStates] = useState<Record<string, RowState>>({});
+    const [walkInOpen, setWalkInOpen] = useState(false);
+    const [walkInSuccess, setWalkInSuccess] = useState<string | null>(null);
 
     useEffect(() => {
         const user = getUser();
@@ -50,16 +41,15 @@ export default function StaffTodayPage() {
         let cancelled = false;
         (async () => {
             try {
-                const data = await apiGet<WaitingResponse>("/staff/today");
+                const list = await getTodayList();
                 if (!cancelled) {
-                    setWaiting(data.waitingList ?? []);
+                    setWaiting(list);
                 }
             } catch (err) {
                 if (!cancelled) {
                     setDataUnavailable(true);
                     setWaiting([]);
                 }
-                // Don't hard fail - show banner + empty list.
                 console.warn("staff/today unavailable", err);
             } finally {
                 if (!cancelled) setLoading(false);
@@ -70,52 +60,70 @@ export default function StaffTodayPage() {
         };
     }, [router]);
 
-    async function onCheckIn(patientId: string) {
+    async function onCheckIn(appointmentId: string) {
         setRowStates((prev) => ({
             ...prev,
-            [patientId]: { ...(prev[patientId] ?? emptyRowState()), busy: true, error: null },
+            [appointmentId]: { ...(prev[appointmentId] ?? emptyRowState()), busy: true, error: null },
         }));
         try {
-            await apiPost<unknown>("/staff/checkin", { patientId });
+            await checkIn(appointmentId);
             setRowStates((prev) => ({
                 ...prev,
-                [patientId]: {
-                    ...(prev[patientId] ?? emptyRowState()),
+                [appointmentId]: {
+                    ...(prev[appointmentId] ?? emptyRowState()),
                     busy: false,
                     checkedIn: true,
-                    stubHint: false,
                     error: null,
                 },
             }));
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            const is404 = message.includes("404");
             setRowStates((prev) => ({
                 ...prev,
-                [patientId]: {
-                    ...(prev[patientId] ?? emptyRowState()),
+                [appointmentId]: {
+                    ...(prev[appointmentId] ?? emptyRowState()),
                     busy: false,
-                    // Treat 404 as a soft "stub pending" so the user still sees visual feedback.
-                    checkedIn: is404,
-                    stubHint: is404,
-                    error: is404 ? null : message,
+                    error: message,
                 },
             }));
         }
     }
 
+    function onWalkInRegistered(result: WalkInResult) {
+        setWalkInSuccess(`Patient registered (ID: ${result.patientId.slice(0, 8)}…)${result.userId ? " — login account created." : "."}`);
+        setTimeout(() => setWalkInSuccess(null), 5000);
+    }
+
     return (
         <>
             <StaffNav active="today" />
+            <WalkInModal
+                open={walkInOpen}
+                onClose={() => setWalkInOpen(false)}
+                onRegistered={onWalkInRegistered}
+            />
             <main className="shell shell-narrow portal-shell staff-shell">
-                <header className="page-header">
-                    <div className="page-header-eyebrow">Front desk</div>
-                    <h1 className="page-header-title">Today in the waiting room.</h1>
-                    <p className="page-header-sub">
-                        Check patients in as they arrive. A pre-visit dot shows whether the
-                        doctor already has their intake.
-                    </p>
+                <header className="page-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+                    <div>
+                        <div className="page-header-eyebrow">Front desk</div>
+                        <h1 className="page-header-title">Today in the waiting room.</h1>
+                        <p className="page-header-sub">
+                            Check patients in as they arrive. A pre-visit dot shows whether the
+                            doctor already has their intake.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ flexShrink: 0, marginTop: 4 }}
+                        onClick={() => setWalkInOpen(true)}
+                    >
+                        + Walk-in
+                    </button>
                 </header>
+                {walkInSuccess && (
+                    <div className="ghost-banner" role="status">{walkInSuccess}</div>
+                )}
 
                 {dataUnavailable && (
                     <div className="ghost-banner" role="status">
@@ -134,7 +142,7 @@ export default function StaffTodayPage() {
                 ) : (
                     <ul className="waiting-list">
                         {waiting.map((entry) => {
-                            const state = rowStates[entry.patientId] ?? emptyRowState();
+                            const state = rowStates[entry.appointmentId] ?? emptyRowState();
                             const dotClass =
                                 entry.preVisitStatus === "pending"
                                     ? "waiting-dot waiting-dot-pending"
@@ -148,7 +156,7 @@ export default function StaffTodayPage() {
                                       ? "Pre-visit submitted"
                                       : "No pre-visit";
                             return (
-                                <li key={entry.patientId} className="waiting-row">
+                                <li key={entry.appointmentId} className="waiting-row">
                                     <span
                                         className={dotClass}
                                         title={statusLabel}
@@ -159,26 +167,23 @@ export default function StaffTodayPage() {
                                         <div className="waiting-meta">{statusLabel}</div>
                                     </div>
                                     <div className="waiting-meta">
-                                        Arrived {formatTime(entry.arrivedAt)}
+                                        {entry.arrivedAt
+                                            ? `Arrived ${formatTime(entry.arrivedAt)}`
+                                            : `Slot ${formatTime(entry.slotStartAt)}`}
                                     </div>
                                     <div className="waiting-action">
                                         <button
                                             type="button"
                                             className="btn btn-primary"
-                                            disabled={state.busy || state.checkedIn}
-                                            onClick={() => onCheckIn(entry.patientId)}
+                                            disabled={state.busy || state.checkedIn || entry.checkedIn}
+                                            onClick={() => onCheckIn(entry.appointmentId)}
                                         >
-                                            {state.checkedIn
+                                            {state.checkedIn || entry.checkedIn
                                                 ? "Checked in"
                                                 : state.busy
                                                   ? "Checking in…"
                                                   : "Check in"}
                                         </button>
-                                        {state.stubHint && (
-                                            <div className="waiting-hint">
-                                                Stub — backend pending
-                                            </div>
-                                        )}
                                         {state.error && (
                                             <div className="waiting-error">
                                                 {state.error}

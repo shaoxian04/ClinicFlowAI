@@ -139,6 +139,24 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
     return envelope.data;
 }
 
+/** PATCH to an endpoint that intentionally returns data:null on success. */
+export async function apiPatchVoid(path: string, body: unknown): Promise<void> {
+    const token = getToken();
+    const res = await fetch(`${BASE}${path}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await readErrorMessage(res));
+    const envelope: WebResult<unknown> = await res.json();
+    if (envelope.code !== 0) {
+        throw new Error(envelope.message || `code ${envelope.code}`);
+    }
+}
+
 export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
     const token = getToken();
     const res = await fetch(`${BASE}${path}`, {

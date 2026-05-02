@@ -44,6 +44,7 @@ public class AppointmentRepositoryImpl implements AppointmentRepository {
         e.setCancelReason(m.getCancelReason());
         e.setCancelledAt(m.getCancelledAt());
         e.setCancelledBy(m.getCancelledBy());
+        e.setCheckedInAt(m.getCheckedInAt());
 
         AppointmentEntity saved = jpa.save(e);
         m.hydrateId(saved.getId());
@@ -79,6 +80,17 @@ public class AppointmentRepositoryImpl implements AppointmentRepository {
                   .stream().map(this::toModel).toList();
     }
 
+    @Override
+    public List<AppointmentModel> findBySlotIdInAndStatusIn(Collection<UUID> slotIds,
+                                                              Collection<AppointmentStatus> statuses) {
+        if (slotIds == null || slotIds.isEmpty() || statuses == null || statuses.isEmpty()) {
+            return List.of();
+        }
+        List<String> statusNames = statuses.stream().map(Enum::name).toList();
+        return jpa.findBySlotIdInAndStatusIn(slotIds, statusNames)
+                  .stream().map(this::toModel).toList();
+    }
+
     private AppointmentModel toModel(AppointmentEntity e) {
         return AppointmentModel.hydrate(
             e.getId(),
@@ -90,6 +102,7 @@ public class AppointmentRepositoryImpl implements AppointmentRepository {
             AppointmentStatus.valueOf(e.getStatus()),
             e.getCancelReason(),
             e.getCancelledAt(),
-            e.getCancelledBy());
+            e.getCancelledBy(),
+            e.getCheckedInAt());
     }
 }

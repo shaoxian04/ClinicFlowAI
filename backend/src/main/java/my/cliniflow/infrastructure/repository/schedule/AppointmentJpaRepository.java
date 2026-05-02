@@ -52,4 +52,18 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentEntit
         @Param("dayStart")       OffsetDateTime dayStart,
         @Param("dayEnd")         OffsetDateTime dayEnd,
         @Param("activeStatuses") Collection<String> activeStatuses);
+
+    /**
+     * Returns appointments whose {@code slot_id} is one of {@code slotIds}
+     * and whose {@code status} is one of {@code statuses}. Caller is
+     * responsible for any ordering.
+     */
+    @Query("""
+        SELECT a FROM AppointmentEntity a
+         WHERE a.slotId IN :slotIds
+           AND a.status IN :statuses
+        """)
+    List<AppointmentEntity> findBySlotIdInAndStatusIn(
+        @Param("slotIds")  Collection<UUID> slotIds,
+        @Param("statuses") Collection<String> statuses);
 }

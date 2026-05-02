@@ -4,20 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getUser } from "@/lib/auth";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
+import { listUsers, changeUserRole, type AdminUser, type UserRole } from "@/lib/admin";
 
 import AdminNav from "../components/AdminNav";
-
-type UserRole = "PATIENT" | "DOCTOR" | "STAFF" | "ADMIN";
-
-type AdminUser = {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-};
-
-type UsersResponse = { users: AdminUser[] };
+import UserDetailDrawer from "./components/UserDetailDrawer";
 
 type CreateForm = {
     email: string;
@@ -44,11 +35,10 @@ export default function AdminUsersPage() {
     const [createForm, setCreateForm] = useState<CreateForm>(EMPTY_CREATE);
     const [createBusy, setCreateBusy] = useState<boolean>(false);
     const [createError, setCreateError] = useState<string | null>(null);
-    const [createStub, setCreateStub] = useState<boolean>(false);
     const [roleChanges, setRoleChanges] = useState<Record<string, UserRole>>({});
     const [roleBusy, setRoleBusy] = useState<Record<string, boolean>>({});
-    const [roleStubs, setRoleStubs] = useState<Record<string, boolean>>({});
     const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
+    const [drawerUser, setDrawerUser] = useState<AdminUser | null>(null);
 
     useEffect(() => {
         const user = getUser();
@@ -63,9 +53,9 @@ export default function AdminUsersPage() {
         let cancelled = false;
         (async () => {
             try {
-                const data = await apiGet<UsersResponse>("/admin/users");
+                const list = await listUsers();
                 if (!cancelled) {
-                    setUsers(data.users ?? []);
+                    setUsers(list);
                 }
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
@@ -91,20 +81,22 @@ export default function AdminUsersPage() {
         e.preventDefault();
         setCreateBusy(true);
         setCreateError(null);
-        setCreateStub(false);
         try {
-            const created = await apiPost<AdminUser>("/admin/users", createForm);
-            setUsers((prev) => [...prev, created]);
+            // Map frontend form fields to backend CreateUserRequest names
+            await apiPost<unknown>("/admin/users", {
+                role: createForm.role,
+                email: createForm.email,
+                fullName: createForm.name,
+                tempPassword: createForm.initialPassword,
+            });
+            // Refresh list so new user appears with all fields
+            const refreshed = await listUsers();
+            setUsers(refreshed);
             setCreateForm(EMPTY_CREATE);
             setShowCreate(false);
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            const is404 = msg.includes("404");
-            if (is404) {
-                setCreateStub(true);
-            } else {
-                setCreateError(msg);
-            }
+            setCreateError(msg);
         } finally {
             setCreateBusy(false);
         }
@@ -123,9 +115,8 @@ export default function AdminUsersPage() {
         if (!newRole) return;
         setRoleBusy((prev) => ({ ...prev, [userId]: true }));
         setRoleErrors((prev) => ({ ...prev, [userId]: "" }));
-        setRoleStubs((prev) => ({ ...prev, [userId]: false }));
         try {
-            await apiPost<unknown>(`/admin/users/${userId}/role`, { role: newRole });
+            await changeUserRole(userId, newRole);
             setUsers((prev) =>
                 prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
             );
@@ -136,20 +127,25 @@ export default function AdminUsersPage() {
             });
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            const is404 = msg.includes("404");
-            if (is404) {
-                setRoleStubs((prev) => ({ ...prev, [userId]: true }));
-            } else {
-                setRoleErrors((prev) => ({ ...prev, [userId]: msg }));
-            }
+            setRoleErrors((prev) => ({ ...prev, [userId]: msg }));
         } finally {
             setRoleBusy((prev) => ({ ...prev, [userId]: false }));
         }
     }
 
+    function onDrawerUpdated(updated: AdminUser) {
+        setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+        setDrawerUser(updated);
+    }
+
     return (
         <>
             <AdminNav active="users" />
+            <UserDetailDrawer
+                user={drawerUser}
+                onClose={() => setDrawerUser(null)}
+                onUpdated={onDrawerUpdated}
+            />
             <main className="shell shell-narrow portal-shell staff-shell">
                 <header className="page-header">
                     <div className="page-header-eyebrow">Clinic admin</div>
@@ -161,7 +157,7 @@ export default function AdminUsersPage() {
 
                 {stub && (
                     <div className="ghost-banner" role="status">
-                        Stub — backend pending. Showing empty user list until the API is wired up.
+                        Unable to load users — check your connection and try refreshing.
                     </div>
                 )}
 
@@ -219,7 +215,7 @@ export default function AdminUsersPage() {
                                 </select>
                             </label>
                             <label className="field">
-                                <span className="field-label">Initial password</span>
+                                <span className="field-label">Initial password (min 12 chars)</span>
                                 <input
                                     type="password"
                                     className="input"
@@ -228,6 +224,7 @@ export default function AdminUsersPage() {
                                         onCreateFormChange("initialPassword", e.target.value)
                                     }
                                     required
+                                    minLength={12}
                                     autoComplete="new-password"
                                 />
                             </label>
@@ -238,11 +235,6 @@ export default function AdminUsersPage() {
                             >
                                 {createBusy ? "Creating…" : "Create user"}
                             </button>
-                            {createStub && (
-                                <div className="ghost-banner" role="status">
-                                    Stub — backend pending
-                                </div>
-                            )}
                             {createError && (
                                 <div className="banner banner-error">{createError}</div>
                             )}
@@ -268,12 +260,20 @@ export default function AdminUsersPage() {
                                     <th>Email</th>
                                     <th>Role</th>
                                     <th>Change role</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {users.map((u) => (
                                     <tr key={u.id}>
-                                        <td>{u.name}</td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                {!u.active && (
+                                                    <span className="text-fog-dim text-xs">(inactive)</span>
+                                                )}
+                                                {u.name}
+                                            </div>
+                                        </td>
                                         <td>{u.email}</td>
                                         <td>
                                             <span className={`role-chip role-chip-${u.role.toLowerCase()}`}>
@@ -311,17 +311,21 @@ export default function AdminUsersPage() {
                                                 >
                                                     {roleBusy[u.id] ? "Saving…" : "Save"}
                                                 </button>
-                                                {roleStubs[u.id] && (
-                                                    <span className="stub-hint">
-                                                        Stub — backend pending
-                                                    </span>
-                                                )}
                                                 {roleErrors[u.id] && (
                                                     <span className="error-hint">
                                                         {roleErrors[u.id]}
                                                     </span>
                                                 )}
                                             </div>
+                                        </td>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm"
+                                                onClick={() => setDrawerUser(u)}
+                                            >
+                                                Details
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -344,6 +348,7 @@ function SkeletonTable({ rows }: { rows: number }) {
                         <th>Email</th>
                         <th>Role</th>
                         <th>Change role</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -360,6 +365,9 @@ function SkeletonTable({ rows }: { rows: number }) {
                             </td>
                             <td>
                                 <span className="skeleton-bar skeleton-bar-narrow" />
+                            </td>
+                            <td>
+                                <span className="skeleton-bar skeleton-bar-btn" />
                             </td>
                         </tr>
                     ))}

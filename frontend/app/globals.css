@@ -20,46 +20,46 @@
     --crimson: #FF4D5E;
     --mica: #2A3346;
 
-    /* Legacy vars — kept at their original light values so staff + admin CSS continues to work */
-    --paper: #F6F1E6;
-    --bone: #E8DFCE;
-    --ink: #141414;
-    --ink-soft: #3B3A35;
-    --oxblood: #7A2E2E;
-    --sage: #4F6B56;
-    --ochre: #B87C2A;
-    --slate: #1F2A2B;
-    --hairline: #D9D1BE;
+    /* Legacy vars — retained names, updated to dark theme */
+    --paper: #0E1424;
+    --bone: #1A2133;
+    --ink: #E9EEF5;
+    --ink-soft: rgba(233,238,245,0.75);
+    --oxblood: #22E1D7;
+    --sage: #B8FF5C;
+    --ochre: #F7B23B;
+    --slate: #0A0F1A;
+    --hairline: rgba(233,238,245,0.08);
 
-    /* Compatibility aliases — hardcoded to legacy light values so staff/admin pages remain light */
-    --primary: #7A2E2E;
-    --primary-hover: #6b2626;
-    --primary-ink: #F6F1E6;
-    --primary-soft: rgba(122, 46, 46, 0.1);
-    --accent: #8F1C1C;
-    --accent-hover: #7a1818;
-    --accent-ink: #F6F1E6;
-    --warn: #B87C2A;
-    --warn-soft: rgba(184, 124, 42, 0.12);
-    --warn-ink: #7a4f10;
-    --good: #4F6B56;
-    --good-soft: rgba(79, 107, 86, 0.12);
-    --good-ink: #2d4a33;
-    --danger: #8F1C1C;
-    --danger-soft: rgba(143, 28, 28, 0.1);
-    --bad: #8F1C1C;
+    /* Compatibility aliases — now using dark aurora-glass palette */
+    --primary: #22E1D7;
+    --primary-hover: rgba(34,225,215,0.85);
+    --primary-ink: #0A0F1A;
+    --primary-soft: rgba(34,225,215,0.12);
+    --accent: #22E1D7;
+    --accent-hover: rgba(34,225,215,0.85);
+    --accent-ink: #0A0F1A;
+    --warn: #F7B23B;
+    --warn-soft: rgba(247,178,59,0.12);
+    --warn-ink: #F7B23B;
+    --good: #B8FF5C;
+    --good-soft: rgba(184,255,92,0.12);
+    --good-ink: #B8FF5C;
+    --danger: #FF4D5E;
+    --danger-soft: rgba(255,77,94,0.12);
+    --bad: #FF4D5E;
     --pill-radius: 999px;
 
-    --bg: #F6F1E6;
-    --bg-soft: #E8DFCE;
-    --surface: #F6F1E6;
-    --surface-2: #E8DFCE;
-    --line: #D9D1BE;
-    --line-strong: #c5b89f;
-    --ink-2: #3B3A35;
-    --ink-3: #7a7570;
-    --ink-dim: #7a7570;
-    --border: #D9D1BE;
+    --bg: #0E1424;
+    --bg-soft: #1A2133;
+    --surface: #1A2133;
+    --surface-2: #2A3346;
+    --line: rgba(233,238,245,0.08);
+    --line-strong: rgba(233,238,245,0.15);
+    --ink-2: rgba(233,238,245,0.75);
+    --ink-3: #93A0B5;
+    --ink-dim: #93A0B5;
+    --border: rgba(233,238,245,0.08);
 
     --radius-sm: 4px;
     --radius: 8px;
@@ -186,8 +186,8 @@
   max-width: 980px;
   margin: 0 auto;
   padding: 56px 32px 96px;
-  background: #F6F1E6;
-  color: #141414;
+  background: var(--bg);
+  color: var(--ink);
 }
 
 .shell-narrow {
@@ -329,7 +329,7 @@
 .textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(122, 46, 46, 0.12);
+  box-shadow: 0 0 0 3px rgba(34, 225, 215, 0.15);
 }
 
 .input:disabled,
@@ -418,9 +418,9 @@
   border-radius: 6px;
   background: linear-gradient(
     90deg,
-    rgba(15, 23, 42, 0.06),
-    rgba(15, 23, 42, 0.12),
-    rgba(15, 23, 42, 0.06)
+    rgba(233,238,245,0.04),
+    rgba(233,238,245,0.10),
+    rgba(233,238,245,0.04)
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;

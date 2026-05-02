@@ -8,6 +8,7 @@ import my.cliniflow.application.biz.patient.PatientWriteAppService.RegistrationR
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.controller.base.WebResult;
 import my.cliniflow.controller.biz.auth.request.StaffCreatePatientRequest;
+import my.cliniflow.controller.biz.patient.response.PatientSummaryDTO;
 import my.cliniflow.domain.biz.patient.model.PatientClinicalProfileModel;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.infrastructure.security.JwtService;
@@ -83,6 +84,13 @@ public class PatientsController {
             return WebResult.ok(reads.searchByName(name).stream().map(this::toPreview).toList());
         }
         return WebResult.ok(List.of());
+    }
+
+    /** Staff/doctor-friendly summary: demographics + last 5 finalized visit previews. */
+    @GetMapping("/{patientId}")
+    @PreAuthorize("hasAnyRole('STAFF','DOCTOR')")
+    public WebResult<PatientSummaryDTO> summary(@PathVariable UUID patientId) {
+        return WebResult.ok(reads.summary(patientId));
     }
 
     @GetMapping("/{patientId}/clinical-profile")

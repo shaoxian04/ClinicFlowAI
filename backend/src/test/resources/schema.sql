@@ -246,10 +246,11 @@ CREATE TABLE IF NOT EXISTS appointments (
                       CHECK (appointment_type IN ('NEW_SYMPTOM','FOLLOW_UP')),
     parent_visit_id  UUID         NULL REFERENCES visits(id),
     status           VARCHAR(16)  NOT NULL
-                      CHECK (status IN ('BOOKED','CANCELLED','COMPLETED','NO_SHOW')),
+                      CHECK (status IN ('BOOKED','CHECKED_IN','CANCELLED','COMPLETED','NO_SHOW')),
     cancel_reason    VARCHAR(64)  NULL,
     cancelled_at     TIMESTAMP WITH TIME ZONE NULL,
     cancelled_by     UUID         NULL REFERENCES users(id),
+    checked_in_at    TIMESTAMP WITH TIME ZONE NULL,
     gmt_create       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     gmt_modified     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     -- NOTE: Partial unique indexes uq_appointments_active_slot and
