@@ -18,6 +18,10 @@ backend/src/main/resources/application-local.yml
 
 # Test / MCP artifacts
 .playwright-mcp/
+frontend/test-results/
+frontend/playwright-report/
+# Loose ad-hoc screenshots in repo root (intentional ones live in docs/)
+/*.png
 
 # Brainstorming visual companion sessions
 .superpowers/
@@ -38,6 +42,7 @@ yarn-error.log*
 backend/target/
 backend/bin/
 backend/out/
+.gradle/
 *.class
 hs_err_pid*
 replay_pid*

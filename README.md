@@ -10,22 +10,19 @@
 
 ## Judges — start here
 
-> All four submission artifacts and the pitching video are linked below. Click to open.
+> All Final-Round submission artifacts and the pitching video are linked below. Click to open.
 
 | # | Artifact | Link |
 |---|----------|------|
-| 1 | **Product Requirement Document (PRD)** | [Open PDF](Product%20Requirement%20Document%20%28PRD%29%20%E2%80%94%20CliniFlow%20AI.pdf) |
-| 2 | **System Analysis Document (SAD)** | [Open PDF](System%20Analysis%20Document%20%28SA%29%20%E2%80%94%20CliniFlow%20AI.pdf) |
-| 3 | **Testing Analysis Document** | [Open PDF](Testing%20Analysis%20Document.pdf) |
-| 4 | **Pitching Deck** | [Open PDF](Pitching%20Deck.pdf) |
-| 5 | **Pitching Video** | [Watch on Google Drive ▶](https://drive.google.com/file/d/1kpo0B8AMJh_CxKhLLqf9a52mxFfU2zSg/view?usp=drive_link) |
+| 1 | **Deployment Plan** | [Open PDF](Deployment%20Plan%E2%80%94%20CliniFlow%20AI.pdf) |
+| 2 | **Business Proposal** | [Open PDF](Business%20Proposal%E2%80%94%20CliniFlow%20AI.pdf) |
+| 3 | **Refined Test Analysis Document** | [Open PDF](Refined%20Quality%20Assurance%20Testing%20Documentation%E2%80%94%20CliniFlow%20AI.pdf) |
+| 4 | **System Analysis Document (V2)** | [Open PDF](System%20Analysis%20Document%20%28SA%29%20V2%E2%80%94%20CliniFlow%20AI.pdf) |
+| 5 | **Product Requirement Document (V2)** | [Open PDF](Product%20Requirement%20Document%20%28PRD%29%20V2%20%E2%80%94%20CliniFlow%20AI.pdf) |
+| 6 | **Final Round Presentation Pitch Deck** | [Open PDF](Final%20Round%20Presentation%20Pitch%20Deck.pdf) |
+| 7 | **Pitching Video** | [Watch on Google Drive ▶](https://drive.google.com/file/d/1kpo0B8AMJh_CxKhLLqf9a52mxFfU2zSg/view?usp=drive_link) |
 
-If GitHub doesn't preview a PDF inline, use the **Download** button on the file's page. Direct repo paths:
-
-- [`./Product Requirement Document (PRD) — CliniFlow AI.pdf`](Product%20Requirement%20Document%20%28PRD%29%20%E2%80%94%20CliniFlow%20AI.pdf)
-- [`./System Analysis Document (SA) — CliniFlow AI.pdf`](System%20Analysis%20Document%20%28SA%29%20%E2%80%94%20CliniFlow%20AI.pdf)
-- [`./Testing Analysis Document.pdf`](Testing%20Analysis%20Document.pdf)
-- [`./Pitching Deck.pdf`](Pitching%20Deck.pdf)
+If GitHub doesn't preview a PDF inline, use the **Download** button on the file's page.
 
 ---
 
@@ -82,7 +79,7 @@ Polyglot service architecture — one service per concern, two databases, one LL
 
 > Frontend talks to Spring Boot **only** — never directly to the Python agent or Neo4j, never via the Supabase JS client for clinical data.
 
-Full architecture detail: see the [System Analysis Document (SAD)](System%20Analysis%20Document%20%28SA%29%20%E2%80%94%20CliniFlow%20AI.pdf) and [`docs/details/architecture.md`](docs/details/architecture.md).
+Full architecture detail: see the [System Analysis Document (V2)](System%20Analysis%20Document%20%28SA%29%20V2%E2%80%94%20CliniFlow%20AI.pdf) and [`docs/details/architecture.md`](docs/details/architecture.md).
 
 ---
 
@@ -140,7 +137,7 @@ CI runs all three on every push and PR (`.github/workflows/ci.yml`).
 
 ## Database setup
 
-- **Postgres (Supabase)** — schema lives in `backend/src/main/resources/db/migration/V1__init.sql` … `V8__*.sql`. **Flyway is NOT used** (incompatible with Supabase pgbouncer) — apply schema changes manually via the Supabase SQL editor in V-order. JPA runs with `ddl-auto: none`.
+- **Postgres (Supabase)** — schema lives in `backend/src/main/resources/db/migration/V1__init.sql` … `V14__*.sql`. **Flyway is NOT used** (incompatible with Supabase pgbouncer) — apply schema changes manually via the Supabase SQL editor in V-order. JPA runs with `ddl-auto: none`.
 - **Neo4j** — constraints + indexes are applied at FastAPI startup from `agent/app/graph/schema.py::apply_schema`. All statements are idempotent (`IF NOT EXISTS`).
 - **PDPA invariant** — `audit_log` and `agent_turns` reject `UPDATE`/`DELETE` at the DB level via triggers. Always `INSERT`.
 
