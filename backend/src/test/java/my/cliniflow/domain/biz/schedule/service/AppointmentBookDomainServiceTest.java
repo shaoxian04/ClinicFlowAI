@@ -40,7 +40,7 @@ class AppointmentBookDomainServiceTest {
     void setUp() {
         slotRepo = mock(AppointmentSlotRepository.class);
         apptRepo = mock(AppointmentRepository.class);
-        svc = new AppointmentBookDomainService(slotRepo, apptRepo);
+        svc = new AppointmentBookDomainServiceImpl(slotRepo, apptRepo);
     }
 
     private AppointmentSlotModel availableSlot() {

@@ -44,7 +44,7 @@ class AppointmentCancelDomainServiceTest {
     void setUp() {
         apptRepo = mock(AppointmentRepository.class);
         slotRepo = mock(AppointmentSlotRepository.class);
-        svc = new AppointmentCancelDomainService(apptRepo, slotRepo);
+        svc = new AppointmentCancelDomainServiceImpl(apptRepo, slotRepo);
     }
 
     private AppointmentModel bookedAppointment() {

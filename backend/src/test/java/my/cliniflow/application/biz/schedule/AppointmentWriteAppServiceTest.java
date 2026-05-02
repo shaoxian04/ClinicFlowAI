@@ -81,7 +81,7 @@ class AppointmentWriteAppServiceTest {
         audit        = mock(AuditWriter.class);
         events       = mock(ApplicationEventPublisher.class);
 
-        svc = new AppointmentWriteAppService(
+        svc = new AppointmentWriteAppServiceImpl(
             bookSvc, cancelSvc, appts, slotRepo, templates,
             patientReads, visitReads, visits, users, audit, events);
 

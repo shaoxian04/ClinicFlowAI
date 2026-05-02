@@ -59,7 +59,7 @@ class StaffWriteAppServiceTest {
         var appt = makeAppointmentInStatus(AppointmentStatus.BOOKED);
         when(apptRepo.findById(APPT_ID)).thenReturn(Optional.of(appt));
 
-        var svc = new StaffWriteAppService(apptRepo, audit);
+        var svc = new StaffWriteAppServiceImpl(apptRepo, audit);
         svc.checkIn(APPT_ID, ACTOR);
 
         assertThat(appt.getStatus()).isEqualTo(AppointmentStatus.CHECKED_IN);
@@ -85,7 +85,7 @@ class StaffWriteAppServiceTest {
         var appt = makeAppointmentInStatus(AppointmentStatus.CHECKED_IN);
         when(apptRepo.findById(APPT_ID)).thenReturn(Optional.of(appt));
 
-        var svc = new StaffWriteAppService(apptRepo, audit);
+        var svc = new StaffWriteAppServiceImpl(apptRepo, audit);
         svc.checkIn(APPT_ID, ACTOR);
 
         verify(audit, never()).append(any(), any(), any(), any(), any(), any());
@@ -99,7 +99,7 @@ class StaffWriteAppServiceTest {
         var appt = makeAppointmentInStatus(AppointmentStatus.CANCELLED);
         when(apptRepo.findById(APPT_ID)).thenReturn(Optional.of(appt));
 
-        var svc = new StaffWriteAppService(apptRepo, audit);
+        var svc = new StaffWriteAppServiceImpl(apptRepo, audit);
         assertThatThrownBy(() -> svc.checkIn(APPT_ID, ACTOR))
             .isInstanceOf(ConflictException.class);
         verify(audit, never()).append(any(), any(), any(), any(), any(), any());
@@ -113,7 +113,7 @@ class StaffWriteAppServiceTest {
         var appt = makeAppointmentInStatus(AppointmentStatus.NO_SHOW);
         when(apptRepo.findById(APPT_ID)).thenReturn(Optional.of(appt));
 
-        var svc = new StaffWriteAppService(apptRepo, audit);
+        var svc = new StaffWriteAppServiceImpl(apptRepo, audit);
         assertThatThrownBy(() -> svc.checkIn(APPT_ID, ACTOR))
             .isInstanceOf(ConflictException.class);
         verify(audit, never()).append(any(), any(), any(), any(), any(), any());
@@ -127,7 +127,7 @@ class StaffWriteAppServiceTest {
         var appt = makeAppointmentInStatus(AppointmentStatus.COMPLETED);
         when(apptRepo.findById(APPT_ID)).thenReturn(Optional.of(appt));
 
-        var svc = new StaffWriteAppService(apptRepo, audit);
+        var svc = new StaffWriteAppServiceImpl(apptRepo, audit);
         assertThatThrownBy(() -> svc.checkIn(APPT_ID, ACTOR))
             .isInstanceOf(ConflictException.class);
         verify(audit, never()).append(any(), any(), any(), any(), any(), any());

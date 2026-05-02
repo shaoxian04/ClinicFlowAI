@@ -40,7 +40,7 @@ class VisitReadAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        svc = new VisitReadAppService(visits, reports, patients, new ObjectMapper(),
+        svc = new VisitReadAppServiceImpl(visits, reports, patients, new ObjectMapper(),
             findingRepo, findingConverter, auditWriter);
     }
 

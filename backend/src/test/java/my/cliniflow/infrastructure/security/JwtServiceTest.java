@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JwtServiceTest {
 
-    private final JwtService svc = new JwtService(
+    private final JwtService svc = new JwtServiceImpl(
         "test-secret-key-that-is-at-least-32-chars-long!",
         60
     );

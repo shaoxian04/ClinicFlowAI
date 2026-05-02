@@ -41,7 +41,7 @@ class UserAdminSetActiveTest {
         var audit = mock(AuditWriter.class);
         var u = user(TARGET, true);
         when(users.findById(TARGET)).thenReturn(Optional.of(u));
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         svc.setActive(ACTOR, TARGET, false);
 
@@ -64,7 +64,7 @@ class UserAdminSetActiveTest {
     void setActiveSelfActionForbiddenThrowsConflictException() {
         var users = mock(UserRepository.class);
         var audit = mock(AuditWriter.class);
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         assertThatThrownBy(() -> svc.setActive(ACTOR, ACTOR, false))
             .isInstanceOf(ConflictException.class);
@@ -77,7 +77,7 @@ class UserAdminSetActiveTest {
         var users = mock(UserRepository.class);
         var audit = mock(AuditWriter.class);
         when(users.findById(TARGET)).thenReturn(Optional.empty());
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         assertThatThrownBy(() -> svc.setActive(ACTOR, TARGET, false))
             .isInstanceOf(ResourceNotFoundException.class);

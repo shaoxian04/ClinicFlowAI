@@ -5,7 +5,7 @@ import my.cliniflow.domain.biz.visit.enums.FindingSeverity;
 import my.cliniflow.domain.biz.visit.info.AcknowledgeFindingInfo;
 import my.cliniflow.domain.biz.visit.model.EvaluatorFindingModel;
 import my.cliniflow.domain.biz.visit.repository.EvaluatorFindingRepository;
-import my.cliniflow.domain.biz.visit.service.EvaluatorFindingAcknowledgeDomainService;
+import my.cliniflow.domain.biz.visit.service.EvaluatorFindingAcknowledgeDomainServiceImpl;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -29,7 +29,7 @@ class EvaluatorFindingAcknowledgeDomainServiceTest {
         when(repo.findById(f.getId())).thenReturn(Optional.of(f));
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        var svc = new EvaluatorFindingAcknowledgeDomainService(repo);
+        var svc = new EvaluatorFindingAcknowledgeDomainServiceImpl(repo);
         UUID doctorId = UUID.randomUUID();
         var info = new AcknowledgeFindingInfo(f.getId(), doctorId, "noted");
 
@@ -46,7 +46,7 @@ class EvaluatorFindingAcknowledgeDomainServiceTest {
         EvaluatorFindingModel f = makeCriticalFinding();
         when(repo.findById(f.getId())).thenReturn(Optional.of(f));
 
-        var svc = new EvaluatorFindingAcknowledgeDomainService(repo);
+        var svc = new EvaluatorFindingAcknowledgeDomainServiceImpl(repo);
         UUID otherVisit = UUID.randomUUID();
         var info = new AcknowledgeFindingInfo(f.getId(), UUID.randomUUID(), "x");
 
@@ -60,7 +60,7 @@ class EvaluatorFindingAcknowledgeDomainServiceTest {
         EvaluatorFindingRepository repo = mock(EvaluatorFindingRepository.class);
         when(repo.findById(any())).thenReturn(Optional.empty());
 
-        var svc = new EvaluatorFindingAcknowledgeDomainService(repo);
+        var svc = new EvaluatorFindingAcknowledgeDomainServiceImpl(repo);
         var info = new AcknowledgeFindingInfo(UUID.randomUUID(), UUID.randomUUID(), "x");
         assertThatThrownBy(() -> svc.acknowledge(UUID.randomUUID(), info))
             .isInstanceOf(IllegalArgumentException.class);

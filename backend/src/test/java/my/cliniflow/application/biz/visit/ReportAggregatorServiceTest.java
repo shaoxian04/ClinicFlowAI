@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ReportAggregatorServiceTest {
 
-    private final ReportAggregatorService svc = new ReportAggregatorService(new ObjectMapper());
+    private final ReportAggregatorService svc = new ReportAggregatorServiceImpl(new ObjectMapper());
 
     @Test
     void reducesUpdateSoapDraftAndTurnCompleteIntoCompleteStatus() {
