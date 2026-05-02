@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -13,14 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
-@TestPropertySource(properties = {
-        "cliniflow.clinic.name=Test Clinic",
-        "cliniflow.clinic.address-line1=Line A",
-        "cliniflow.clinic.address-line2=Line B",
-        "cliniflow.clinic.phone=+60 3-1111 2222",
-        "cliniflow.clinic.email=test@clinic.local",
-        "cliniflow.clinic.registration-number=REG-1"
-})
 class ReferenceNumberDomainServiceTest {
 
     @Autowired ReferenceNumberDomainService svc;

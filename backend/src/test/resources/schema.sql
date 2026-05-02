@@ -111,10 +111,9 @@ CREATE TABLE IF NOT EXISTS visits (
     gmt_modified     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- V14: Per-day visit reference number counter (H2-translated).
--- Uses PRIMARY KEY (counter_date) so PostgreSQL `INSERT ... ON CONFLICT
--- (counter_date) DO UPDATE` upsert in ReferenceNumberDomainService works
--- against H2's PostgreSQL mode.
+-- V14: Per-day visit reference number counter.
+-- ReferenceNumberDomainService uses a portable UPDATE-then-INSERT-on-miss
+-- upsert (no ON CONFLICT), which works on both Postgres and H2.
 CREATE TABLE IF NOT EXISTS visit_reference_counter (
     counter_date DATE    NOT NULL PRIMARY KEY,
     last_seq     INTEGER NOT NULL DEFAULT 0

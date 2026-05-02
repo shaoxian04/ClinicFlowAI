@@ -29,6 +29,9 @@
         <bucket4j.version>8.10.1</bucket4j.version>
         <twilio-sdk.version>10.4.1</twilio-sdk.version>
         <wiremock.version>3.0.1</wiremock.version>
+        <!-- Override Spring Boot 3.3's H2 (2.2.224) to 2.3.232 for ON CONFLICT ... RETURNING support
+             used by ReferenceNumberDomainService in @SpringBootTest. -->
+        <h2.version>2.3.232</h2.version>
     </properties>
 
     <dependencies>

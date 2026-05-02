@@ -16,6 +16,13 @@ spring:
       mode: always
 
 cliniflow:
+  clinic:
+    name: Test Clinic
+    address-line1: Test Line A
+    address-line2: Test Line B
+    phone: +60 3-0000 0000
+    email: test@clinic.local
+    registration-number: TEST-REG-001
   jwt:
     secret: test-secret-key-that-is-at-least-32-chars-long!
     expiry-minutes: 60

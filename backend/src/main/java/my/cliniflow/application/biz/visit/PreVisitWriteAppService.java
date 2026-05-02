@@ -5,11 +5,13 @@ import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 import my.cliniflow.domain.biz.visit.model.PreVisitReportModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
+import my.cliniflow.domain.biz.visit.service.ReferenceNumberDomainService;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -18,15 +20,18 @@ public class PreVisitWriteAppService {
 
     private final VisitRepository visits;
     private final AgentServiceClient agent;
+    private final ReferenceNumberDomainService refNumbers;
     private final UUID seededDoctorId;
 
     public PreVisitWriteAppService(
         VisitRepository visits,
         AgentServiceClient agent,
+        ReferenceNumberDomainService refNumbers,
         @Value("${cliniflow.dev.seeded-doctor-id}") String seededDoctorId
     ) {
         this.visits = visits;
         this.agent = agent;
+        this.refNumbers = refNumbers;
         this.seededDoctorId = UUID.fromString(seededDoctorId);
     }
 
@@ -37,6 +42,9 @@ public class PreVisitWriteAppService {
         v.setDoctorId(seededDoctorId);
         v.setStatus(VisitStatus.IN_PROGRESS);
         v.setStartedAt(OffsetDateTime.now());
+        if (v.getReferenceNumber() == null) {
+            v.setReferenceNumber(refNumbers.nextFor(LocalDate.now()));
+        }
 
         PreVisitReportModel r = new PreVisitReportModel();
         Map<String, Object> initial = new HashMap<>();
