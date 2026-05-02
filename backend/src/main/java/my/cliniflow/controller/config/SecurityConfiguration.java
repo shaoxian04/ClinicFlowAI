@@ -35,6 +35,8 @@ public class SecurityConfiguration {
                 // public auth endpoints (login, register, forced-password-change is authed)
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register/patient").permitAll()
+                // public clinic letterhead info (read-only, no PHI)
+                .requestMatchers(HttpMethod.GET, "/api/clinic").permitAll()
                 // forced-password-change requires JWT (mustChangePassword still true)
                 .requestMatchers("/api/auth/**").authenticated()
                 .anyRequest().authenticated()

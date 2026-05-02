@@ -13,8 +13,8 @@ Three LangGraph agents inside the FastAPI service, one per phase. Shared compone
 Neo4j is the literal implementation of the Graphify concept (https://github.com/safishamsi/graphify), adapted from code knowledge graphs to clinical concepts. **Every agent queries the graph before calling GLM** to pull multi-hop patient context into the prompt. Graph-RAG, not vector-RAG.
 
 **Why a graph DB at all** — multi-hop reasoning that would be expensive JOINs in Postgres:
-- **Hero query**: drug-interaction check. When the Visit agent extracts a new prescription, it runs a 2-hop Cypher query `Prescription → CONTRAINDICATED_BY → Allergy` (and `Prescription → INTERACTS_WITH → ActiveMedication`) and surfaces flags to the doctor before finalization.
-- Pre-visit agent traverses `Patient → HAS_HISTORY_OF → Condition` + `Patient → PRESENTED_WITH → Symptom` across past visits.
+- **Hero query**: drug-interaction check. When the Visit agent extracts a new prescription, the evaluator runs Cypher against `(Patient)-[:ALLERGIC_TO]->(Allergy)` for allergy collisions and `(Patient)-[:TAKES]->(:Medication)` ↔ `(:Drug)-[:INTERACTS_WITH]-(:Drug)` (with `(:Drug)-[:BELONGS_TO]->(:DrugClass)` fan-out) for DDI before finalization.
+- Pre-visit agent traverses `(Patient)-[:HAS_CONDITION]->(Condition)` + `(Patient)-[:HAD_VISIT]->(Visit)-[:PRESENTED_WITH]->(Symptom)` across past visits.
 
 **Techniques adapted from Graphify** (pattern, not library):
 - **Two-pass extraction**: deterministic first (regex / clinical-dictionary entity extraction from transcripts) for `EXTRACTED` (confidence 1.0) edges, GLM second for `INFERRED` (confidence 0.0–1.0) edges. Tag every edge with relation type, confidence, and source location.

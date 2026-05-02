@@ -99,15 +99,24 @@ CREATE TABLE IF NOT EXISTS neo4j_projection_outbox (
 );
 
 CREATE TABLE IF NOT EXISTS visits (
-    id            UUID         NOT NULL PRIMARY KEY,
-    patient_id    UUID         NOT NULL REFERENCES patients(id),
-    doctor_id     UUID         NOT NULL REFERENCES users(id),
-    status        VARCHAR(32)  NOT NULL DEFAULT 'SCHEDULED',
-    started_at    TIMESTAMP WITH TIME ZONE,
-    finalized_at  TIMESTAMP WITH TIME ZONE,
-    report_draft  CLOB,
-    gmt_create    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    gmt_modified  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    id               UUID         NOT NULL PRIMARY KEY,
+    patient_id       UUID         NOT NULL REFERENCES patients(id),
+    doctor_id        UUID         NOT NULL REFERENCES users(id),
+    status           VARCHAR(32)  NOT NULL DEFAULT 'SCHEDULED',
+    started_at       TIMESTAMP WITH TIME ZONE,
+    finalized_at     TIMESTAMP WITH TIME ZONE,
+    report_draft     CLOB,
+    reference_number VARCHAR(32)  UNIQUE,
+    gmt_create       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    gmt_modified     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- V14: Per-day visit reference number counter.
+-- ReferenceNumberDomainService uses a portable UPDATE-then-INSERT-on-miss
+-- upsert (no ON CONFLICT), which works on both Postgres and H2.
+CREATE TABLE IF NOT EXISTS visit_reference_counter (
+    counter_date DATE    NOT NULL PRIMARY KEY,
+    last_seq     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS pre_visit_reports (

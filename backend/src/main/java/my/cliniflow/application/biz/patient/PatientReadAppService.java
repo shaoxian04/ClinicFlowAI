@@ -126,6 +126,20 @@ public class PatientReadAppService {
         return patients.findByUserId(userId);
     }
 
+    public java.util.Optional<PatientModel> findById(UUID patientId) {
+        return patients.findById(patientId);
+    }
+
+    /**
+     * Decrypt the AES-GCM ciphertext stored in {@code nationalIdCiphertext}.
+     * Returns {@code null} when no ciphertext is stored (e.g. walk-in patients
+     * registered without an NRIC).
+     */
+    public String decryptNationalId(PatientModel p) {
+        if (p.getNationalIdCiphertext() == null) return null;
+        return nidEncryptor.decrypt(p.getNationalIdCiphertext());
+    }
+
     public List<PatientModel> searchByName(String fragment) {
         return patients.findTop10ByFullNameContainingIgnoreCaseOrderByFullNameAsc(fragment);
     }
