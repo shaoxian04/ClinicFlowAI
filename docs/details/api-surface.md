@@ -28,10 +28,20 @@
 - `POST /api/schedule/days/{date}/blocks` ← `WindowBlockRequest{date, windowStart, windowEnd, reason?}` → `UUID`. 409 if active bookings overlap.
 - `DELETE /api/schedule/overrides/{id}` → 204
 - `POST /api/schedule/appointments/{id}/no-show` → 204
+- `GET  /api/staff/today` → `{ waitingList: WaitingEntryDTO[] }` — today's appointments (BOOKED or CHECKED_IN) in clinic-local time (Asia/Kuala_Lumpur), enriched with patient name, doctor name, slot time, pre-visit status, and arrived-at timestamp.
+- `POST /api/staff/checkin` ← `{ appointmentId: UUID }` → 204. Idempotent: BOOKED → CHECKED_IN + stamps `checked_in_at`. Already CHECKED_IN: no-op. Terminal statuses (CANCELLED/NO_SHOW/COMPLETED): 409.
+- `POST /api/staff/patients` ← `StaffWalkInRequest{ fullName*, dateOfBirth?, gender?, phone?, email?, password?, preferredLanguage? }` → `{ patientId, userId? }`. Creates a patient profile with `registrationSource=STAFF_LED`. If email + password provided, also creates a PATIENT user account. Audit: `CREATE` / `PATIENT`.
 
 **Admin endpoints (`hasRole('ADMIN')`):**
 - `GET  /api/schedule/template` → `ScheduleTemplateDTO` (404 if none)
 - `PUT  /api/schedule/template` ← `ScheduleTemplateUpsertRequest` → `ScheduleTemplateDTO`. Triggers slot regeneration in same transaction.
+- `GET  /api/admin/users` → `{ users: AdminUserDTO[] }` — all users with id, email, name, role, active.
+- `POST /api/admin/users` ← `CreateUserRequest{ role*, email*, fullName*, tempPassword*(min 12), phone?, employeeId?, mmcNumber?, specialty?, signatureImageUrl? }` → `{ userId, role }`. Role must be STAFF, DOCTOR, or ADMIN.
+- `PATCH /api/admin/users/{id}/role` ← `{ role: STAFF|DOCTOR|ADMIN }` → 204. Self-action guard (409). Patient-role transitions rejected (409). Audit: `UPDATE` / `USER_ROLE`.
+- `PATCH /api/admin/users/{id}/active` ← `{ active: bool }` → 204. Self-action guard (409). Audit: `UPDATE` / `USER`.
+- `POST /api/admin/users/{id}/force-password-reset` → 204. Sets `must_change_password=true`. Self-action guard (409). Audit: `UPDATE` / `USER`.
+- `GET  /api/admin/audit?page&limit&action&resourceType&from&to` → `{ total, page, limit, entries[] }`. Paginated (max 200/page). Each entry includes actor email/name joined from users table.
+- `GET  /api/admin/analytics` → `{ kpis: { totalPatients, totalAppointments, appointmentsToday, finalized30d }, appointmentSeries30d: [{ date, count }] }`. 30-day daily appointment counts via `generate_series`.
 
 **Doctor endpoints (`hasRole('DOCTOR')`):**
 - `GET  /api/doctor/appointments/today` → `List<AppointmentDTO>`

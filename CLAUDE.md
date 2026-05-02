@@ -14,7 +14,7 @@ Four roles with RBAC: **Patient**, **Doctor**, **Clinic Staff/Receptionist**, **
 
 ## Repository status
 
-**MVP flows implemented; ongoing hardening.** `frontend/` (Next.js 14), `backend/` (Spring Boot 3.3 / Java 21 / Maven), `agent/` (FastAPI + LangGraph), `deploy/nginx/`. Registration, pre-visit intake, SOAP generation + doctor review, post-visit summary, patient portal, admin user management, audit log, and the Neo4j projection drainer are wired end-to-end. The DDD package tree for the 4 bounded contexts lives under `backend/src/main/java/my/cliniflow/`.
+**MVP flows implemented; ongoing hardening.** `frontend/` (Next.js 14), `backend/` (Spring Boot 3.3 / Java 21 / Maven), `agent/` (FastAPI + LangGraph), `deploy/nginx/`. Registration, pre-visit intake, SOAP generation + doctor review, post-visit summary, patient portal, staff portal (today's waiting list, check-in, walk-in registration), admin portal (user management with drawer, role/active/force-reset actions, analytics KPIs + sparkline, PDPA audit log), and the Neo4j projection drainer are wired end-to-end. The DDD package tree for the 4 bounded contexts lives under `backend/src/main/java/my/cliniflow/`.
 
 Design artifacts:
 - `Product Requirement Document (PRD) — CliniFlow AI.pdf` — product spec (what to build)
