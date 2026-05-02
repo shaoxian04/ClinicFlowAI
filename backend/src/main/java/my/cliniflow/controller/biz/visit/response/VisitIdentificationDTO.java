@@ -16,7 +16,7 @@ public record VisitIdentificationDTO(Clinic clinic, Patient patient, Doctor doct
 
     public record Doctor(String fullName, String mmcNumber, String specialty) {}
 
-    public record Visit(UUID visitId, UUID patientId, String referenceNumber, LocalDate visitDate,
+    public record Visit(UUID visitId, String referenceNumber, LocalDate visitDate,
                         OffsetDateTime finalizedAt) {}
 
     public static VisitIdentificationDTO from(VisitIdentificationInfo i) {
@@ -41,7 +41,6 @@ public record VisitIdentificationDTO(Clinic clinic, Patient patient, Doctor doct
                         i.doctor().specialty()),
                 new Visit(
                         i.visit().visitId(),
-                        i.visit().patientId(),
                         i.visit().referenceNumber(),
                         i.visit().visitDate(),
                         i.visit().finalizedAt())
