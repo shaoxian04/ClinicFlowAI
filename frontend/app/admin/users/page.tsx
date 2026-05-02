@@ -8,6 +8,7 @@ import { apiPost } from "@/lib/api";
 import { listUsers, changeUserRole, type AdminUser, type UserRole } from "@/lib/admin";
 
 import AdminNav from "../components/AdminNav";
+import UserDetailDrawer from "./components/UserDetailDrawer";
 
 type CreateForm = {
     email: string;
@@ -37,6 +38,7 @@ export default function AdminUsersPage() {
     const [roleChanges, setRoleChanges] = useState<Record<string, UserRole>>({});
     const [roleBusy, setRoleBusy] = useState<Record<string, boolean>>({});
     const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
+    const [drawerUser, setDrawerUser] = useState<AdminUser | null>(null);
 
     useEffect(() => {
         const user = getUser();
@@ -123,9 +125,19 @@ export default function AdminUsersPage() {
         }
     }
 
+    function onDrawerUpdated(updated: AdminUser) {
+        setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+        setDrawerUser(updated);
+    }
+
     return (
         <>
             <AdminNav active="users" />
+            <UserDetailDrawer
+                user={drawerUser}
+                onClose={() => setDrawerUser(null)}
+                onUpdated={onDrawerUpdated}
+            />
             <main className="shell shell-narrow portal-shell staff-shell">
                 <header className="page-header">
                     <div className="page-header-eyebrow">Clinic admin</div>
@@ -239,12 +251,20 @@ export default function AdminUsersPage() {
                                     <th>Email</th>
                                     <th>Role</th>
                                     <th>Change role</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {users.map((u) => (
                                     <tr key={u.id}>
-                                        <td>{u.name}</td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                {!u.active && (
+                                                    <span className="text-fog-dim text-xs">(inactive)</span>
+                                                )}
+                                                {u.name}
+                                            </div>
+                                        </td>
                                         <td>{u.email}</td>
                                         <td>
                                             <span className={`role-chip role-chip-${u.role.toLowerCase()}`}>
@@ -289,6 +309,15 @@ export default function AdminUsersPage() {
                                                 )}
                                             </div>
                                         </td>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm"
+                                                onClick={() => setDrawerUser(u)}
+                                            >
+                                                Details
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -310,6 +339,7 @@ function SkeletonTable({ rows }: { rows: number }) {
                         <th>Email</th>
                         <th>Role</th>
                         <th>Change role</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -326,6 +356,9 @@ function SkeletonTable({ rows }: { rows: number }) {
                             </td>
                             <td>
                                 <span className="skeleton-bar skeleton-bar-narrow" />
+                            </td>
+                            <td>
+                                <span className="skeleton-bar skeleton-bar-btn" />
                             </td>
                         </tr>
                     ))}

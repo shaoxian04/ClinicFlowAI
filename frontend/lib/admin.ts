@@ -1,4 +1,4 @@
-import { apiGet, apiPatch } from "./api";
+import { apiGet, apiPatchVoid, apiPostVoid } from "./api";
 
 export type UserRole = "PATIENT" | "DOCTOR" | "STAFF" | "ADMIN";
 
@@ -16,5 +16,13 @@ export async function listUsers(): Promise<AdminUser[]> {
 }
 
 export async function changeUserRole(userId: string, role: UserRole): Promise<void> {
-    await apiPatch<unknown>(`/admin/users/${encodeURIComponent(userId)}/role`, { role });
+    await apiPatchVoid(`/admin/users/${encodeURIComponent(userId)}/role`, { role });
+}
+
+export async function setUserActive(userId: string, active: boolean): Promise<void> {
+    await apiPatchVoid(`/admin/users/${encodeURIComponent(userId)}/active`, { active });
+}
+
+export async function forcePasswordReset(userId: string): Promise<void> {
+    await apiPostVoid(`/admin/users/${encodeURIComponent(userId)}/force-password-reset`);
 }
