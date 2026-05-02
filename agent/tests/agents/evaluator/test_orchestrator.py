@@ -126,3 +126,41 @@ async def test_orchestrator_marks_validator_unavailable_on_exception():
         gp.return_value = pool
         result = await agent.evaluate(_ctx())
     assert any(cat == "DDI" for cat, _ in result.validators_unavailable)
+
+
+@pytest.mark.asyncio
+async def test_load_patient_context_returns_normalised_shape():
+    # Regression: prior code imported a non-existent
+    # `aggregate_patient_context` from `app.routes.patient_context` and the
+    # try/except masked the ImportError, so the hallucination validator always
+    # received {} no matter what the graph actually held. This test pins the
+    # call to `get_patient_context` and asserts the dict shape the validator
+    # depends on.
+    from app.graph.queries.patient_context import PatientContext
+    agent = EvaluatorAgent()
+    fake_ctx = PatientContext(
+        patient_id="11111111-1111-1111-1111-111111111111",
+        demographics={},
+        allergies=["Penicillin", "Peanuts"],
+        conditions=["Type 2 Diabetes"],
+        medications=["Metformin 500mg"],
+    )
+    with patch("app.graph.queries.patient_context.get_patient_context",
+               AsyncMock(return_value=fake_ctx)):
+        out = await agent._load_patient_context(uuid4())
+    assert out == {
+        "allergies":   ["Penicillin", "Peanuts"],
+        "conditions":  ["Type 2 Diabetes"],
+        "medications": ["Metformin 500mg"],
+    }
+
+
+@pytest.mark.asyncio
+async def test_load_patient_context_swallows_errors():
+    # The orchestrator must keep running if Neo4j is unreachable; the
+    # hallucination validator just gets an empty context dict.
+    agent = EvaluatorAgent()
+    with patch("app.graph.queries.patient_context.get_patient_context",
+               AsyncMock(side_effect=RuntimeError("neo4j down"))):
+        out = await agent._load_patient_context(uuid4())
+    assert out == {}

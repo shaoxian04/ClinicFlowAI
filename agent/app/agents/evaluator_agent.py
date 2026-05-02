@@ -292,9 +292,17 @@ class EvaluatorAgent:
         }
 
     async def _load_patient_context(self, patient_id: UUID) -> dict:
+        # Loaded shape feeds the hallucination validator's LLM prompt — see
+        # app/agents/evaluator/hallucination.py. Keys must stay stable so the
+        # prompt's "PATIENT CONTEXT (JSON)" block has predictable structure.
         try:
-            from app.routes.patient_context import aggregate_patient_context
-            return await aggregate_patient_context(patient_id)
+            from app.graph.queries.patient_context import get_patient_context
+            ctx = await get_patient_context(patient_id)
+            return {
+                "allergies":   list(ctx.allergies),
+                "conditions":  list(ctx.conditions),
+                "medications": list(ctx.medications),
+            }
         except Exception:
             return {}
 

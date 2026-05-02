@@ -23,18 +23,26 @@ UUID PKs, `gmt_create` / `gmt_modified` audit columns on most entities.
 
 ## Neo4j graph schema (SAD §2.3.3)
 
-Nodes: `Patient`, `Doctor`, `Visit`, `Symptom`, `Diagnosis`, `Medication`, `Allergy`, `Condition`, `AdaptiveRule`.
+Nodes: `Patient`, `Doctor`, `Visit`, `Symptom`, `Diagnosis`, `Medication`, `Allergy`, `Condition`, `AdaptiveRule`. Drug-knowledge nodes: `Drug`, `DrugClass`, `PregnancyCategory`, `DoseRule` (see §Neo4j drug knowledge graph below).
 
-Relationships:
-- `(Patient)-[:PRESENTED_WITH]->(Symptom)`
-- `(Visit)-[:DIAGNOSED_AS]->(Diagnosis)`
-- `(Visit)-[:PRESCRIBED]->(Medication)`
-- `(Medication)-[:CONTRAINDICATES]->(Allergy)`
-- `(Patient)-[:HAS_HISTORY_OF]->(Condition)`
-- `(AdaptiveRule)-[:APPLIES_TO]->(Doctor)`
-- `(AdaptiveRule)-[:IN_CONTEXT_OF]->(Condition)`
+Relationships actually written by code (authoritative):
 
-Every edge is tagged with relation type, confidence (`EXTRACTED` = 1.0, `INFERRED` = 0.0–1.0), and source location. No vector DB — reasoning is graph-based, not RAG.
+Patient-level (written by `Neo4jProjectionClient.projectClinicalProfile` from the Postgres `patient_clinical_profiles` aggregate; demo seeder `agent/app/graph/queries/seed_demo.py` writes the same edges without properties):
+- `(Patient)-[:ALLERGIC_TO {confidence, source}]->(Allergy)`
+- `(Patient)-[:HAS_CONDITION {confidence, source}]->(Condition)`
+- `(Patient)-[:TAKES {confidence, source, dose, frequency}]->(Medication)`
+- `(Patient)-[:HAD_VISIT]->(Visit)` *(seeded only at present)*
+
+Visit-level (seed bundle + the `record_inferred_edge` agent tool — see `agent/app/graph/queries/inferred_edge.py`):
+- `(Visit)-[:PRESENTED_WITH {confidence, source, visit_id}]->(Symptom)`
+- `(Visit)-[:DIAGNOSED_AS {confidence, source, visit_id}]->(Diagnosis)`
+- Inferred-edge whitelist also allows: `[:SUGGESTED_DIAGNOSIS]`, `[:SUGGESTED_MEDICATION]`, `[:SUGGESTS_CONDITION]` between `Visit`/`Diagnosis`/`Medication`/`Symptom`/`Condition`/`Allergy`.
+
+AdaptiveRule (Hermes pattern — read-only from agent; admin-curated externally for now): `(:AdaptiveRule)` nodes are filtered by properties `doctor_id`, `specialty`, `status`, `category`. No edges from `AdaptiveRule` to `Doctor` or `Condition` exist in the current code.
+
+Edge tagging: extracted/inferred edges carry `confidence` (`1.0` for EXTRACTED, `0.0–1.0` for INFERRED), `source` (e.g. `'REGISTRATION'`, `'PORTAL'`, `'DOCTOR_VISIT'`, `'extractor'`, `'evaluator'`), and (where applicable) `visit_id`. No vector DB — reasoning is graph-based, not RAG.
+
+> **Doc-drift history (2026-05-02 fix):** Earlier revisions of this file documented `[:HAS_ALLERGY]`, `[:HAS_HISTORY_OF]`, `(Visit)-[:PRESCRIBED]->(Medication)`, `(Medication)-[:CONTRAINDICATES]->(Allergy)`, and the two `AdaptiveRule` edges — none of those are written or read by current code. New queries should use the names above; grep `agent/app/graph/queries/` and `backend/.../Neo4jProjectionClient.java` if in doubt.
 
 ## Demo seeding — destructive, dev-only
 

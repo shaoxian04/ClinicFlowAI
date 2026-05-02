@@ -13,6 +13,13 @@ import { Separator } from "@/components/ui/Separator";
 import { apiPutVoid } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { getMyProfile } from "@/lib/patient-me";
+import {
+    getMyClinicalProfile,
+    updateMyClinicalProfile,
+    type AllergyItem,
+    type ConditionItem,
+    type MedicationItem,
+} from "@/lib/patient-clinical-profile";
 
 const PHONE_RE = /^\+?[0-9]{6,20}$/;
 
@@ -28,6 +35,16 @@ export default function ProfilePage() {
     const [phoneToast, setPhoneToast] = useState<string | null>(null);
     const [consentToast, setConsentToast] = useState<string | null>(null);
 
+    // Medical history (allergies, conditions, regular medications)
+    const [patientId, setPatientId] = useState<string | null>(null);
+    const [allergiesText, setAllergiesText] = useState("");
+    const [conditionsText, setConditionsText] = useState("");
+    const [medicationsText, setMedicationsText] = useState("");
+    const [busyHistory, setBusyHistory] = useState(false);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+    const [historyToast, setHistoryToast] = useState<string | null>(null);
+    const [historyUpdatedAt, setHistoryUpdatedAt] = useState<string | null>(null);
+
     useEffect(() => {
         const user = getUser();
         if (!user || user.role !== "PATIENT") router.replace("/login");
@@ -36,13 +53,30 @@ export default function ProfilePage() {
     useEffect(() => {
         let cancelled = false;
         getMyProfile()
-            .then((me) => {
+            .then(async (me) => {
                 if (cancelled) return;
                 if (me.phone) {
                     setPhone(me.phone);
                     setPhoneSaved(me.phone);
                 }
                 setWhatsappOn(me.whatsappConsent);
+                setPatientId(me.patientId);
+                try {
+                    const cp = await getMyClinicalProfile(me.patientId);
+                    if (cancelled) return;
+                    setAllergiesText((cp.drugAllergies ?? []).map((a) => a.name).join(", "));
+                    setConditionsText((cp.chronicConditions ?? []).map((c) => c.name).join(", "));
+                    setMedicationsText(formatMedications(cp.regularMedications ?? []));
+                    setHistoryUpdatedAt(
+                        latestUpdatedAt(
+                            cp.drugAllergiesUpdatedAt,
+                            cp.chronicConditionsUpdatedAt,
+                            cp.regularMedicationsUpdatedAt,
+                        ),
+                    );
+                } catch {
+                    // First-time profile — empty form is fine.
+                }
             })
             .catch(() => {
                 // Silently ignore — first-load, blank form is fine
@@ -68,6 +102,33 @@ export default function ProfilePage() {
             setPhoneError(err instanceof Error ? err.message : "Failed to save phone.");
         } finally {
             setBusyPhone(false);
+        }
+    }
+
+    async function saveMedicalHistory(e: React.FormEvent) {
+        e.preventDefault();
+        setHistoryError(null);
+        setHistoryToast(null);
+        if (!patientId) {
+            setHistoryError("Profile not loaded yet — please refresh.");
+            return;
+        }
+        const drugAllergies: AllergyItem[] = parseCommaList(allergiesText)
+            .map((name) => ({ name, severity: "UNKNOWN" }));
+        const chronicConditions: ConditionItem[] = parseCommaList(conditionsText)
+            .map((name) => ({ name }));
+        const regularMedications: MedicationItem[] = parseMedications(medicationsText);
+        setBusyHistory(true);
+        try {
+            await updateMyClinicalProfile(patientId, {
+                drugAllergies, chronicConditions, regularMedications,
+            });
+            setHistoryToast("Medical history updated.");
+            setHistoryUpdatedAt(new Date().toISOString());
+        } catch (err) {
+            setHistoryError(err instanceof Error ? err.message : "Failed to save medical history.");
+        } finally {
+            setBusyHistory(false);
         }
     }
 
@@ -143,6 +204,76 @@ export default function ProfilePage() {
             <Separator className="my-10" />
 
             <motion.div variants={fadeUp}>
+                <p className="font-mono text-xs text-fog-dim/60 uppercase tracking-widest mb-3">
+                    Medical history
+                </p>
+                <h2 className="font-display text-xl text-fog leading-tight">
+                    Allergies, conditions, regular medications
+                </h2>
+                <p className="font-sans text-sm text-fog-dim leading-relaxed mt-2">
+                    Helps your doctor&apos;s AI assistant flag drug interactions, allergy collisions, and dose risks
+                    before any prescription is finalised. Updates take effect on your next visit.
+                </p>
+                {historyUpdatedAt && (
+                    <p className="font-mono text-xs text-fog-dim/60 mt-2">
+                        Last updated {new Date(historyUpdatedAt).toLocaleString()}
+                    </p>
+                )}
+            </motion.div>
+
+            <motion.form variants={fadeUp} onSubmit={saveMedicalHistory} className="space-y-5 mt-6">
+                <Field
+                    label="Drug allergies"
+                    hint="Comma-separated, e.g. Penicillin, Aspirin, Peanuts"
+                    htmlFor="allergies"
+                >
+                    <Input
+                        id="allergies"
+                        value={allergiesText}
+                        onChange={(e) => setAllergiesText(e.target.value)}
+                        placeholder="Penicillin, Aspirin"
+                    />
+                </Field>
+                <Field
+                    label="Chronic conditions"
+                    hint="Comma-separated, e.g. Type 2 Diabetes, Hypertension"
+                    htmlFor="conditions"
+                >
+                    <Input
+                        id="conditions"
+                        value={conditionsText}
+                        onChange={(e) => setConditionsText(e.target.value)}
+                        placeholder="Type 2 Diabetes, Hypertension"
+                    />
+                </Field>
+                <Field
+                    label="Regular medications"
+                    hint="Comma-separated. Optional dose/frequency in parens, e.g. Metformin (500mg, BD), Atorvastatin (20mg, ON)"
+                    htmlFor="medications"
+                >
+                    <Input
+                        id="medications"
+                        value={medicationsText}
+                        onChange={(e) => setMedicationsText(e.target.value)}
+                        placeholder="Metformin (500mg, BD), Atorvastatin"
+                    />
+                </Field>
+                {historyError && (
+                    <p className="font-sans text-sm text-crimson" role="alert">
+                        {historyError}
+                    </p>
+                )}
+                {historyToast && (
+                    <p className="font-sans text-sm text-cyan">{historyToast}</p>
+                )}
+                <Button type="submit" loading={busyHistory} variant="primary" disabled={!patientId}>
+                    Save medical history
+                </Button>
+            </motion.form>
+
+            <Separator className="my-10" />
+
+            <motion.div variants={fadeUp}>
                 <p className="font-sans text-sm text-fog leading-relaxed">
                     WhatsApp reminders
                 </p>
@@ -165,6 +296,65 @@ export default function ProfilePage() {
             </motion.div>
         </motion.div>
     );
+}
+
+function parseCommaList(raw: string): string[] {
+    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+// Split on commas at paren-depth 0 only, so "Metformin (500mg, BD)"
+// stays as a single chunk.
+function splitTopLevelCommas(raw: string): string[] {
+    const out: string[] = [];
+    let depth = 0;
+    let buf = "";
+    for (const ch of raw) {
+        if (ch === "(") { depth++; buf += ch; continue; }
+        if (ch === ")") { if (depth > 0) depth--; buf += ch; continue; }
+        if (ch === "," && depth === 0) {
+            const t = buf.trim();
+            if (t) out.push(t);
+            buf = "";
+            continue;
+        }
+        buf += ch;
+    }
+    const tail = buf.trim();
+    if (tail) out.push(tail);
+    return out;
+}
+
+// "Metformin (500mg, BD)" → { name: "Metformin", dose: "500mg", frequency: "BD" }
+// "Atorvastatin"          → { name: "Atorvastatin" }
+function parseMedications(raw: string): MedicationItem[] {
+    const items: MedicationItem[] = [];
+    for (const chunk of splitTopLevelCommas(raw)) {
+        const m = chunk.match(/^(.+?)\s*\(([^)]*)\)\s*$/);
+        if (!m) {
+            items.push({ name: chunk });
+            continue;
+        }
+        const name = m[1].trim();
+        const inside = m[2].split(",").map((s) => s.trim()).filter(Boolean);
+        const med: MedicationItem = { name };
+        if (inside[0]) med.dose = inside[0];
+        if (inside[1]) med.frequency = inside[1];
+        items.push(med);
+    }
+    return items;
+}
+
+function formatMedications(items: MedicationItem[]): string {
+    return items.map((m) => {
+        const inside = [m.dose, m.frequency].filter(Boolean).join(", ");
+        return inside ? `${m.name} (${inside})` : m.name;
+    }).join(", ");
+}
+
+function latestUpdatedAt(...timestamps: (string | null)[]): string | null {
+    const valid = timestamps.filter((t): t is string => Boolean(t));
+    if (valid.length === 0) return null;
+    return valid.reduce((a, b) => (new Date(a) > new Date(b) ? a : b));
 }
 
 function ConsentToggle({
