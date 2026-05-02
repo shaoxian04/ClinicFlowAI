@@ -95,7 +95,7 @@ public class AdminUserController {
 
     @PatchMapping("/{id}/active")
     public WebResult<Void> setActive(@PathVariable("id") UUID targetId,
-                                      @RequestBody ActiveRequest req,
+                                      @Valid @RequestBody ActiveRequest req,
                                       Authentication auth) {
         UUID actor = ((JwtService.Claims) auth.getPrincipal()).userId();
         adminSvc.setActive(actor, targetId, req.active());

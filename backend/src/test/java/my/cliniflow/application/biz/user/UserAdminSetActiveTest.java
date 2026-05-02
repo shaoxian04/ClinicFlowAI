@@ -1,8 +1,7 @@
 package my.cliniflow.application.biz.user;
 
-import my.cliniflow.controller.base.BusinessException;
+import my.cliniflow.controller.base.ConflictException;
 import my.cliniflow.controller.base.ResourceNotFoundException;
-import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.domain.biz.user.enums.Role;
 import my.cliniflow.domain.biz.user.model.UserModel;
 import my.cliniflow.domain.biz.user.repository.UserRepository;
@@ -62,15 +61,13 @@ class UserAdminSetActiveTest {
     }
 
     @Test
-    void setActiveSelfActionForbiddenThrowsBusinessException() {
+    void setActiveSelfActionForbiddenThrowsConflictException() {
         var users = mock(UserRepository.class);
         var audit = mock(AuditWriter.class);
         var svc = new UserAdminAppService(users, audit);
 
         assertThatThrownBy(() -> svc.setActive(ACTOR, ACTOR, false))
-            .isInstanceOf(BusinessException.class)
-            .satisfies(ex -> assertThat(((BusinessException) ex).resultCode())
-                .isEqualTo(ResultCode.BAD_REQUEST));
+            .isInstanceOf(ConflictException.class);
         verify(audit, never()).append(any(), any(), any(), any(), any(), any());
         verify(users, never()).save(any());
     }
