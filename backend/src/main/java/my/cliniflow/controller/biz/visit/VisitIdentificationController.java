@@ -55,7 +55,7 @@ public class VisitIdentificationController {
                     .map(v -> v.getPatientId()).orElse(null);
             if (ownPatientId == null || visitPatientId == null
                     || !ownPatientId.equals(visitPatientId)) {
-                return WebResult.error(ResultCode.FORBIDDEN, "Visit not yours");
+                return WebResult.error(ResultCode.FORBIDDEN, "You don't have permission to view this prescription.");
             }
         }
 

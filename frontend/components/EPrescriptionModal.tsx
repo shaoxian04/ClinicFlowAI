@@ -24,18 +24,7 @@ type Props = {
   onClose: () => void;
 };
 
-function formatDob(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatVisitDate(iso: string | null | undefined): string {
+function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
@@ -170,7 +159,7 @@ export function EPrescriptionModal({ visitId, medications, onClose }: Props) {
                   />
                   <PatientRow
                     label="Date of Birth"
-                    value={formatDob(ident.patient.dateOfBirth)}
+                    value={formatDate(ident.patient.dateOfBirth)}
                   />
                   <PatientRow
                     label="Age"
@@ -186,7 +175,7 @@ export function EPrescriptionModal({ visitId, medications, onClose }: Props) {
                   />
                   <PatientRow
                     label="Date"
-                    value={formatVisitDate(ident.visit.visitDate)}
+                    value={formatDate(ident.visit.visitDate)}
                   />
                 </div>
               </section>
@@ -274,6 +263,7 @@ export function EPrescriptionModal({ visitId, medications, onClose }: Props) {
           </Button>
           <Button
             variant="primary"
+            disabled={loading || !!error || !ident}
             onClick={() => alert("PDF download coming soon.")}
           >
             Download as PDF
