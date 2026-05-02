@@ -126,3 +126,16 @@ resilience4j:
 logging:
   pattern:
     level: "%5p [cid=%X{correlationId:-}]"
+
+# Sentry — when SENTRY_DSN is unset, the SDK is a no-op (zero overhead, no errors).
+# Free tier: 5k events/month. See SAD §4.2.1.
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:development}
+  release: ${SENTRY_RELEASE:cliniflow-backend@0.0.1-SNAPSHOT}
+  send-default-pii: false
+  traces-sample-rate: 0.0
+  exception-resolver-order: -2147483647
+  logging:
+    minimum-event-level: error
+    minimum-breadcrumb-level: info

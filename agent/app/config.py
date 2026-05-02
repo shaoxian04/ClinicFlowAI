@@ -31,5 +31,10 @@ class Settings(BaseSettings):
     evaluator_timeout_llm_seconds: int = 8
     evaluator_enabled: bool = True
 
+    # Sentry — empty DSN disables the SDK (zero overhead). See SAD §4.2.1.
+    sentry_dsn: str = ""
+    sentry_environment: str = "development"
+    sentry_release: str = "cliniflow-agent@0.0.1"
+
 
 settings = Settings()

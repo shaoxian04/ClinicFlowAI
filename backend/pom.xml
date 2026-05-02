@@ -29,6 +29,7 @@
         <bucket4j.version>8.10.1</bucket4j.version>
         <twilio-sdk.version>10.4.1</twilio-sdk.version>
         <wiremock.version>3.0.1</wiremock.version>
+        <sentry.version>7.18.0</sentry.version>
     </properties>
 
     <dependencies>
@@ -165,6 +166,18 @@
             <artifactId>neo4j</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Sentry — error tracking (auto-captures uncaught exceptions, no-ops if SENTRY_DSN unset) -->
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-spring-boot-starter-jakarta</artifactId>
+            <version>${sentry.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-logback</artifactId>
+            <version>${sentry.version}</version>
         </dependency>
     </dependencies>
 
