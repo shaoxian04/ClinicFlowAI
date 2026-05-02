@@ -30,6 +30,9 @@ public class VisitModel {
     @Column(name = "finalized_at")
     private OffsetDateTime finalizedAt;
 
+    @Column(name = "reference_number", length = 32, unique = true)
+    private String referenceNumber;
+
     @Column(name = "gmt_create", nullable = false, updatable = false)
     private OffsetDateTime gmtCreate;
 
@@ -60,6 +63,8 @@ public class VisitModel {
     public void setStartedAt(OffsetDateTime v) { this.startedAt = v; }
     public OffsetDateTime getFinalizedAt() { return finalizedAt; }
     public void setFinalizedAt(OffsetDateTime v) { this.finalizedAt = v; }
+    public String getReferenceNumber() { return referenceNumber; }
+    public void setReferenceNumber(String v) { this.referenceNumber = v; }
     public PreVisitReportModel getPreVisitReport() { return preVisitReport; }
     public void setPreVisitReport(PreVisitReportModel v) {
         this.preVisitReport = v;

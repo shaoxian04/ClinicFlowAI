@@ -13,6 +13,7 @@ import my.cliniflow.domain.biz.visit.model.VisitModel;
 import my.cliniflow.domain.biz.visit.repository.EvaluatorFindingRepository;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
 import my.cliniflow.domain.biz.visit.service.EvaluatorFindingAcknowledgeDomainService;
+import my.cliniflow.domain.biz.visit.service.ReferenceNumberDomainService;
 import my.cliniflow.infrastructure.audit.AuditWriter;
 import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +42,7 @@ public class VisitWriteAppService {
     private final AuditWriter auditWriter;
     private final AgentServiceClient agent;
     private final ApplicationEventPublisher events;
+    private final ReferenceNumberDomainService refNumbers;
 
     public VisitWriteAppService(VisitRepository visits,
                                 @Value("${cliniflow.dev.seeded-doctor-id}") String seededDoctorId,
@@ -48,7 +51,8 @@ public class VisitWriteAppService {
                                 EvaluatorFindingAcknowledgeDomainService ackService,
                                 AuditWriter auditWriter,
                                 AgentServiceClient agent,
-                                ApplicationEventPublisher events) {
+                                ApplicationEventPublisher events,
+                                ReferenceNumberDomainService refNumbers) {
         this.visits = visits;
         this.seededDoctorId = UUID.fromString(seededDoctorId);
         this.findingRepo = findingRepo;
@@ -57,6 +61,7 @@ public class VisitWriteAppService {
         this.auditWriter = auditWriter;
         this.agent = agent;
         this.events = events;
+        this.refNumbers = refNumbers;
     }
 
     /**
@@ -74,6 +79,9 @@ public class VisitWriteAppService {
         v.setDoctorId(seededDoctorId);
         v.setStatus(VisitStatus.IN_PROGRESS);
         v.setStartedAt(OffsetDateTime.now());
+        if (v.getReferenceNumber() == null) {
+            v.setReferenceNumber(refNumbers.nextFor(LocalDate.now()));
+        }
         v = visits.save(v);
         return v.getId();
     }
