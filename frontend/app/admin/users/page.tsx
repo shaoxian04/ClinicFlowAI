@@ -4,20 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getUser } from "@/lib/auth";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
+import { listUsers, changeUserRole, type AdminUser, type UserRole } from "@/lib/admin";
 
 import AdminNav from "../components/AdminNav";
-
-type UserRole = "PATIENT" | "DOCTOR" | "STAFF" | "ADMIN";
-
-type AdminUser = {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-};
-
-type UsersResponse = { users: AdminUser[] };
 
 type CreateForm = {
     email: string;
@@ -44,10 +34,8 @@ export default function AdminUsersPage() {
     const [createForm, setCreateForm] = useState<CreateForm>(EMPTY_CREATE);
     const [createBusy, setCreateBusy] = useState<boolean>(false);
     const [createError, setCreateError] = useState<string | null>(null);
-    const [createStub, setCreateStub] = useState<boolean>(false);
     const [roleChanges, setRoleChanges] = useState<Record<string, UserRole>>({});
     const [roleBusy, setRoleBusy] = useState<Record<string, boolean>>({});
-    const [roleStubs, setRoleStubs] = useState<Record<string, boolean>>({});
     const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
@@ -63,9 +51,9 @@ export default function AdminUsersPage() {
         let cancelled = false;
         (async () => {
             try {
-                const data = await apiGet<UsersResponse>("/admin/users");
+                const list = await listUsers();
                 if (!cancelled) {
-                    setUsers(data.users ?? []);
+                    setUsers(list);
                 }
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
@@ -91,7 +79,6 @@ export default function AdminUsersPage() {
         e.preventDefault();
         setCreateBusy(true);
         setCreateError(null);
-        setCreateStub(false);
         try {
             const created = await apiPost<AdminUser>("/admin/users", createForm);
             setUsers((prev) => [...prev, created]);
@@ -99,12 +86,7 @@ export default function AdminUsersPage() {
             setShowCreate(false);
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            const is404 = msg.includes("404");
-            if (is404) {
-                setCreateStub(true);
-            } else {
-                setCreateError(msg);
-            }
+            setCreateError(msg);
         } finally {
             setCreateBusy(false);
         }
@@ -123,9 +105,8 @@ export default function AdminUsersPage() {
         if (!newRole) return;
         setRoleBusy((prev) => ({ ...prev, [userId]: true }));
         setRoleErrors((prev) => ({ ...prev, [userId]: "" }));
-        setRoleStubs((prev) => ({ ...prev, [userId]: false }));
         try {
-            await apiPost<unknown>(`/admin/users/${userId}/role`, { role: newRole });
+            await changeUserRole(userId, newRole);
             setUsers((prev) =>
                 prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
             );
@@ -136,12 +117,7 @@ export default function AdminUsersPage() {
             });
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            const is404 = msg.includes("404");
-            if (is404) {
-                setRoleStubs((prev) => ({ ...prev, [userId]: true }));
-            } else {
-                setRoleErrors((prev) => ({ ...prev, [userId]: msg }));
-            }
+            setRoleErrors((prev) => ({ ...prev, [userId]: msg }));
         } finally {
             setRoleBusy((prev) => ({ ...prev, [userId]: false }));
         }
@@ -161,7 +137,7 @@ export default function AdminUsersPage() {
 
                 {stub && (
                     <div className="ghost-banner" role="status">
-                        Stub — backend pending. Showing empty user list until the API is wired up.
+                        Unable to load users — check your connection and try refreshing.
                     </div>
                 )}
 
@@ -238,11 +214,6 @@ export default function AdminUsersPage() {
                             >
                                 {createBusy ? "Creating…" : "Create user"}
                             </button>
-                            {createStub && (
-                                <div className="ghost-banner" role="status">
-                                    Stub — backend pending
-                                </div>
-                            )}
                             {createError && (
                                 <div className="banner banner-error">{createError}</div>
                             )}
@@ -311,11 +282,6 @@ export default function AdminUsersPage() {
                                                 >
                                                     {roleBusy[u.id] ? "Saving…" : "Save"}
                                                 </button>
-                                                {roleStubs[u.id] && (
-                                                    <span className="stub-hint">
-                                                        Stub — backend pending
-                                                    </span>
-                                                )}
                                                 {roleErrors[u.id] && (
                                                     <span className="error-hint">
                                                         {roleErrors[u.id]}
