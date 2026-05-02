@@ -40,8 +40,8 @@ public class AdminAnalyticsController {
             """
             SELECT COUNT(*) FROM appointments a
             JOIN appointment_slots s ON s.id = a.slot_id
-            WHERE s.slot_start AT TIME ZONE 'Asia/Kuala_Lumpur' >= CURRENT_DATE
-              AND s.slot_start AT TIME ZONE 'Asia/Kuala_Lumpur' < CURRENT_DATE + INTERVAL '1 day'
+            WHERE s.start_at AT TIME ZONE 'Asia/Kuala_Lumpur' >= CURRENT_DATE
+              AND s.start_at AT TIME ZONE 'Asia/Kuala_Lumpur' < CURRENT_DATE + INTERVAL '1 day'
               AND a.status NOT IN ('CANCELLED')
             """, Long.class);
 
@@ -59,7 +59,7 @@ public class AdminAnalyticsController {
                      INTERVAL '1 day'
                  ) AS d(day)
             LEFT JOIN appointment_slots s
-                   ON DATE(s.slot_start AT TIME ZONE 'Asia/Kuala_Lumpur') = d.day
+                   ON DATE(s.start_at AT TIME ZONE 'Asia/Kuala_Lumpur') = d.day
             LEFT JOIN appointments a
                    ON a.slot_id = s.id AND a.status NOT IN ('CANCELLED')
             GROUP BY d.day
