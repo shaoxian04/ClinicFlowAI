@@ -2,6 +2,7 @@ package my.cliniflow.application.biz.visit;
 
 import my.cliniflow.application.biz.clinic.ClinicReadAppService;
 import my.cliniflow.application.biz.patient.PatientReadAppService;
+import my.cliniflow.controller.base.ResourceNotFoundException;
 import my.cliniflow.domain.biz.clinic.info.ClinicInfo;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.domain.biz.user.model.DoctorProfileModel;
@@ -140,6 +141,6 @@ class VisitIdentificationReadAppServiceTest {
     void throws_when_visit_not_found() {
         UUID id = UUID.randomUUID();
         when(visits.findById(id)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> svc.assemble(id)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> svc.assemble(id)).isInstanceOf(ResourceNotFoundException.class);
     }
 }

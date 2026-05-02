@@ -6,6 +6,9 @@ import my.cliniflow.domain.biz.clinic.info.ClinicInfo;
 import my.cliniflow.domain.biz.patient.model.PatientModel;
 import my.cliniflow.domain.biz.user.enums.Role;
 import my.cliniflow.domain.biz.visit.info.VisitIdentificationInfo;
+import my.cliniflow.domain.biz.visit.model.VisitModel;
+import my.cliniflow.domain.biz.visit.repository.VisitRepository;
+import my.cliniflow.controller.base.ResourceNotFoundException;
 import my.cliniflow.infrastructure.security.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +43,7 @@ class VisitIdentificationControllerTest {
 
     @MockBean VisitIdentificationReadAppService identificationReads;
     @MockBean PatientReadAppService patientReads;
+    @MockBean VisitRepository visits;
 
     private static final UUID VISIT_ID   = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID PATIENT_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
@@ -110,6 +114,10 @@ class VisitIdentificationControllerTest {
         ownPatient.setId(PATIENT_ID);
         when(patientReads.findByUserId(PATIENT_USER_ID)).thenReturn(Optional.of(ownPatient));
 
+        VisitModel visitModel = new VisitModel();
+        visitModel.setPatientId(PATIENT_ID);
+        when(visits.findById(VISIT_ID)).thenReturn(Optional.of(visitModel));
+
         mvc.perform(get("/api/visits/{visitId}/identification", VISIT_ID)
                         .with(authentication(jwtAuth(PATIENT_USER_ID, Role.PATIENT))))
                 .andExpect(status().isOk())
@@ -118,11 +126,13 @@ class VisitIdentificationControllerTest {
 
     @Test
     void patient_role_is_forbidden_for_other_visits() throws Exception {
-        when(identificationReads.assemble(VISIT_ID)).thenReturn(stubInfo());
-
         PatientModel otherPatient = new PatientModel();
         otherPatient.setId(UUID.randomUUID()); // different — not the visit's patient
         when(patientReads.findByUserId(PATIENT_USER_ID)).thenReturn(Optional.of(otherPatient));
+
+        VisitModel visitModel = new VisitModel();
+        visitModel.setPatientId(PATIENT_ID);
+        when(visits.findById(VISIT_ID)).thenReturn(Optional.of(visitModel));
 
         mvc.perform(get("/api/visits/{visitId}/identification", VISIT_ID)
                         .with(authentication(jwtAuth(PATIENT_USER_ID, Role.PATIENT))))
@@ -133,11 +143,11 @@ class VisitIdentificationControllerTest {
     @Test
     void visit_not_found_returns_not_found_code() throws Exception {
         when(identificationReads.assemble(any()))
-                .thenThrow(new IllegalArgumentException("Visit not found: " + VISIT_ID));
+                .thenThrow(new ResourceNotFoundException("Visit", VISIT_ID));
 
         mvc.perform(get("/api/visits/{visitId}/identification", VISIT_ID)
                         .with(authentication(jwtAuth(DOCTOR_USER_ID, Role.DOCTOR))))
-                .andExpect(status().isOk())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(40400));
     }
 }

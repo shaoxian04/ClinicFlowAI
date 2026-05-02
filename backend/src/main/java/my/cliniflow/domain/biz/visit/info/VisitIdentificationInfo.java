@@ -17,6 +17,11 @@ public record VisitIdentificationInfo(
 
     public record Doctor(String fullName, String mmcNumber, String specialty) {}
 
-    public record Visit(UUID visitId, UUID patientId, String referenceNumber, LocalDate visitDate,
-                        OffsetDateTime finalizedAt) {}
+    public record Visit(
+            UUID visitId,
+            UUID patientId,    // internal only — used for ownership checks, never expose in response DTOs
+            String referenceNumber,
+            LocalDate visitDate,
+            OffsetDateTime finalizedAt
+    ) {}
 }

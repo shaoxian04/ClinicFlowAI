@@ -7,6 +7,7 @@ import my.cliniflow.domain.biz.user.model.DoctorProfileModel;
 import my.cliniflow.domain.biz.user.model.UserModel;
 import my.cliniflow.domain.biz.user.repository.DoctorProfileRepository;
 import my.cliniflow.domain.biz.user.repository.UserRepository;
+import my.cliniflow.controller.base.ResourceNotFoundException;
 import my.cliniflow.domain.biz.visit.info.VisitIdentificationInfo;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
 import my.cliniflow.domain.biz.visit.repository.VisitRepository;
@@ -46,16 +47,16 @@ public class VisitIdentificationReadAppService {
 
     public VisitIdentificationInfo assemble(UUID visitId) {
         VisitModel v = visits.findById(visitId)
-                .orElseThrow(() -> new IllegalArgumentException("Visit not found: " + visitId));
+                .orElseThrow(() -> new ResourceNotFoundException("Visit", visitId));
 
         PatientModel p = patients.findById(v.getPatientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found: " + v.getPatientId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Patient for visit", visitId));
 
         UserModel u = users.findById(v.getDoctorId())
-                .orElseThrow(() -> new IllegalArgumentException("Doctor user not found: " + v.getDoctorId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor for visit", visitId));
 
         DoctorProfileModel dp = doctorProfiles.findByUserId(v.getDoctorId())
-                .orElseThrow(() -> new IllegalArgumentException("Doctor profile not found: " + v.getDoctorId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor profile for visit", visitId));
 
         String nationalId = patients.decryptNationalId(p);
 
