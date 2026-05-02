@@ -11,11 +11,13 @@ import { cn } from "@/design/cn";
 import { fadeUp, staggerChildren } from "@/design/motion";
 import { PullQuote } from "@/components/ui/PullQuote";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
 import { MedicationCard } from "@/app/portal/components/MedicationCard";
 import { RedFlagsCard } from "@/app/portal/components/RedFlagsCard";
 import { FollowUpCard } from "@/app/portal/components/FollowUpCard";
 import { LangCrossfade } from "@/components/ui/LangCrossfade";
 import { NoMedicationsIllustration } from "@/components/illustrations/empty/NoMedicationsIllustration";
+import { EPrescriptionModal } from "@/components/EPrescriptionModal";
 
 type Detail = {
   visitId: string;
@@ -85,6 +87,7 @@ export default function PortalVisitDetail() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [lang, setLang] = useState<"en" | "ms">("en");
   const [error, setError] = useState<string | null>(null);
+  const [showRx, setShowRx] = useState(false);
 
   function switchLang(next: "en" | "ms") {
     if (next === lang) return;
@@ -246,10 +249,20 @@ export default function PortalVisitDetail() {
                   <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-fog">
                     {medsCopy.heading}
                   </h2>
-                  <span className="font-mono text-xs text-fog-dim/60">
-                    {medCount}{" "}
-                    {medCount === 1 ? medsCopy.item : medsCopy.items}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-fog-dim/60">
+                      {medCount}{" "}
+                      {medCount === 1 ? medsCopy.item : medsCopy.items}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowRx(true)}
+                      className="font-mono text-xs text-cyan hover:text-cyan/80 border border-cyan/30 hover:border-cyan/60 px-2 py-1 rounded-xs transition-colors duration-150"
+                    >
+                      View e-prescription
+                    </Button>
+                  </div>
                 </div>
 
                 {medCount === 0 ? (
@@ -283,6 +296,14 @@ export default function PortalVisitDetail() {
           </LangCrossfade>
         </motion.div>
       </motion.div>
+
+      {showRx && (
+        <EPrescriptionModal
+          visitId={visitId}
+          medications={detail.medications}
+          onClose={() => setShowRx(false)}
+        />
+      )}
     </main>
   );
 }
