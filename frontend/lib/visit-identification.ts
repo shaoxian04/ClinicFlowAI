@@ -13,14 +13,14 @@ export type PatientInfo = {
     fullName: string;
     nationalId: string | null;
     dateOfBirth: string | null;
-    ageYears: number;
+    ageYears: number | null;
     gender: string | null;
     phone: string | null;
 };
 
 export type DoctorInfo = {
     fullName: string;
-    mmcNumber: string;
+    mmcNumber: string | null;
     specialty: string;
 };
 

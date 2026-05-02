@@ -13,7 +13,7 @@ public record VisitIdentificationInfo(
         Visit visit
 ) {
     public record Patient(String fullName, String nationalId, LocalDate dateOfBirth,
-                          int ageYears, String gender, String phone) {}
+                          Integer ageYears, String gender, String phone) {}
 
     public record Doctor(String fullName, String mmcNumber, String specialty) {}
 

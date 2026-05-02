@@ -248,7 +248,7 @@ export function ReportPreview({
                   <dt className={dtCls}>Specialty</dt>
                   <dd className={ddCls}>{ident.doctor.specialty}</dd>
                   <dt className={dtCls}>MMC No.</dt>
-                  <dd className={cn(ddCls, monoCls)}>{ident.doctor.mmcNumber}</dd>
+                  <dd className={cn(ddCls, monoCls)}>{ident.doctor.mmcNumber ?? "—"}</dd>
                 </dl>
               </>
             ) : !identErr ? (
@@ -469,10 +469,17 @@ export function ReportPreview({
           {ident ? (
             <>
               <p className="font-display text-base text-fog">{ident.doctor.fullName}</p>
-              <p className="font-mono text-xs text-fog-dim/60">{ident.doctor.specialty} · {ident.doctor.mmcNumber}</p>
+              <p className="font-mono text-xs text-fog-dim/60">
+                MMC: {ident.doctor.mmcNumber ?? "—"} · {ident.doctor.specialty}
+              </p>
             </>
-          ) : (
+          ) : identErr ? (
             <p className="font-display text-base text-fog">{doctorName}</p>
+          ) : (
+            <div className="animate-pulse space-y-1.5">
+              <div className="h-4 w-32 rounded bg-white/10" />
+              <div className="h-3 w-40 rounded bg-white/10" />
+            </div>
           )}
           {finalizedAt && (
             <p className="font-mono text-xs text-fog-dim/50">

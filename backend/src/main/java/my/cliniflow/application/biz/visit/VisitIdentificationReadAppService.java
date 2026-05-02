@@ -60,7 +60,7 @@ public class VisitIdentificationReadAppService {
 
         String nationalId = patients.decryptNationalId(p);
 
-        int ageYears = (p.getDateOfBirth() == null) ? 0
+        Integer ageYears = (p.getDateOfBirth() == null) ? null
                 : Period.between(p.getDateOfBirth(), LocalDate.now()).getYears();
 
         return new VisitIdentificationInfo(
