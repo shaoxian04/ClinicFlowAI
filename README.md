@@ -1,5 +1,7 @@
 # CliniFlow AI
 
+[![CI](https://github.com/shaoxian04/ClinicFlowAI/actions/workflows/ci.yml/badge.svg)](https://github.com/shaoxian04/ClinicFlowAI/actions/workflows/ci.yml)
+
 **AI-powered clinical workflow platform for SME clinics in Malaysia.** End-to-end automation of the patient journey — pre-visit symptom intake, in-visit SOAP-note generation from voice or text, and post-visit bilingual (EN / MS) patient summaries. Built around a strict doctor-in-the-loop safety model.
 
 > Hackathon submission · Team **Dependency Free** · Solo developer: **Tang Shao Xian**
