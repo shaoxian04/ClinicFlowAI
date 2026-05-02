@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiPost } from "@/lib/api";
+import { getVisitIdentification, type VisitIdentification } from "@/lib/visit-identification";
 import type { MedicalReport } from "@/lib/types/report";
 import { cn } from "@/design/cn";
 import { Card } from "@/components/ui/Card";
@@ -27,53 +28,13 @@ export interface ReportPreviewProps {
   onReEvaluate?: () => Promise<Finding[] | null>;
 }
 
-const CLINIC = {
-  name: "CliniFlow AI Clinic",
-  address: "No. 12, Jalan Bukit Bintang, 55100 Kuala Lumpur, Malaysia",
-  phone: "+60 3-2145 8800",
-  email: "reception@cliniflow.demo",
-  registration: "KKM-KL-2024-0451",
-};
-
-function demoPatientProfile(visitId: string, patientName: string) {
-  const seed = visitId.charCodeAt(0) + visitId.charCodeAt(1);
-  const sexes = ["Male", "Female"] as const;
-  const year = 1978 + (seed % 40);
-  const month = ((seed * 3) % 12) + 1;
-  const day = ((seed * 7) % 27) + 1;
-  const icSuffix = (seed * 1237).toString().padStart(7, "0").slice(0, 7);
-  const phoneLast = (1000 + (seed * 19) % 9000).toString();
-  return {
-    name: patientName,
-    mrn: `MRN-${visitId.slice(0, 6).toUpperCase()}`,
-    dob: `${String(year)}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-    sex: sexes[seed % 2],
-    ic: `${String(year).slice(2)}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}-14-${icSuffix.slice(0, 4)}`,
-    phone: `+60 12-345 ${phoneLast}`,
-  };
-}
-
-function demoDoctorProfile(name: string) {
-  return {
-    name: formatDoctorName(name),
-    specialty: "General Practice",
-    mmcNumber: "MMC 54321",
-    qualification: "MBBS (UM)",
-  };
-}
-
-function formatDoctorName(name: string): string {
-  const trimmed = name.trim();
-  return /^dr\.?\s/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
-}
-
-function calcAge(dob: string): number {
-  const birth = new Date(dob);
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const m = now.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-  return age;
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-MY", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function humanizeVital(key: string): string {
@@ -103,6 +64,17 @@ export function ReportPreview({
   const [err, setErr] = useState<string | null>(null);
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideFindings, setOverrideFindings] = useState<Finding[]>([]);
+
+  const [ident, setIdent] = useState<VisitIdentification | null>(null);
+  const [identErr, setIdentErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getVisitIdentification(visitId)
+      .then((d) => { if (!cancelled) setIdent(d); })
+      .catch((e) => { if (!cancelled) setIdentErr(e instanceof Error ? e.message : "Failed to load identification"); });
+    return () => { cancelled = true; };
+  }, [visitId]);
 
   const hasReport = report != null;
 
@@ -176,8 +148,6 @@ export function ReportPreview({
   }
 
   const visitDate = new Date(createdAt);
-  const patient = demoPatientProfile(visitId, patientName);
-  const doctor = demoDoctorProfile(doctorName);
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
@@ -186,21 +156,41 @@ export function ReportPreview({
         {/* ============================ HEADER ============================ */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-6">
           <div>
-            <p className="font-display text-lg text-fog">{CLINIC.name}</p>
-            <p className="font-sans text-xs text-fog-dim mt-0.5">{CLINIC.address}</p>
-            <p className="font-mono text-xs text-fog-dim/60 mt-1 flex flex-wrap gap-2">
-              <span>Tel: {CLINIC.phone}</span>
-              <span>·</span>
-              <span>{CLINIC.email}</span>
-              <span>·</span>
-              <span>Reg. {CLINIC.registration}</span>
-            </p>
+            {identErr ? (
+              <p className="font-sans text-sm text-crimson">Failed to load clinic info: {identErr}</p>
+            ) : ident ? (
+              <>
+                <p className="font-display text-lg text-fog">{ident.clinic.name}</p>
+                <p className="font-sans text-xs text-fog-dim mt-0.5">
+                  {ident.clinic.addressLine1}{ident.clinic.addressLine2 ? `, ${ident.clinic.addressLine2}` : ""}
+                </p>
+                <p className="font-mono text-xs text-fog-dim/60 mt-1 flex flex-wrap gap-2">
+                  <span>Tel: {ident.clinic.phone}</span>
+                  <span>·</span>
+                  <span>{ident.clinic.email}</span>
+                  <span>·</span>
+                  <span>Reg. {ident.clinic.registrationNumber}</span>
+                </p>
+              </>
+            ) : (
+              <div className="animate-pulse space-y-1.5">
+                <div className="h-4 w-48 rounded bg-white/10" />
+                <div className="h-3 w-64 rounded bg-white/10" />
+                <div className="h-3 w-56 rounded bg-white/10" />
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-1 sm:items-end flex-shrink-0">
             <div className="flex gap-2 items-baseline">
               <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Visit ID</span>
               <code className="font-mono text-xs text-fog">{visitId.slice(0, 8)}…</code>
             </div>
+            {ident?.visit.referenceNumber && (
+              <div className="flex gap-2 items-baseline">
+                <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Ref</span>
+                <code className="font-mono text-xs text-fog">{ident.visit.referenceNumber}</code>
+              </div>
+            )}
             <div className="flex gap-2 items-baseline">
               <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Date</span>
               <span className="font-mono text-xs text-fog">{visitDate.toLocaleDateString()}</span>
@@ -222,23 +212,54 @@ export function ReportPreview({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
           <div>
             <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-2">Patient</p>
-            <p className="font-display text-base text-fog">{patient.name}</p>
-            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-              <dt className={dtCls}>MRN</dt><dd className={cn(ddCls, monoCls)}>{patient.mrn}</dd>
-              <dt className={dtCls}>IC No.</dt><dd className={cn(ddCls, monoCls)}>{patient.ic}</dd>
-              <dt className={dtCls}>DOB</dt><dd className={ddCls}>{patient.dob} ({calcAge(patient.dob)} y)</dd>
-              <dt className={dtCls}>Sex</dt><dd className={ddCls}>{patient.sex}</dd>
-              <dt className={dtCls}>Phone</dt><dd className={ddCls}>{patient.phone}</dd>
-            </dl>
+            {ident ? (
+              <>
+                <p className="font-display text-base text-fog">{ident.patient.fullName}</p>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+                  <dt className={dtCls}>IC No.</dt>
+                  <dd className={cn(ddCls, monoCls)}>{ident.patient.nationalId ?? "—"}</dd>
+                  <dt className={dtCls}>DOB</dt>
+                  <dd className={ddCls}>
+                    {formatDate(ident.patient.dateOfBirth)}
+                    {ident.patient.ageYears != null ? ` (${ident.patient.ageYears} y)` : ""}
+                  </dd>
+                  <dt className={dtCls}>Sex</dt>
+                  <dd className={ddCls}>{ident.patient.gender ?? "—"}</dd>
+                  <dt className={dtCls}>Phone</dt>
+                  <dd className={ddCls}>{ident.patient.phone ?? "—"}</dd>
+                </dl>
+              </>
+            ) : !identErr ? (
+              <div className="animate-pulse space-y-1.5 mt-1">
+                <div className="h-4 w-36 rounded bg-white/10" />
+                <div className="h-3 w-48 rounded bg-white/10" />
+                <div className="h-3 w-40 rounded bg-white/10" />
+              </div>
+            ) : (
+              <p className="font-sans text-sm text-fog-dim/50">{patientName}</p>
+            )}
           </div>
           <div>
             <p className="font-mono text-[10px] text-fog-dim/60 uppercase tracking-widest mb-2">Attending Doctor</p>
-            <p className="font-display text-base text-fog">{doctor.name}</p>
-            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-              <dt className={dtCls}>Qualification</dt><dd className={ddCls}>{doctor.qualification}</dd>
-              <dt className={dtCls}>Specialty</dt><dd className={ddCls}>{doctor.specialty}</dd>
-              <dt className={dtCls}>MMC No.</dt><dd className={cn(ddCls, monoCls)}>{doctor.mmcNumber}</dd>
-            </dl>
+            {ident ? (
+              <>
+                <p className="font-display text-base text-fog">{ident.doctor.fullName}</p>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+                  <dt className={dtCls}>Specialty</dt>
+                  <dd className={ddCls}>{ident.doctor.specialty}</dd>
+                  <dt className={dtCls}>MMC No.</dt>
+                  <dd className={cn(ddCls, monoCls)}>{ident.doctor.mmcNumber}</dd>
+                </dl>
+              </>
+            ) : !identErr ? (
+              <div className="animate-pulse space-y-1.5 mt-1">
+                <div className="h-4 w-36 rounded bg-white/10" />
+                <div className="h-3 w-48 rounded bg-white/10" />
+                <div className="h-3 w-40 rounded bg-white/10" />
+              </div>
+            ) : (
+              <p className="font-sans text-sm text-fog-dim/50">{doctorName}</p>
+            )}
           </div>
         </div>
 
@@ -445,8 +466,14 @@ export function ReportPreview({
         <Separator className="mt-6 mb-4" />
         <div className="flex flex-col gap-0.5">
           <span className="font-mono text-[10px] text-fog-dim/50 uppercase tracking-widest">Attending Doctor</span>
-          <p className="font-display text-base text-fog">{doctor.name}</p>
-          <p className="font-mono text-xs text-fog-dim/60">{doctor.qualification} · {doctor.mmcNumber}</p>
+          {ident ? (
+            <>
+              <p className="font-display text-base text-fog">{ident.doctor.fullName}</p>
+              <p className="font-mono text-xs text-fog-dim/60">{ident.doctor.specialty} · {ident.doctor.mmcNumber}</p>
+            </>
+          ) : (
+            <p className="font-display text-base text-fog">{doctorName}</p>
+          )}
           {finalizedAt && (
             <p className="font-mono text-xs text-fog-dim/50">
               Signed: {new Date(finalizedAt).toLocaleString()}
