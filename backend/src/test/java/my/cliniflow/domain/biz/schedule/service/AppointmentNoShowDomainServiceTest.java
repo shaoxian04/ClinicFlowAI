@@ -31,7 +31,7 @@ class AppointmentNoShowDomainServiceTest {
     @BeforeEach
     void setUp() {
         appts = mock(AppointmentRepository.class);
-        svc = new AppointmentNoShowDomainService(appts);
+        svc = new AppointmentNoShowDomainServiceImpl(appts);
     }
 
     private AppointmentModel appointment(AppointmentStatus status) {

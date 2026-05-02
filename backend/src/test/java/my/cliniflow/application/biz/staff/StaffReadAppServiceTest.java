@@ -43,7 +43,7 @@ class StaffReadAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        svc = new StaffReadAppService(slots, appts, preVisitReports, nameResolver);
+        svc = new StaffReadAppServiceImpl(slots, appts, preVisitReports, nameResolver);
     }
 
     @Test

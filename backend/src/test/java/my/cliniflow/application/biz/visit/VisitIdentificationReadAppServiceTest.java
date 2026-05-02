@@ -37,7 +37,7 @@ class VisitIdentificationReadAppServiceTest {
     @Mock DoctorProfileRepository doctorProfiles;
     @Mock ClinicReadAppService clinic;
 
-    @InjectMocks VisitIdentificationReadAppService svc;
+    @InjectMocks VisitIdentificationReadAppServiceImpl svc;
 
     /** Use reflection to set private JPA-managed fields on VisitModel. */
     private static void setVisitField(VisitModel v, String fieldName, Object value) throws Exception {

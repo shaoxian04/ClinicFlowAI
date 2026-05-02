@@ -40,7 +40,7 @@ class SlotGenerateDomainServiceTest {
     void setUp() {
         slotRepo = mock(AppointmentSlotRepository.class);
         overrideRepo = mock(ScheduleDayOverrideRepository.class);
-        svc = new SlotGenerateDomainService(slotRepo, overrideRepo);
+        svc = new SlotGenerateDomainServiceImpl(slotRepo, overrideRepo);
         doctorId = UUID.randomUUID();
         when(slotRepo.deleteFutureAvailable(eq(doctorId), any())).thenReturn(0);
         when(slotRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));

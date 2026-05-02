@@ -41,7 +41,7 @@ class PatientReadAppServiceSummaryTest {
     private PatientClinicalProfileRepository clinicalProfiles;
     private NationalIdEncryptor nidEncryptor;
 
-    private PatientReadAppService svc;
+    private PatientReadAppServiceImpl svc;
 
     @BeforeEach
     void setUp() {
@@ -55,7 +55,7 @@ class PatientReadAppServiceSummaryTest {
         clinicalProfiles = mock(PatientClinicalProfileRepository.class);
         nidEncryptor = mock(NationalIdEncryptor.class);
 
-        svc = new PatientReadAppService(
+        svc = new PatientReadAppServiceImpl(
             patients, visits, summaries, medicalReports, meds, users,
             agent, clinicalProfiles, nidEncryptor);
     }

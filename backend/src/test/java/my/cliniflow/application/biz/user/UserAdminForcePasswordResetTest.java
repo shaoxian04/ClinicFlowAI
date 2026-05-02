@@ -41,7 +41,7 @@ class UserAdminForcePasswordResetTest {
         var audit = mock(AuditWriter.class);
         var u = user(TARGET);
         when(users.findById(TARGET)).thenReturn(Optional.of(u));
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         svc.forcePasswordReset(ACTOR, TARGET);
 
@@ -65,7 +65,7 @@ class UserAdminForcePasswordResetTest {
     void forcePasswordResetSelfActionForbiddenThrowsConflictException() {
         var users = mock(UserRepository.class);
         var audit = mock(AuditWriter.class);
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         assertThatThrownBy(() -> svc.forcePasswordReset(ACTOR, ACTOR))
             .isInstanceOf(ConflictException.class);
@@ -78,7 +78,7 @@ class UserAdminForcePasswordResetTest {
         var users = mock(UserRepository.class);
         var audit = mock(AuditWriter.class);
         when(users.findById(TARGET)).thenReturn(Optional.empty());
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         assertThatThrownBy(() -> svc.forcePasswordReset(ACTOR, TARGET))
             .isInstanceOf(ResourceNotFoundException.class);

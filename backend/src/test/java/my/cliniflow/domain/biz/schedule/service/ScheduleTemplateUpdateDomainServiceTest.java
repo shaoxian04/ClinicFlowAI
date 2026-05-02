@@ -37,7 +37,7 @@ class ScheduleTemplateUpdateDomainServiceTest {
     @BeforeEach
     void setUp() {
         templates = mock(ScheduleTemplateRepository.class);
-        svc = new ScheduleTemplateUpdateDomainService(templates);
+        svc = new ScheduleTemplateUpdateDomainServiceImpl(templates);
     }
 
     private ScheduleTemplateModel existingTemplate(LocalDate effectiveFrom) {

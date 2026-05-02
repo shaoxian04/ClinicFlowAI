@@ -37,7 +37,7 @@ class UserAdminAppServiceTest {
     void changeRoleSelfActionForbidden() {
         var users = mock(UserRepository.class);
         var audit = mock(AuditWriter.class);
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         assertThatThrownBy(() -> svc.changeRole(ACTOR, ACTOR, Role.ADMIN))
             .isInstanceOf(ConflictException.class)
@@ -51,7 +51,7 @@ class UserAdminAppServiceTest {
         var audit = mock(AuditWriter.class);
         var u = user(TARGET, Role.STAFF);
         when(users.findById(TARGET)).thenReturn(Optional.of(u));
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         svc.changeRole(ACTOR, TARGET, Role.DOCTOR);
 
@@ -77,7 +77,7 @@ class UserAdminAppServiceTest {
         var audit = mock(AuditWriter.class);
         var u = user(TARGET, Role.STAFF);
         when(users.findById(TARGET)).thenReturn(Optional.of(u));
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         svc.changeRole(ACTOR, TARGET, Role.STAFF);
 
@@ -91,7 +91,7 @@ class UserAdminAppServiceTest {
         var audit = mock(AuditWriter.class);
         var u = user(TARGET, Role.PATIENT);
         when(users.findById(TARGET)).thenReturn(Optional.of(u));
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         assertThatThrownBy(() -> svc.changeRole(ACTOR, TARGET, Role.STAFF))
             .isInstanceOf(ConflictException.class);
@@ -104,7 +104,7 @@ class UserAdminAppServiceTest {
         var audit = mock(AuditWriter.class);
         var u = user(TARGET, Role.STAFF);
         when(users.findById(TARGET)).thenReturn(Optional.of(u));
-        var svc = new UserAdminAppService(users, audit);
+        var svc = new UserAdminAppServiceImpl(users, audit);
 
         assertThatThrownBy(() -> svc.changeRole(ACTOR, TARGET, Role.PATIENT))
             .isInstanceOf(ConflictException.class);

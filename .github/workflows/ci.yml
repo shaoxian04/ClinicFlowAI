@@ -6,9 +6,13 @@ on:
   pull_request:
     branches: [master]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend:
-    name: Frontend — lint & typecheck
+    name: Frontend — lint, typecheck & build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,9 +27,12 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080
 
   backend:
-    name: Backend — Maven test
+    name: Backend — Maven test + coverage
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -37,7 +44,14 @@ jobs:
           java-version: 21
           distribution: temurin
           cache: maven
-      - run: ./mvnw test -B
+      - run: ./mvnw verify -B
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+          retention-days: 7
 
   agent:
     name: Agent — pytest + ruff
@@ -54,3 +68,63 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: pytest --tb=short
+
+  security:
+    name: Security — gitleaks secrets scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy:
+    name: Security — Trivy image scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan backend Dockerfile
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: backend/Dockerfile
+          severity: CRITICAL,HIGH
+          exit-code: 0
+      - name: Scan frontend Dockerfile
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: frontend/Dockerfile
+          severity: CRITICAL,HIGH
+          exit-code: 0
+      - name: Scan agent Dockerfile
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: agent/Dockerfile
+          severity: CRITICAL,HIGH
+          exit-code: 0
+
+  docker-build:
+    name: Docker — compose build smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create minimal .env for build
+        run: |
+          cp .env.example .env
+          sed -i \
+            -e 's|SUPABASE_DB_URL=.*|SUPABASE_DB_URL=jdbc:postgresql://localhost:5432/cliniflow|' \
+            -e 's|SUPABASE_DB_PASSWORD=.*|SUPABASE_DB_PASSWORD=ci-placeholder|' \
+            -e 's|NEO4J_PASSWORD=.*|NEO4J_PASSWORD=ci-placeholder|' \
+            -e 's|JWT_SECRET=.*|JWT_SECRET=ci-placeholder-secret-that-is-at-least-32-chars|' \
+            -e 's|OPENAI_API_KEY=.*|OPENAI_API_KEY=sk-placeholder|' \
+            -e 's|GLM_API_KEY=.*|GLM_API_KEY=ci-placeholder|' \
+            -e 's|AGENT_SERVICE_TOKEN=.*|AGENT_SERVICE_TOKEN=ci-placeholder|' \
+            .env
+      - name: Build all images (no runtime)
+        run: docker compose build --no-cache
+        env:
+          DOCKER_BUILDKIT: 1

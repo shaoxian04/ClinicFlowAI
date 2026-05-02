@@ -48,7 +48,7 @@ class SlotBlockDomainServiceTest {
     void setUp() {
         apptRepo = mock(AppointmentRepository.class);
         overrideRepo = mock(ScheduleDayOverrideRepository.class);
-        svc = new SlotBlockDomainService(apptRepo, overrideRepo);
+        svc = new SlotBlockDomainServiceImpl(apptRepo, overrideRepo);
     }
 
     private AppointmentModel bookedAppointment() {
