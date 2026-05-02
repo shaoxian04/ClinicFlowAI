@@ -1,7 +1,9 @@
 package my.cliniflow.application.biz.user;
 
+import my.cliniflow.controller.base.BusinessException;
 import my.cliniflow.controller.base.ConflictException;
 import my.cliniflow.controller.base.ResourceNotFoundException;
+import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.domain.biz.user.enums.Role;
 import my.cliniflow.domain.biz.user.model.UserModel;
 import my.cliniflow.domain.biz.user.repository.UserRepository;
@@ -36,6 +38,29 @@ public class UserAdminAppService {
     public UserAdminAppService(UserRepository users, AuditWriter audit) {
         this.users = users;
         this.audit = audit;
+    }
+
+    /**
+     * Activates or deactivates the target user account. An admin may not
+     * deactivate their own account (self-action guard → 400).
+     */
+    @Transactional
+    public void setActive(UUID actorUserId, UUID targetUserId, boolean active) {
+        if (actorUserId.equals(targetUserId)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST,
+                "cannot change active status of your own account (self-action forbidden)");
+        }
+        UserModel u = users.findById(targetUserId).orElseThrow(
+            () -> new ResourceNotFoundException("USER", targetUserId));
+        u.setActive(active);
+        users.save(u);
+        audit.append(
+            "UPDATE",
+            "USER",
+            targetUserId.toString(),
+            actorUserId,
+            "ADMIN",
+            Map.of("active", active));
     }
 
     /**

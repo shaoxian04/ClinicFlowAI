@@ -6,6 +6,7 @@ import my.cliniflow.application.biz.user.UserWriteAppService;
 import my.cliniflow.controller.base.BusinessException;
 import my.cliniflow.controller.base.ResultCode;
 import my.cliniflow.controller.base.WebResult;
+import my.cliniflow.controller.biz.admin.request.ActiveRequest;
 import my.cliniflow.controller.biz.admin.request.CreateUserRequest;
 import my.cliniflow.controller.biz.admin.request.RoleChangeRequest;
 import my.cliniflow.domain.biz.user.enums.Role;
@@ -89,6 +90,15 @@ public class AdminUserController {
             throw new BusinessException(ResultCode.BAD_REQUEST, "invalid role: " + req.role());
         }
         adminSvc.changeRole(actor, targetId, role);
+        return WebResult.ok(null);
+    }
+
+    @PatchMapping("/{id}/active")
+    public WebResult<Void> setActive(@PathVariable("id") UUID targetId,
+                                      @RequestBody ActiveRequest req,
+                                      Authentication auth) {
+        UUID actor = ((JwtService.Claims) auth.getPrincipal()).userId();
+        adminSvc.setActive(actor, targetId, req.active());
         return WebResult.ok(null);
     }
 }
