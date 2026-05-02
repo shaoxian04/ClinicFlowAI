@@ -101,4 +101,12 @@ public class AdminUserController {
         adminSvc.setActive(actor, targetId, req.active());
         return WebResult.ok(null);
     }
+
+    @PostMapping("/{id}/force-password-reset")
+    public WebResult<Void> forcePasswordReset(@PathVariable("id") UUID targetId,
+                                               Authentication auth) {
+        UUID actor = ((JwtService.Claims) auth.getPrincipal()).userId();
+        adminSvc.forcePasswordReset(actor, targetId);
+        return WebResult.ok(null);
+    }
 }

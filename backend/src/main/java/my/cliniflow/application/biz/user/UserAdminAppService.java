@@ -61,6 +61,28 @@ public class UserAdminAppService {
     }
 
     /**
+     * Forces the target user to change their password on next login. Cannot
+     * be applied to yourself (self-action guard → 409).
+     */
+    @Transactional
+    public void forcePasswordReset(UUID actorUserId, UUID targetUserId) {
+        if (actorUserId.equals(targetUserId)) {
+            throw new ConflictException("cannot force password reset on your own account (self-action forbidden)");
+        }
+        UserModel u = users.findById(targetUserId).orElseThrow(
+            () -> new ResourceNotFoundException("USER", targetUserId));
+        u.setMustChangePassword(true);
+        users.save(u);
+        audit.append(
+            "UPDATE",
+            "USER",
+            targetUserId.toString(),
+            actorUserId,
+            "ADMIN",
+            Map.of("must_change_password", true));
+    }
+
+    /**
      * Updates the target user's role. Rejects self-action and patient-role
      * transitions. Idempotent on no-op (target already has the requested role).
      */
