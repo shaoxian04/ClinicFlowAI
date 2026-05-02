@@ -82,8 +82,16 @@ export default function AdminUsersPage() {
         setCreateBusy(true);
         setCreateError(null);
         try {
-            const created = await apiPost<AdminUser>("/admin/users", createForm);
-            setUsers((prev) => [...prev, created]);
+            // Map frontend form fields to backend CreateUserRequest names
+            await apiPost<unknown>("/admin/users", {
+                role: createForm.role,
+                email: createForm.email,
+                fullName: createForm.name,
+                tempPassword: createForm.initialPassword,
+            });
+            // Refresh list so new user appears with all fields
+            const refreshed = await listUsers();
+            setUsers(refreshed);
             setCreateForm(EMPTY_CREATE);
             setShowCreate(false);
         } catch (err) {
@@ -207,7 +215,7 @@ export default function AdminUsersPage() {
                                 </select>
                             </label>
                             <label className="field">
-                                <span className="field-label">Initial password</span>
+                                <span className="field-label">Initial password (min 12 chars)</span>
                                 <input
                                     type="password"
                                     className="input"
@@ -216,6 +224,7 @@ export default function AdminUsersPage() {
                                         onCreateFormChange("initialPassword", e.target.value)
                                     }
                                     required
+                                    minLength={12}
                                     autoComplete="new-password"
                                 />
                             </label>
