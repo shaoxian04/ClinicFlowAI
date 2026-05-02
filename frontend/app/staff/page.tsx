@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getUser } from "@/lib/auth";
-import { getTodayList, checkIn, type WaitingEntry } from "@/lib/staff";
+import { getTodayList, checkIn, type WaitingEntry, type WalkInResult } from "@/lib/staff";
 
 import StaffNav from "./components/StaffNav";
+import WalkInModal from "./components/WalkInModal";
 
 type RowState = {
     checkedIn: boolean;
@@ -24,6 +25,8 @@ export default function StaffTodayPage() {
     const [waiting, setWaiting] = useState<WaitingEntry[]>([]);
     const [dataUnavailable, setDataUnavailable] = useState<boolean>(false);
     const [rowStates, setRowStates] = useState<Record<string, RowState>>({});
+    const [walkInOpen, setWalkInOpen] = useState(false);
+    const [walkInSuccess, setWalkInSuccess] = useState<string | null>(null);
 
     useEffect(() => {
         const user = getUser();
@@ -86,18 +89,41 @@ export default function StaffTodayPage() {
         }
     }
 
+    function onWalkInRegistered(result: WalkInResult) {
+        setWalkInSuccess(`Patient registered (ID: ${result.patientId.slice(0, 8)}…)${result.userId ? " — login account created." : "."}`);
+        setTimeout(() => setWalkInSuccess(null), 5000);
+    }
+
     return (
         <>
             <StaffNav active="today" />
+            <WalkInModal
+                open={walkInOpen}
+                onClose={() => setWalkInOpen(false)}
+                onRegistered={onWalkInRegistered}
+            />
             <main className="shell shell-narrow portal-shell staff-shell">
-                <header className="page-header">
-                    <div className="page-header-eyebrow">Front desk</div>
-                    <h1 className="page-header-title">Today in the waiting room.</h1>
-                    <p className="page-header-sub">
-                        Check patients in as they arrive. A pre-visit dot shows whether the
-                        doctor already has their intake.
-                    </p>
+                <header className="page-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+                    <div>
+                        <div className="page-header-eyebrow">Front desk</div>
+                        <h1 className="page-header-title">Today in the waiting room.</h1>
+                        <p className="page-header-sub">
+                            Check patients in as they arrive. A pre-visit dot shows whether the
+                            doctor already has their intake.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ flexShrink: 0, marginTop: 4 }}
+                        onClick={() => setWalkInOpen(true)}
+                    >
+                        + Walk-in
+                    </button>
                 </header>
+                {walkInSuccess && (
+                    <div className="ghost-banner" role="status">{walkInSuccess}</div>
+                )}
 
                 {dataUnavailable && (
                     <div className="ghost-banner" role="status">

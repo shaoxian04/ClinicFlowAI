@@ -1,4 +1,19 @@
-import { apiGet, apiPostVoid } from "./api";
+import { apiGet, apiPost, apiPostVoid } from "./api";
+
+export type WalkInForm = {
+    fullName: string;
+    dateOfBirth?: string;
+    gender?: "MALE" | "FEMALE" | "OTHER";
+    phone?: string;
+    email?: string;
+    password?: string;
+    preferredLanguage?: "en" | "ms" | "zh";
+};
+
+export type WalkInResult = {
+    patientId: string;
+    userId: string | null;
+};
 
 export type WaitingEntry = {
     appointmentId: string;
@@ -19,4 +34,8 @@ export async function getTodayList(): Promise<WaitingEntry[]> {
 
 export async function checkIn(appointmentId: string): Promise<void> {
     await apiPostVoid("/staff/checkin", { appointmentId });
+}
+
+export async function registerWalkIn(form: WalkInForm): Promise<WalkInResult> {
+    return apiPost<WalkInResult>("/staff/patients", form);
 }
