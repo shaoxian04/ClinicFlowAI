@@ -9,6 +9,7 @@ import my.cliniflow.domain.biz.schedule.repository.AppointmentRepository;
 import my.cliniflow.domain.biz.schedule.repository.AppointmentSlotRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -41,17 +44,20 @@ public class DoctorTodayController {
     private final AppointmentSlotRepository slots;
     private final AppointmentModel2DTOConverter converter;
     private final AppointmentNameResolver nameResolver;
+    private final JdbcTemplate jdbc;
     private final UUID doctorId;
 
     public DoctorTodayController(AppointmentRepository appts,
                                   AppointmentSlotRepository slots,
                                   AppointmentModel2DTOConverter converter,
                                   AppointmentNameResolver nameResolver,
+                                  JdbcTemplate jdbc,
                                   @Value("${cliniflow.dev.seeded-doctor-pk}") String doctorId) {
         this.appts = appts;
         this.slots = slots;
         this.converter = converter;
         this.nameResolver = nameResolver;
+        this.jdbc = jdbc;
         this.doctorId = UUID.fromString(doctorId);
     }
 
@@ -93,8 +99,30 @@ public class DoctorTodayController {
     private List<AppointmentDTO> rangeForDoctor(LocalDate fromDay, LocalDate toDayExclusive) {
         OffsetDateTime windowStart = ZonedDateTime.of(fromDay, LocalTime.MIN, KL).toOffsetDateTime();
         OffsetDateTime windowEnd   = ZonedDateTime.of(toDayExclusive, LocalTime.MIN, KL).toOffsetDateTime();
-        var rows = appts.findByDoctorAndDayWindow(doctorId, windowStart, windowEnd,
+        var rowsRaw = appts.findByDoctorAndDayWindow(doctorId, windowStart, windowEnd,
             List.of(AppointmentStatus.BOOKED.name()));
+
+        // Drop appointments whose visit already has a medical_report row — they
+        // belong in the "Awaiting review" tab (drafted/approved) or "Finalized"
+        // tab (finalized). The Schedule tab shows only consultations that have
+        // not yet been drafted by the doctor.
+        Set<UUID> visitIdsWithReport = new HashSet<>();
+        List<UUID> visitIds = rowsRaw.stream().map(a -> a.getVisitId()).filter(java.util.Objects::nonNull).toList();
+        if (!visitIds.isEmpty()) {
+            String inClause = "?" + ",?".repeat(visitIds.size() - 1);
+            jdbc.query(
+                "SELECT visit_id FROM medical_reports WHERE visit_id IN (" + inClause + ")",
+                ps -> {
+                    for (int i = 0; i < visitIds.size(); i++) {
+                        ps.setObject(i + 1, visitIds.get(i));
+                    }
+                },
+                rs -> { visitIdsWithReport.add(rs.getObject(1, UUID.class)); });
+        }
+        var rows = rowsRaw.stream()
+            .filter(a -> a.getVisitId() == null || !visitIdsWithReport.contains(a.getVisitId()))
+            .toList();
+
         // Batch-fetch patient names in one pass to avoid N+1 reads.
         java.util.Map<UUID, String> patientNames = nameResolver.patientNames(
             rows.stream().map(a -> a.getPatientId()).toList());

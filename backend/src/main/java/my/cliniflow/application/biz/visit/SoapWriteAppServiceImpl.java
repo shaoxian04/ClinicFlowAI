@@ -1,5 +1,6 @@
 package my.cliniflow.application.biz.visit;
 
+import my.cliniflow.domain.biz.schedule.repository.AppointmentRepository;
 import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 import my.cliniflow.domain.biz.visit.event.SoapFinalizedDomainEvent;
 import my.cliniflow.domain.biz.visit.exception.UnacknowledgedCriticalFindingsException;
@@ -41,12 +42,14 @@ public class SoapWriteAppServiceImpl implements SoapWriteAppService {
     private final ApplicationEventPublisher events;
     private final EvaluatorFindingRepository findingRepo;
     private final AuditWriter auditWriter;
+    private final AppointmentRepository appointments;
 
     public SoapWriteAppServiceImpl(VisitRepository visits, MedicalReportRepository reports,
                                    AgentServiceClient agent, MedicationRepository medications,
                                    ApplicationEventPublisher events,
                                    EvaluatorFindingRepository findingRepo,
-                                   AuditWriter auditWriter) {
+                                   AuditWriter auditWriter,
+                                   AppointmentRepository appointments) {
         this.visits = visits;
         this.reports = reports;
         this.agent = agent;
@@ -54,6 +57,7 @@ public class SoapWriteAppServiceImpl implements SoapWriteAppService {
         this.events = events;
         this.findingRepo = findingRepo;
         this.auditWriter = auditWriter;
+        this.appointments = appointments;
     }
 
     @Override
@@ -134,6 +138,15 @@ public class SoapWriteAppServiceImpl implements SoapWriteAppService {
         v.setStatus(VisitStatus.FINALIZED);
         v.setFinalizedAt(OffsetDateTime.now());
         visits.save(v);
+
+        // Transition the appointment to COMPLETED so the doctor's schedule
+        // view drops finalised consultations. No-op if no booked appointment
+        // exists for this visit (e.g. walk-in visits without a slot booking).
+        appointments.findActiveByVisitId(visitId).ifPresent(a -> {
+            a.markCompleted();
+            appointments.save(a);
+        });
+
         boolean hasMeds = !medications.findByVisitIdOrderByGmtCreateAsc(visitId).isEmpty();
         events.publishEvent(new SoapFinalizedDomainEvent(visitId, v.getPatientId(), hasMeds, null));
         return r;

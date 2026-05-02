@@ -13,6 +13,8 @@ import my.cliniflow.domain.biz.visit.enums.VisitStatus;
 import my.cliniflow.domain.biz.visit.model.MedicalReportModel;
 import my.cliniflow.domain.biz.visit.model.MedicationModel;
 import my.cliniflow.domain.biz.visit.model.VisitModel;
+import my.cliniflow.domain.biz.schedule.repository.AppointmentRepository;
+import my.cliniflow.domain.biz.visit.event.SoapFinalizedDomainEvent;
 import my.cliniflow.domain.biz.visit.repository.EvaluatorFindingRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicalReportRepository;
 import my.cliniflow.domain.biz.visit.repository.MedicationRepository;
@@ -21,6 +23,7 @@ import my.cliniflow.infrastructure.client.AgentServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +49,8 @@ public class ReportReviewAppServiceImpl implements ReportReviewAppService {
     private final ObjectMapper mapper;
     private final JdbcTemplate jdbc;
     private final EvaluatorFindingRepository findings;
+    private final AppointmentRepository appointments;
+    private final ApplicationEventPublisher events;
 
     public ReportReviewAppServiceImpl(
         VisitRepository visits,
@@ -55,7 +60,9 @@ public class ReportReviewAppServiceImpl implements ReportReviewAppService {
         ReportAggregatorService aggregator,
         ObjectMapper mapper,
         JdbcTemplate jdbc,
-        EvaluatorFindingRepository findings
+        EvaluatorFindingRepository findings,
+        AppointmentRepository appointments,
+        ApplicationEventPublisher events
     ) {
         this.visits = visits;
         this.reports = reports;
@@ -65,6 +72,8 @@ public class ReportReviewAppServiceImpl implements ReportReviewAppService {
         this.mapper = mapper;
         this.jdbc = jdbc;
         this.findings = findings;
+        this.appointments = appointments;
+        this.events = events;
     }
 
     // ───── /generate-sync ─────────────────────────────────────────────────────
@@ -237,6 +246,14 @@ public class ReportReviewAppServiceImpl implements ReportReviewAppService {
         v.setFinalizedAt(now);
         visits.save(v);
 
+        // Transition the linked appointment to COMPLETED so the doctor's
+        // schedule no longer lists it. No-op if the visit was a walk-in
+        // without an appointment row.
+        appointments.findActiveByVisitId(visitId).ifPresent(a -> {
+            a.markCompleted();
+            appointments.save(a);
+        });
+
         String correlationId = MDC.get("correlationId");
         if (correlationId == null || correlationId.isEmpty()) {
             correlationId = UUID.randomUUID().toString();
@@ -248,8 +265,17 @@ public class ReportReviewAppServiceImpl implements ReportReviewAppService {
             correlationId, "{\"event\":\"finalized\",\"visit_id\":\"" + visitId + "\"}"
         );
 
-        log.info("[REVIEW] finalize OK visit={} doctor={} summaryEnLen={} summaryMsLen={}",
-            visitId, doctorId, summaryEn.length(), summaryMs.length());
+        // Publish SoapFinalizedDomainEvent so SoapFinalizedListener can enqueue
+        // the post-visit WhatsApp summary (soap_meds_summary_v1) when meds were
+        // prescribed. Without this publish, the listener never fires.
+        boolean hasMeds = finalizedReport.plan() != null
+            && finalizedReport.plan().medications() != null
+            && !finalizedReport.plan().medications().isEmpty();
+        events.publishEvent(new SoapFinalizedDomainEvent(
+            visitId, v.getPatientId(), hasMeds, null));
+
+        log.info("[REVIEW] finalize OK visit={} doctor={} summaryEnLen={} summaryMsLen={} hasMeds={}",
+            visitId, doctorId, summaryEn.length(), summaryMs.length(), hasMeds);
 
         return new FinalizeResponse(visitId, summaryEn, summaryMs, now);
     }

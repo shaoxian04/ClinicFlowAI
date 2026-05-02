@@ -109,17 +109,25 @@ export default function DoctorTodayPage() {
         return () => { cancelled = true; };
     }, [fromDate, days]);
 
+    // Schedule shows only future-actionable bookings — completed (finalised),
+    // cancelled, and no-show appointments are dropped so the doctor's schedule
+    // doesn't accumulate visual noise.
+    const visibleAppointments = useMemo(
+        () => appointments.filter((a) => a.status === "BOOKED"),
+        [appointments]
+    );
+
     const grouped = useMemo(() => {
         const byDay: Record<string, Appointment[]> = {};
         for (const d of days) byDay[d] = [];
-        for (const a of appointments) {
+        for (const a of visibleAppointments) {
             const key = localDateOfStartAt(a.startAt);
             if (byDay[key]) byDay[key].push(a);
         }
         return byDay;
-    }, [appointments, days]);
+    }, [visibleAppointments, days]);
 
-    const totalCount = appointments.length;
+    const totalCount = visibleAppointments.length;
     const today = todayISOInKL();
     const isOnToday = fromDate === today;
 
