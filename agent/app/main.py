@@ -1,11 +1,23 @@
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 import structlog
 from fastapi import Depends, FastAPI
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.responses import Response
 
 from app.config import settings
+
+# Sentry — init before FastAPI app construction so request handlers are wrapped.
+# Empty DSN -> SDK is a no-op (zero overhead, no errors). See SAD §4.2.1.
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.sentry_environment,
+        release=settings.sentry_release,
+        traces_sample_rate=0.0,
+        send_default_pii=False,
+    )
 from app.deps import require_service_token
 from app.graph.driver import close_driver
 from app.graph.schema import apply_schema

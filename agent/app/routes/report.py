@@ -231,7 +231,13 @@ async def clarify(req: ClarifyRequest) -> StreamingResponse:
         llm=llm, registry=registry, turns=AgentTurnRepository(),
     )
     ctx = AgentContext(visit_id=req.visit_id, patient_id=req.patient_id, doctor_id=req.doctor_id)
-    return StreamingResponse(_run_stream_with_evaluator(agent, ctx, req.answer), media_type="text/event-stream")
+    # Wrap with a distinct prefix so the agent recognises this as a doctor's
+    # answer to its prior ask_doctor_clarification — NOT a fresh transcript.
+    # The system prompt's CLARIFY PROCESS section keys off this prefix.
+    user_input = f"Doctor clarification answer:\n{req.answer}"
+    log.info("[AGENT] /agents/report/clarify visit=%s answer_len=%d",
+             req.visit_id, len(req.answer))
+    return StreamingResponse(_run_stream_with_evaluator(agent, ctx, user_input), media_type="text/event-stream")
 
 
 @router.post("/edit")

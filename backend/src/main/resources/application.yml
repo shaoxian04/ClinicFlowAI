@@ -98,9 +98,11 @@ cliniflow:
           soap_followup_reminder_v1:   '${META_TEMPLATE_SOAP_FOLLOWUP_REMINDER:cliniflow_soap_followup_reminder_v1}'
         }
       # Internal locale -> Meta language code.
+      # NOTE: cliniflow_* templates were approved by Meta as language='en' (not en_US).
+      # hello_world fallback uses en_US, configured separately via default-template-language.
       language-codes: >
         {
-          en: 'en_US',
+          en: 'en',
           ms: 'ms',
           zh: 'zh_CN'
         }
@@ -126,3 +128,16 @@ resilience4j:
 logging:
   pattern:
     level: "%5p [cid=%X{correlationId:-}]"
+
+# Sentry — when SENTRY_DSN is unset, the SDK is a no-op (zero overhead, no errors).
+# Free tier: 5k events/month. See SAD §4.2.1.
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:development}
+  release: ${SENTRY_RELEASE:cliniflow-backend@0.0.1-SNAPSHOT}
+  send-default-pii: false
+  traces-sample-rate: 0.0
+  exception-resolver-order: -2147483647
+  logging:
+    minimum-event-level: error
+    minimum-breadcrumb-level: info

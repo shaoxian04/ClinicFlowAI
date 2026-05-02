@@ -32,7 +32,7 @@ class MetaCloudWhatsAppSenderTest {
     );
 
     private static final Map<String, String> LANGUAGES = Map.of(
-        "en", "en_US",
+        "en", "en",
         "ms", "ms",
         "zh", "zh_CN"
     );
@@ -112,7 +112,7 @@ class MetaCloudWhatsAppSenderTest {
         String body = lastRequestBody.get();
         assertThat(body).contains("\"to\":\"60122372812\"");
         assertThat(body).contains("\"name\":\"cliniflow_appointment_confirmation_v1\"");
-        assertThat(body).contains("\"code\":\"en_US\"");
+        assertThat(body).contains("\"code\":\"en\"");
         // 4 body parameters with our values, in order
         assertThat(body).contains("\"text\":\"Pat Demo\"");
         assertThat(body).contains("\"text\":\"Smith\"");

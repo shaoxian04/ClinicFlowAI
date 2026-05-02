@@ -36,7 +36,9 @@ public class TwilioWhatsAppSender implements WhatsAppSender {
     private static final Set<Integer> TERMINAL_CODES = Set.of(
         21211, // Invalid 'To' phone number
         21408, // Permission to send to that region not enabled
+        21608, // Trial account: 'To' number not in Verified Caller IDs list
         21610, // Recipient opted out (STOP)
+        21612, // Trial account: 'To' number not verified
         21614, // 'To' is not a valid mobile number
         63016, // Failed to send freeform message because you are outside the allowed window
         63018, // Permission denied
@@ -84,7 +86,13 @@ public class TwilioWhatsAppSender implements WhatsAppSender {
             return new SendResult.Terminal(ex.getMessage(), "RENDER_FAILED");
         }
 
-        String to = "whatsapp:" + payload.toPhoneE164();
+        String normalized = normalizeE164(payload.toPhoneE164());
+        if (normalized == null) {
+            log.warn("[twilio-whatsapp] invalid phone number to={} — cannot normalize to E.164",
+                redactPhone(payload.toPhoneE164()));
+            return new SendResult.Terminal("invalid phone number", "INVALID_PHONE");
+        }
+        String to = "whatsapp:" + normalized;
         try {
             Message msg = Message.creator(
                     new PhoneNumber(to),
@@ -147,6 +155,19 @@ public class TwilioWhatsAppSender implements WhatsAppSender {
     private static String redactPhone(String e164) {
         if (e164 == null || e164.length() < 4) return "****";
         return "****" + e164.substring(e164.length() - 4);
+    }
+
+    /**
+     * Normalises a raw phone string to E.164 form ({@code +<digits>}). Strips
+     * spaces, hyphens, parentheses, and other non-digit characters. Returns
+     * {@code null} if the result has fewer than 7 digits (clearly not a valid
+     * MSISDN) or is otherwise empty.
+     */
+    static String normalizeE164(String raw) {
+        if (raw == null) return null;
+        String digits = raw.replaceAll("[^0-9]", "");
+        if (digits.length() < 7) return null;
+        return "+" + digits;
     }
 
     private static String safe(String s) {

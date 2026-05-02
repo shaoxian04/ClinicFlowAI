@@ -186,6 +186,38 @@ class BaseAgent(ABC):
         yield agent_error("step limit exceeded")
         raise AgentStepLimitExceeded(str(ctx.visit_id))
 
+    @staticmethod
+    def _merge_clarification_answers(out: list[dict[str, Any]]) -> None:
+        """Rewrite waiting-for-doctor tool results in place once the doctor has
+        answered. Without this, the LLM sees the question as still-pending and
+        re-asks the same clarification on every subsequent step.
+
+        Pattern: assistant(tool_calls=[ask_doctor_clarification]) -> tool({status:
+        waiting_for_doctor}) -> user("…Doctor clarification answer:\\n<answer>").
+        We mutate the tool message in `out` so the model sees the answer baked in.
+        """
+        i = 0
+        while i < len(out):
+            msg = out[i]
+            if msg.get("role") == "tool" and i + 1 < len(out):
+                nxt = out[i + 1]
+                content_str = nxt.get("content") or ""
+                if (
+                    nxt.get("role") == "user"
+                    and "Doctor clarification answer:" in content_str
+                ):
+                    try:
+                        cur = json.loads(msg.get("content") or "{}")
+                    except (json.JSONDecodeError, TypeError):
+                        cur = {}
+                    if isinstance(cur, dict) and cur.get("status") == "waiting_for_doctor":
+                        answer = content_str.split(
+                            "Doctor clarification answer:", 1
+                        )[1].strip()
+                        cur = {"status": "answered_by_doctor", "answer": answer}
+                        msg["content"] = json.dumps(cur, ensure_ascii=False)
+            i += 1
+
     async def _load_openai_messages(self, ctx: AgentContext) -> list[dict[str, Any]]:
         turns = await self._turns.load(ctx.visit_id, self.agent_type)
         out: list[dict[str, Any]] = []
@@ -255,6 +287,7 @@ class BaseAgent(ABC):
                 i += 1
             else:
                 i += 1
+        self._merge_clarification_answers(out)
         return out
 
     @staticmethod

@@ -80,6 +80,7 @@ Read the relevant file on demand — don't preload everything.
 - **`data-model.md`** — Postgres tables and Neo4j node/edge schema. Read before schema changes or Cypher queries.
 - **`api-surface.md`** — Spring Boot external endpoints and Python agent internal endpoints. Read before adding routes.
 - **`non-functional.md`** — PDPA, performance targets, Resilience4j config, rollout strategy, priority matrix, golden signals, correlation IDs. Read before ops/observability work.
+- **`monitoring-setup.md`** — Sentry + Uptime Robot setup for SAD §4.2.1. Read before wiring observability env vars or adding new public-facing endpoints.
 - **`scope-and-acceptance.md`** — Explicit out-of-scope list, MVP must/should split, user-story IDs with PRD-defined acceptance criteria. Read before adding features.
 - **`open-questions.md`** — Unresolved decisions and assumptions to validate.
 
