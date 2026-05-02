@@ -44,6 +44,13 @@ management:
       application: ${spring.application.name}
 
 cliniflow:
+  clinic:
+    name: ${CLINIFLOW_CLINIC_NAME:CliniFlow Medical Clinic}
+    address-line1: ${CLINIFLOW_CLINIC_ADDRESS_LINE1:No. 12, Jalan Bukit Bintang}
+    address-line2: ${CLINIFLOW_CLINIC_ADDRESS_LINE2:55100 Kuala Lumpur, Malaysia}
+    phone: ${CLINIFLOW_CLINIC_PHONE:+60 3-2145 8800}
+    email: ${CLINIFLOW_CLINIC_EMAIL:reception@cliniflow.demo}
+    registration-number: ${CLINIFLOW_CLINIC_REGISTRATION_NUMBER:KKM-KL-2024-0451}
   jwt:
     secret: ${JWT_SECRET:dev-secret-change-me-at-least-32-chars}
     expiry-minutes: ${JWT_EXPIRY_MINUTES:60}
